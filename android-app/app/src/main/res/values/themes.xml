@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.Eda" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#6C4FE0</item>
+        <item name="colorPrimaryDark">#4B32B3</item>
+        <item name="colorAccent">#00E5C7</item>
+    </style>
+</resources>

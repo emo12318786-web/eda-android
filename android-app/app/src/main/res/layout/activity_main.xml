@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F0B1E">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="E · D · A"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/durumText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="💤 Servis çalışmıyor"
+        android:textSize="16sp"
+        android:textColor="#B8AEDB"
+        android:layout_marginBottom="24dp" />
+
+    <Button
+        android:id="@+id/baslatButon"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Eda'yı Başlat" />
+
+    <Button
+        android:id="@+id/durdurButon"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Eda'yı Durdur" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ayarlar"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/kullaniciAdiInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Hitap (örn. denizçim)"
+        android:textColorHint="#8A7FB0"
+        android:textColor="#FFFFFF" />
+
+    <EditText
+        android:id="@+id/groqInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Groq API anahtarı"
+        android:textColorHint="#8A7FB0"
+        android:textColor="#FFFFFF"
+        android:inputType="textPassword" />
+
+    <EditText
+        android:id="@+id/deepseekInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="DeepSeek API anahtarı"
+        android:textColorHint="#8A7FB0"
+        android:textColor="#FFFFFF"
+        android:inputType="textPassword" />
+
+    <EditText
+        android:id="@+id/openrouterInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="OpenRouter API anahtarı"
+        android:textColorHint="#8A7FB0"
+        android:textColor="#FFFFFF"
+        android:inputType="textPassword" />
+
+    <EditText
+        android:id="@+id/navasanInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Navasan (dolar/altın) API anahtarı"
+        android:textColorHint="#8A7FB0"
+        android:textColor="#FFFFFF"
+        android:inputType="textPassword" />
+
+    <Button
+        android:id="@+id/kaydetButon"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Ayarları Kaydet" />
+
+</LinearLayout>
+</ScrollView>
