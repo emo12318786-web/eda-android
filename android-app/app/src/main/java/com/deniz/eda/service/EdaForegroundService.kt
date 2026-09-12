@@ -10,7 +10,7 @@ import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import androidx.core.app.ServiceCompat
-import android.content.pm.ServiceInfo
+import androidx.core.content.pm.ServiceInfoCompat
 import com.deniz.eda.core.CommandProcessor
 import com.deniz.eda.core.KomutSonucu
 import com.deniz.eda.core.ReminderChecker
@@ -68,7 +68,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         val bildirim = NotificationHelper.bildirimOlustur(this, getString(com.deniz.eda.R.string.notif_sleeping))
         ServiceCompat.startForeground(
             this, NotificationHelper.NOTIF_ID, bildirim,
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+            ServiceInfoCompat.FOREGROUND_SERVICE_TYPE_MICROPHONE
         )
 
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
@@ -307,4 +307,3 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
     override fun onBind(intent: Intent?): IBinder? = null
 }
-// forced rebuild at 20260913_010010
