@@ -10,7 +10,7 @@ import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import androidx.core.app.ServiceCompat
-import androidx.core.content.pm.ServiceInfoCompat
+import android.content.pm.ServiceInfo
 import com.deniz.eda.core.CommandProcessor
 import com.deniz.eda.core.KomutSonucu
 import com.deniz.eda.core.ReminderChecker
@@ -68,11 +68,20 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         val bildirim = NotificationHelper.bildirimOlustur(this, getString(com.deniz.eda.R.string.notif_sleeping))
         ServiceCompat.startForeground(
             this, NotificationHelper.NOTIF_ID, bildirim,
-            ServiceInfoCompat.FOREGROUND_SERVICE_TYPE_MICROPHONE
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
         )
 
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
-            setRecognitionListener(recognitionListener)
+        val konusmaTanimaVarMi = SpeechRecognizer.isRecognitionAvailable(this)
+        android.util.Log.e("EdaService", "SpeechRecognizer bu cihazda mevcut mu: $konusmaTanimaVarMi")
+        if (!konusmaTanimaVarMi) {
+            // Cihazda hicbir konusma tanima servisi yok (orn. Google uygulamasi
+            // olmayan bir ROM) - sonsuz hata donguyu onlemek icin hic denemeyip
+            // bildirimi guncelliyoruz.
+            bildirimGuncelle("⚠️ Bu cihazda konuşma tanıma servisi bulunamadı.")
+        } else {
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
+                setRecognitionListener(recognitionListener)
+            }
         }
 
         pilBildirimBaslat()
@@ -92,8 +101,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             tts.language = Locale("tr", "TR")
         }
         ttsHazir = true
-        // TTS hazir olur olmaz dinlemeye basla
-        baslatDinleme()
+        // TTS hazir olur olmaz dinlemeye basla (konusma tanima mevcutsa).
+        if (speechRecognizer != null) baslatDinleme()
     }
 
     // --- PIL BILDIRIMI (her N dakikada bir, mod ne olursa olsun) ---
@@ -127,6 +136,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
     private fun baslatDinleme() {
         if (dinlemeAktif) return
+        if (speechRecognizer == null) return // cihazda konusma tanima yok
         dinlemeAktif = true
         val uykuModu = mod == Mod.UYKU
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -187,6 +197,24 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         }
     }
 
+    private fun hataAdi(kod: Int): String = when (kod) {
+        SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "ERROR_NETWORK_TIMEOUT"
+        SpeechRecognizer.ERROR_NETWORK -> "ERROR_NETWORK"
+        SpeechRecognizer.ERROR_AUDIO -> "ERROR_AUDIO"
+        SpeechRecognizer.ERROR_SERVER -> "ERROR_SERVER"
+        SpeechRecognizer.ERROR_CLIENT -> "ERROR_CLIENT"
+        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "ERROR_SPEECH_TIMEOUT"
+        SpeechRecognizer.ERROR_NO_MATCH -> "ERROR_NO_MATCH"
+        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "ERROR_RECOGNIZER_BUSY"
+        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "ERROR_INSUFFICIENT_PERMISSIONS"
+        SpeechRecognizer.ERROR_TOO_MANY_REQUESTS -> "ERROR_TOO_MANY_REQUESTS"
+        SpeechRecognizer.ERROR_SERVER_DISCONNECTED -> "ERROR_SERVER_DISCONNECTED"
+        SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED -> "ERROR_LANGUAGE_NOT_SUPPORTED"
+        SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE -> "ERROR_LANGUAGE_UNAVAILABLE"
+        SpeechRecognizer.ERROR_CANNOT_CHECK_SUPPORT -> "ERROR_CANNOT_CHECK_SUPPORT"
+        else -> "BILINMEYEN($kod)"
+    }
+
     private val recognitionListener = object : RecognitionListener {
         override fun onResults(results: Bundle?) {
             dinlemeAktif = false
@@ -196,6 +224,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
         override fun onError(error: Int) {
             dinlemeAktif = false
+            android.util.Log.e("EdaService", "SpeechRecognizer hata kodu: $error (${hataAdi(error)})")
             // ERROR_NO_MATCH / ERROR_SPEECH_TIMEOUT gibi hatalar uyku modunda normaldir
             // (ortam sessiz) - sadece dongude devam ediyoruz, pil dostu bekleme ile.
             yenidenDenemeyiPlanla()
