@@ -76,15 +76,6 @@ object CommandProcessor {
                 KomutSonucu.Cevap(if (basarili) "Fener açıldı $hitap." else "Fener açılamadı $hitap.")
             }
 
-            ("bip" in metin || "beep" in metin) && "kapat" in metin -> {
-                Settings.beepAktif = false
-                KomutSonucu.Cevap("Bip sesi kapatıldı $hitap.")
-            }
-            ("bip" in metin || "beep" in metin) && ("ac" in metin || "aç" in metin) -> {
-                Settings.beepAktif = true
-                KomutSonucu.Cevap("Bip sesi açıldı $hitap.")
-            }
-
             "güvenlik" in metin && "kapat" in metin -> {
                 Settings.guvenlikModuAktif = false
                 KomutSonucu.GuvenlikModuDegisti(false)

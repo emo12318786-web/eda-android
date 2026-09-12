@@ -84,10 +84,4 @@ object Settings {
     var arabaModuAktif: Boolean
         get() = getBool("araba_modu_aktif", false)
         set(v) = setBool("araba_modu_aktif", v)
-
-    // Orijinal script'teki "beep_aktif" ayarinin karsiligi - dinlemeye
-    // baslarken kullaniciya duyulur bir sinyal verilip verilmeyecegini tutar.
-    var beepAktif: Boolean
-        get() = getBool("beep_aktif", false)
-        set(v) = setBool("beep_aktif", v)
 }
