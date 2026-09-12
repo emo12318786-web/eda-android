@@ -10,7 +10,7 @@ import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import androidx.core.app.ServiceCompat
-import androidx.core.content.pm.ServiceInfoCompat
+import android.content.pm.ServiceInfo
 import com.deniz.eda.core.CommandProcessor
 import com.deniz.eda.core.KomutSonucu
 import com.deniz.eda.core.ReminderChecker
@@ -68,7 +68,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         val bildirim = NotificationHelper.bildirimOlustur(this, getString(com.deniz.eda.R.string.notif_sleeping))
         ServiceCompat.startForeground(
             this, NotificationHelper.NOTIF_ID, bildirim,
-            ServiceInfoCompat.FOREGROUND_SERVICE_TYPE_MICROPHONE
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
         )
 
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
