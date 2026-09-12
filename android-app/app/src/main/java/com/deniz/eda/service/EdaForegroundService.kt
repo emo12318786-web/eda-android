@@ -134,17 +134,24 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     // --- DINLEME DONGUSU ---
     private val audioManager by lazy { getSystemService(AUDIO_SERVICE) as android.media.AudioManager }
 
+    // Cihazda offline Turkce konusma tanima paketi yoksa (ERROR_LANGUAGE_UNAVAILABLE/
+    // ERROR_LANGUAGE_NOT_SUPPORTED), bunu bir kez tespit edip bir daha offline
+    // denemeyi birakiyoruz - yoksa her seferinde ayni hatayla bip dongusune giriyor.
+    private var offlineDestekYok = false
+
     private fun baslatDinleme() {
         if (dinlemeAktif) return
         if (speechRecognizer == null) return // cihazda konusma tanima yok
         dinlemeAktif = true
         val uykuModu = mod == Mod.UYKU
+        val offlineDenensin = uykuModu && !offlineDestekYok
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "tr-TR")
             putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
-            // Uyku modunda (sadece uyanma kelimesi icin) cihaz-ustu/hafif tanimayi tercih et.
-            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, uykuModu)
+            // Uyku modunda (sadece uyanma kelimesi icin) cihaz-ustu/hafif tanimayi
+            // tercih et - ama sadece cihazda gercekten offline paket varsa.
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, offlineDenensin)
             // Cok erken "ERROR_SPEECH_TIMEOUT"/"ERROR_NO_MATCH" verip hemen yeniden
             // baslamasini (ve bip sesinin ust uste binmesini) onlemek icin sessizlik
             // toleransini uzatiyoruz.
@@ -225,6 +232,14 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         override fun onError(error: Int) {
             dinlemeAktif = false
             android.util.Log.e("EdaService", "SpeechRecognizer hata kodu: $error (${hataAdi(error)})")
+            if (error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ||
+                error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED
+            ) {
+                if (!offlineDestekYok) {
+                    offlineDestekYok = true
+                    android.util.Log.e("EdaService", "Offline Turkce paketi yok, online tanimaya geciliyor.")
+                }
+            }
             // ERROR_NO_MATCH / ERROR_SPEECH_TIMEOUT gibi hatalar uyku modunda normaldir
             // (ortam sessiz) - sadece dongude devam ediyoruz, pil dostu bekleme ile.
             yenidenDenemeyiPlanla()
