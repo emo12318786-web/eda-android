@@ -1,6 +1,6 @@
 name: Eda Android APK Derle
 
-# Sadece android-app/ klasorunde bir degisiklik oldugunda calisir - v2 - eda.py
+# Sadece android-app/ klasorunde bir degisiklik oldugunda calisir - v2 - v2 - eda.py
 # (Termux tarafi) degisince bosuna tetiklenmesin diye.
 on:
   push:
