@@ -10,7 +10,7 @@ import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import androidx.core.app.ServiceCompat
-import android.content.pm.ServiceInfo
+import androidx.core.content.pm.ServiceInfoCompat
 import com.deniz.eda.core.CommandProcessor
 import com.deniz.eda.core.KomutSonucu
 import com.deniz.eda.core.ReminderChecker
@@ -68,7 +68,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         val bildirim = NotificationHelper.bildirimOlustur(this, getString(com.deniz.eda.R.string.notif_sleeping))
         ServiceCompat.startForeground(
             this, NotificationHelper.NOTIF_ID, bildirim,
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+            ServiceInfoCompat.FOREGROUND_SERVICE_TYPE_MICROPHONE
         )
 
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
@@ -123,6 +123,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     }
 
     // --- DINLEME DONGUSU ---
+    private val audioManager by lazy { getSystemService(AUDIO_SERVICE) as android.media.AudioManager }
+
     private fun baslatDinleme() {
         if (dinlemeAktif) return
         dinlemeAktif = true
@@ -133,12 +135,48 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
             // Uyku modunda (sadece uyanma kelimesi icin) cihaz-ustu/hafif tanimayi tercih et.
             putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, uykuModu)
+            // Cok erken "ERROR_SPEECH_TIMEOUT"/"ERROR_NO_MATCH" verip hemen yeniden
+            // baslamasini (ve bip sesinin ust uste binmesini) onlemek icin sessizlik
+            // toleransini uzatiyoruz.
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1500L)
         }
+        sistemBipSesiniGecicKapat()
         try {
             speechRecognizer?.startListening(intent)
         } catch (e: Exception) {
             dinlemeAktif = false
             yenidenDenemeyiPlanla()
+        }
+    }
+
+    /**
+     * Android'in "dinlemeye basladi" bip sesi genelde STREAM_MUSIC uzerinden
+     * calinir. Surekli yeniden baslama dongusunde bu bip'in ust uste/pes pese
+     * calmasi rahatsiz edici oluyor - dinlemeyi baslatirken kisa sureligine
+     * susturup otomatik geri aciyoruz.
+     */
+    private fun sistemBipSesiniGecicKapat() {
+        try {
+            audioManager.adjustStreamVolume(
+                android.media.AudioManager.STREAM_MUSIC,
+                android.media.AudioManager.ADJUST_MUTE,
+                0
+            )
+        } catch (e: Exception) {
+            // Bazi cihazlarda bu stream'i susturmaya izin verilmeyebilir - sorun degil.
+        }
+        serviceScope.launch {
+            delay(800L)
+            try {
+                audioManager.adjustStreamVolume(
+                    android.media.AudioManager.STREAM_MUSIC,
+                    android.media.AudioManager.ADJUST_UNMUTE,
+                    0
+                )
+            } catch (e: Exception) {
+            }
         }
     }
 
