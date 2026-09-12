@@ -1,0 +1,31 @@
+{
+  "tts_language": "tr-TR",
+  "tts_rate": "1.1",
+  "tts_engine": "com.google.android.tts",
+  "beep_aktif": false,
+  "tanima_modu": "offline",
+  "whisper_model_tercihi": "hiz",
+  "durdurma_dinleme_aktif": false,
+  "wake_words": [
+    "eda",
+    "e da",
+    "hey eda",
+    "uyan eda"
+  ],
+  "security": false,
+  "car_mode": false,
+  "öğrenme_aktif": true,
+  "ai_aktif": true,
+  "ai_provider": "openrouter",
+  "openrouter_api_key": "",
+  "openrouter_model": "openrouter/free",
+  "groq_api_key": "",
+  "groq_model": "openai/gpt-oss-20b",
+  "deepseek_api_key": "",
+  "deepseek_model": "deepseek-v4-flash",
+  "deepseek_thinking": false,
+  "gemma_model": "gemma3:1b",
+  "gemma_host": "http://localhost:11434",
+  "gemma_otomatik": true,
+  "guvenlik_numara": ""
+}
