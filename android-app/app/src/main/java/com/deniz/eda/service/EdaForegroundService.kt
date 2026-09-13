@@ -65,6 +65,19 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         NotificationHelper.channelOlustur(this)
         tts = TextToSpeech(this, this)
 
+        // GUVENLIK ONLEMI: eski bir surumde STREAM_MUSIC gecici olarak
+        // susturuluyordu; bu susturma cihaz genelinde kalici olabildigi
+        // icin (uygulama yeniden baslasa bile), burada bir kez zorla
+        // geri aciyoruz ki TTS sessiz kalmasin.
+        try {
+            audioManager.adjustStreamVolume(
+                android.media.AudioManager.STREAM_MUSIC,
+                android.media.AudioManager.ADJUST_UNMUTE,
+                0
+            )
+        } catch (e: Exception) {
+        }
+
         val bildirim = NotificationHelper.bildirimOlustur(this, getString(com.deniz.eda.R.string.notif_sleeping))
         ServiceCompat.startForeground(
             this, NotificationHelper.NOTIF_ID, bildirim,
@@ -159,41 +172,11 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1500L)
         }
-        sistemBipSesiniGecicKapat()
         try {
             speechRecognizer?.startListening(intent)
         } catch (e: Exception) {
             dinlemeAktif = false
             yenidenDenemeyiPlanla()
-        }
-    }
-
-    /**
-     * Android'in "dinlemeye basladi" bip sesi genelde STREAM_MUSIC uzerinden
-     * calinir. Surekli yeniden baslama dongusunde bu bip'in ust uste/pes pese
-     * calmasi rahatsiz edici oluyor - dinlemeyi baslatirken kisa sureligine
-     * susturup otomatik geri aciyoruz.
-     */
-    private fun sistemBipSesiniGecicKapat() {
-        try {
-            audioManager.adjustStreamVolume(
-                android.media.AudioManager.STREAM_MUSIC,
-                android.media.AudioManager.ADJUST_MUTE,
-                0
-            )
-        } catch (e: Exception) {
-            // Bazi cihazlarda bu stream'i susturmaya izin verilmeyebilir - sorun degil.
-        }
-        serviceScope.launch {
-            delay(800L)
-            try {
-                audioManager.adjustStreamVolume(
-                    android.media.AudioManager.STREAM_MUSIC,
-                    android.media.AudioManager.ADJUST_UNMUTE,
-                    0
-                )
-            } catch (e: Exception) {
-            }
         }
     }
 
@@ -351,4 +334,3 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
     override fun onBind(intent: Intent?): IBinder? = null
 }
-// rebuild 1789257450
