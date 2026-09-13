@@ -34,7 +34,6 @@ import java.util.Locale
  *  - Android SpeechRecognizer, sesi sisteme gondermeden once kendi VAD'i ile
  *    sessizligi zaten eliyor (bizim yazdigimiz RMS filtresinin native karsiligi
  *    isletim sistemi tarafindan hazir geliyor).
- *  - EXTRA_PREFER_OFFLINE ile uyku modunda (sadece uyanma kelimesi icin) agir
  *    online tanima yerine cihaz uzerindeki hafif modeli tercih ediyoruz.
  */
 class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
@@ -157,14 +156,12 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         if (speechRecognizer == null) return // cihazda konusma tanima yok
         dinlemeAktif = true
         val uykuModu = mod == Mod.UYKU
-        val offlineDenensin = uykuModu && !offlineDestekYok
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "tr-TR")
             putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
             // Uyku modunda (sadece uyanma kelimesi icin) cihaz-ustu/hafif tanimayi
             // tercih et - ama sadece cihazda gercekten offline paket varsa.
-            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, offlineDenensin)
             // Cok erken "ERROR_SPEECH_TIMEOUT"/"ERROR_NO_MATCH" verip hemen yeniden
             // baslamasini (ve bip sesinin ust uste binmesini) onlemek icin sessizlik
             // toleransini uzatiyoruz.

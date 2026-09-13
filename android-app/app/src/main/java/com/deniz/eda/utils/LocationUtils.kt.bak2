@@ -74,25 +74,12 @@ object LocationUtils {
         KonumBilgisi(konum.latitude, konum.longitude, adresAl(context, konum))
     }
 
-    /**
-     * آدرس کامل: خیابان، محله، شهر، استان
-     */
     private fun adresAl(context: Context, konum: Location): String? {
         return try {
             val geocoder = android.location.Geocoder(context, Locale.getDefault())
             @Suppress("DEPRECATION")
-            val adresler = geocoder.getFromLocation(konum.latitude, konum.longitude, 1)
-            val adres = adresler?.firstOrNull() ?: return null
-            val parcalar = mutableListOf<String>()
-            // خیابان
-            if (!adres.thoroughfare.isNullOrBlank()) parcalar.add(adres.thoroughfare)
-            // محله
-            if (!adres.subLocality.isNullOrBlank()) parcalar.add(adres.subLocality)
-            // شهر
-            if (!adres.locality.isNullOrBlank()) parcalar.add(adres.locality)
-            // استان
-            if (!adres.adminArea.isNullOrBlank()) parcalar.add(adres.adminArea)
-            if (parcalar.isEmpty()) null else parcalar.joinToString(", ")
+            geocoder.getFromLocation(konum.latitude, konum.longitude, 1)
+                ?.firstOrNull()?.let { "${it.locality ?: ""} ${it.adminArea ?: ""}".trim() }
         } catch (e: Exception) {
             null
         }
