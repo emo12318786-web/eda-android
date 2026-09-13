@@ -17,19 +17,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/**
- * Orijinal komut_isle_tek_direkt() / komut_isle() fonksiyonlarinin Kotlin karsiligi.
- *
- * FAZ 2: hatirlatma, hafiza, gunluk, AI sohbet zinciri, hava durumu, dolar/altin,
- * konum, guvenlik modu, araba modu, SMS ve basit ogrenme (paraphrase) eklendi.
- *
- * NOT (ogrenme sistemi hakkinda): LearningStore su an sadece PASIF bir sozluk -
- * yani "X derse Y komutunu calistir" seklinde ogretilmis eslesmeleri kullanir,
- * ama hicbir yerde otomatik olarak yeni eslesme OGRETILMIYOR (orijinal Python
- * script'teki tam otomatik ogrenme mantigi konusma baglamina ihtiyac duyuyordu,
- * bu FAZ'da o kismi basitlestirdik). Yeni bir eslesme eklemek istersen simdilik
- * "öğret KELIME komutu KOMUT" seklinde soyleyebilirsin (asagida eklendi).
- */
 sealed class KomutSonucu {
     data class Cevap(val metin: String) : KomutSonucu()
     object UykuyaDon : KomutSonucu()
@@ -41,14 +28,14 @@ sealed class KomutSonucu {
 
 object CommandProcessor {
 
+    private fun v(m: String, vararg k: String) = FuzzyMatcher.herhangiBiri(m, *k)
+
     suspend fun isle(context: Context, metinHam: String): KomutSonucu {
         val hitap = Settings.kullaniciAdi
         var metin = metinHam.lowercase(Locale.getDefault()).trim()
 
-        // Daha once ogretilmis bir eslesme varsa, kanonik komuta çevir.
         LearningStore.bul(context, metin)?.let { ogrenilen -> metin = ogrenilen }
 
-        // --- "öğret KELIME komutu KOMUT" - manuel ogretme ---
         if (metin.startsWith("öğret ") && " komutu " in metin) {
             val parcalar = metin.removePrefix("öğret ").split(" komutu ", limit = 2)
             if (parcalar.size == 2) {
@@ -61,100 +48,93 @@ object CommandProcessor {
             }
         }
 
-        // NOT: "fener kapat" gibi bilesik ifadeler, genel "kapat" (uygulamayi
-        // kapat) komutundan ONCE kontrol edilmeli - yoksa "kapat" kelimesi
-        // gecen her cumle yanlislikla kapanma onayi ister. Ayni mantik butun
-        // "kapat" iceren alt-komutlar icin (guvenlik/araba modu kapat vb.)
-        // gecerli, bu yuzden hepsi genel "kapat" satirindan ONCE.
         return when {
-            "fener" in metin && "kapat" in metin -> {
+            v(metin, "fener", "faner") && v(metin, "kapat", "kapa", "kapt") -> {
                 val basarili = FlashlightUtils.kapat(context)
                 KomutSonucu.Cevap(if (basarili) "Fener kapatıldı $hitap." else "Fener kapatılamadı $hitap.")
             }
-            "fener" in metin -> {
+            v(metin, "fener", "faner") -> {
                 val basarili = FlashlightUtils.ac(context)
                 KomutSonucu.Cevap(if (basarili) "Fener açıldı $hitap." else "Fener açılamadı $hitap.")
             }
 
-            ("bip" in metin || "beep" in metin) && "kapat" in metin -> {
+            v(metin, "bip", "beep") && v(metin, "kapat", "kapa", "kapt") -> {
                 Settings.beepAktif = false
                 KomutSonucu.Cevap("Bip sesi kapatıldı $hitap.")
             }
-            ("bip" in metin || "beep" in metin) && ("ac" in metin || "aç" in metin) -> {
+            v(metin, "bip", "beep") && v(metin, "ac", "aç", "ach") -> {
                 Settings.beepAktif = true
                 KomutSonucu.Cevap("Bip sesi açıldı $hitap.")
             }
 
-            "güvenlik" in metin && "kapat" in metin -> {
+            v(metin, "güvenlik", "guvenlik", "guvenlık", "guwenlik") && v(metin, "kapat", "kapa") -> {
                 Settings.guvenlikModuAktif = false
                 KomutSonucu.GuvenlikModuDegisti(false)
             }
-            "güvenlik" in metin -> {
+            v(metin, "güvenlik", "guvenlik", "guvenlık", "guwenlik") -> {
                 Settings.guvenlikModuAktif = true
                 KomutSonucu.GuvenlikModuDegisti(true)
             }
 
-            "araba modu" in metin && "kapat" in metin -> {
+            v(metin, "araba", "arabe") && v(metin, "modu", "mod") && v(metin, "kapat") -> {
                 Settings.arabaModuAktif = false
                 KomutSonucu.ArabaModuDegisti(false)
             }
-            "araba modu" in metin -> {
+            v(metin, "araba", "arabe") && v(metin, "modu", "mod") -> {
                 Settings.arabaModuAktif = true
                 KomutSonucu.ArabaModuDegisti(true)
             }
 
-            "hatırlatmaları temizle" in metin || "hatırlatmalarımı temizle" in metin -> {
+            v(metin, "hatırlatma", "hatirlatma", "hatırlatmaları") && v(metin, "temizle", "sil", "temis") -> {
                 ReminderStore.tumunuTemizle(context)
                 KomutSonucu.Cevap("Bütün hatırlatmaları temizledim $hitap.")
             }
-            "hatırlat" in metin -> {
+            v(metin, "hatırlat", "hatirlat", "hatırla", "hatirla") -> {
                 val saatEslesme = Regex("saat\\s*(\\d{1,2})(?:[:.](\\d{2}))?").find(metin)
                 if (saatEslesme != null) {
                     val saat = saatEslesme.groupValues[1].toInt().coerceIn(0, 23)
                     var dakika = saatEslesme.groupValues[2].takeIf { it.isNotBlank() }?.toInt() ?: 0
-                    if ("buçuk" in metin) dakika = 30
+                    if ("buçuk" in metin || "bucuk" in metin) dakika = 30
                     ReminderStore.ekle(context, metin, saat, dakika)
                     KomutSonucu.Cevap("Saat %02d:%02d için hatırlatma kurdum $hitap.".format(saat, dakika))
                 } else {
                     KomutSonucu.Cevap("Kaçta hatırlatmamı istersin $hitap? \"saat 8 hatırlat\" gibi söyleyebilirsin.")
                 }
             }
-            "hatırlatma" in metin && ("listele" in metin || "neler" in metin || "var mı" in metin) ->
+            v(metin, "hatırlatma", "hatirlatma") && v(metin, "listele", "list", "neler", "göster", "goster") ->
                 KomutSonucu.Cevap(ReminderStore.listeMetni(context))
 
-            "günlüğe yaz" in metin || "günlüğe ekle" in metin -> {
-                val icerik = metin.substringAfter("günlüğe yaz").substringAfter("günlüğe ekle").trim()
+            v(metin, "günlüğe", "gunluge", "günlük", "gunluk") && v(metin, "yaz", "ekle") -> {
+                val icerik = metin.substringAfter("yaz").substringAfter("ekle").trim()
                 DiaryStore.ekle(context, icerik.ifBlank { metin })
                 KomutSonucu.Cevap("Günlüğe yazdım $hitap.")
             }
-            "günlüğü göster" in metin || "günlük göster" in metin || "günlüğü oku" in metin ->
+            v(metin, "günlüğü", "gunlugu", "günlük", "gunluk") && v(metin, "göster", "goster", "oku") ->
                 KomutSonucu.Cevap(DiaryStore.goster(context))
 
-            "hafızaya ekle" in metin || "hafızaya al" in metin || "not al" in metin -> {
-                val icerik = metin.substringAfter("hafızaya ekle")
-                    .substringAfter("hafızaya al")
-                    .substringAfter("not al").trim()
+            v(metin, "hafızaya", "hafizaya", "hafıza", "hafiza") && v(metin, "ekle", "al", "not") -> {
+                val icerik = metin.substringAfter("ekle").substringAfter("al").substringAfter("not").trim()
                 MemoryStore.ekle(context, icerik.ifBlank { metin })
                 KomutSonucu.Cevap("Hafızama ekledim $hitap.")
             }
-            "hafızamda ne var" in metin || "hafızayı göster" in metin ->
+            v(metin, "hafızamda", "hafizamda", "hafızayı", "hafizayi") && v(metin, "ne", "göster", "goster", "var") ->
                 KomutSonucu.Cevap(MemoryStore.goster(context))
 
-            "mesaj gönder" in metin || "sms gönder" in metin -> {
+            v(metin, "mesaj", "mesage") && v(metin, "gönder", "gonder") -> {
                 val numara = SmsUtils.numarayiAyikla(metin)
                 if (numara == null) {
                     KomutSonucu.Cevap("Numarayı anlayamadım $hitap, tekrar söyler misin?")
                 } else {
-                    val icerik = metin.replace(numara, "").replace("mesaj gönder", "").replace("sms gönder", "").trim()
+                    val icerik = metin.replace(numara, "").replace("mesaj", "").replace("gönder", "").replace("gonder", "").trim()
                     val basarili = SmsUtils.gonder(context, numara, icerik.ifBlank { "Eda üzerinden gönderildi." })
                     KomutSonucu.Cevap(if (basarili) "Mesajı gönderdim $hitap." else "Mesaj gönderilemedi, SMS izni verildi mi $hitap?")
                 }
             }
 
-            "konum" in metin || "neredeyim" in metin ->
+            v(metin, "konum", "neredeyim", "nerdeyim") ->
                 KomutSonucu.Cevap(LocationUtils.konumMetni(context, hitap))
 
-            "hava" in metin -> {
+            v(metin, "hava", "hawa") -> {
                 val konum = LocationUtils.sonBilinenKonum(context)
                 if (konum == null) {
                     KomutSonucu.Cevap("Hava durumu için önce konumunu almam lazım $hitap, GPS açık mı?")
@@ -163,33 +143,32 @@ object CommandProcessor {
                 }
             }
 
-            "dolar" in metin || "altın" in metin -> KomutSonucu.Cevap(CurrencyUtils.fiyatlariGetir(hitap))
+            v(metin, "dolar", "altın", "altin") ->
+                KomutSonucu.Cevap(CurrencyUtils.fiyatlariGetir(hitap))
 
-            "uyku" in metin -> KomutSonucu.UykuyaDon
+            v(metin, "uyku", "uygu", "uyu") -> KomutSonucu.UykuyaDon
 
-            // Bilesik ifadeler elendikten sonra artik genel "kapat" guvenle
-            // "uygulamayi kapat" anlamina gelir.
-            "kapat" in metin -> KomutSonucu.KapatOnayIste
+            v(metin, "kapat", "kapa", "kapt") -> KomutSonucu.KapatOnayIste
 
-            "saat" in metin -> {
+            v(metin, "saat", "sat", "sad") -> {
                 val saat = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                 KomutSonucu.Cevap("Saat $saat $hitap.")
             }
 
-            "tarih" in metin -> {
+            v(metin, "tarih", "tarik") -> {
                 val (tarih, gunAdi) = JalaliCalendar.bugununSemsiTarihi()
                 KomutSonucu.Cevap("Bugün $tarih, $gunAdi $hitap.")
             }
 
-            "pil" in metin -> KomutSonucu.Cevap(BatteryUtils.pilDurumuMetni(context, hitap))
+            v(metin, "pil", "pıl", "batarya", "sarj", "şarj") ->
+                KomutSonucu.Cevap(BatteryUtils.pilDurumuMetni(context, hitap))
 
-            "yardım" in metin || "ne yapabilirsin" in metin -> KomutSonucu.Cevap(
+            v(metin, "yardım", "yardim", "ne yapabilirsin") -> KomutSonucu.Cevap(
                 "Saat, tarih, pil, fener, hatırlatma, hafıza, günlük, hava durumu, dolar/altın, " +
                         "konum, mesaj gönderme, güvenlik modu, araba modu ve serbest sohbeti biliyorum $hitap."
             )
 
             else -> {
-                // Bilinen hicbir komutla eslesmedi - serbest sohbet olarak AI zincirine sor.
                 val aiCevap = AiRouter.sor(metinHam)
                 if (aiCevap != null) KomutSonucu.Cevap(aiCevap)
                 else KomutSonucu.Cevap("Anlayamadım $hitap, ya da şu an internetim yok.")
