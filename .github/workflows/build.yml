@@ -33,36 +33,11 @@ jobs:
         with:
           gradle-version: 8.7
 
-      - name: Check project structure
-        working-directory: android-app
-        run: |
-          echo "=== Files in android-app ==="
-          ls -la
-          echo "=== settings.gradle.kts ==="
-          cat settings.gradle.kts || echo "NOT FOUND"
-          echo "=== build.gradle.kts ==="
-          cat build.gradle.kts || echo "NOT FOUND"
-          echo "=== app/build.gradle.kts ==="
-          cat app/build.gradle.kts || echo "NOT FOUND"
-
       - name: Build Debug APK
         working-directory: android-app
-        run: |
-          echo "=== Starting build ==="
-          gradle assembleDebug --stacktrace --no-daemon --info 2>&1 | tee /tmp/build.log
-          echo "=== Build finished ==="
-          echo "=== Last 100 lines ==="
-          tail -100 /tmp/build.log
-        continue-on-error: true
-
-      - name: Show build log summary
-        if: always()
-        run: |
-          echo "=== ERROR SUMMARY ==="
-          grep -iE "error|failed|exception|what went wrong|caused by" /tmp/build.log | head -50 || echo "no errors found"
+        run: gradle assembleDebug --stacktrace --no-daemon
 
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: eda-debug-apk
