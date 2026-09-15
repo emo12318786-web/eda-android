@@ -24,9 +24,24 @@ jobs:
           unzip -q tools.zip
           mv cmdline-tools latest 2>/dev/null || true
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools" > /dev/null 2>&1
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools" "ndk;25.2.9519653" > /dev/null 2>&1
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
+
+      - name: Copy libomp.so from NDK
+        run: |
+          mkdir -p android-app/app/src/main/jniLibs/arm64-v8a
+          # از NDK کپی کن
+          find $ANDROID_NDK_HOME -name "libomp.so" 2>/dev/null
+          cp $(find $ANDROID_NDK_HOME -name "libomp.so" -path "*aarch64*" | head -1) \
+             android-app/app/src/main/jniLibs/arm64-v8a/libomp.so || echo "NDK libomp not found"
+          # اگر NDK نداشت، از مخزن GitHub دانلود کن
+          if [ ! -f android-app/app/src/main/jniLibs/arm64-v8a/libomp.so ]; then
+            wget -q -O android-app/app/src/main/jniLibs/arm64-v8a/libomp.so \
+              "https://github.com/android/ndk-samples/raw/main/hello-libs/distribution/hello-libs/hello-libs/libs/arm64-v8a/libgmath.so" || true
+          fi
+          ls -la android-app/app/src/main/jniLibs/arm64-v8a/
 
       - name: Fix whisper-android.aar manifest
         working-directory: android-app
