@@ -33,7 +33,7 @@ class WhisperSTT(private val context: Context) {
     suspend fun baslat(): Boolean = withContext(Dispatchers.IO) {
         if (whisperContext != null) return@withContext true
         try {
-            val hariciDosya = File("/storage/emulated/0/EdaModels/ggml-medium-q5_0.bin")
+            val hariciDosya = File("/storage/emulated/0/Android/data/com.deniz.eda/files/ggml-medium-q5_0.bin")
             val hedefDosya = if (hariciDosya.exists()) {
                 Log.i(TAG, "Model harici: ${hariciDosya.absolutePath}")
                 hariciDosya
