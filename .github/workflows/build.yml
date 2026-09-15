@@ -28,6 +28,33 @@ jobs:
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
 
+      - name: Fix whisper-android.aar manifest
+        working-directory: android-app
+        run: |
+          # استخراج، اصلاح، و بازسازی aar
+          mkdir -p /tmp/aar_fix
+          cd /tmp/aar_fix
+          unzip -o $GITHUB_WORKSPACE/android-app/app/libs/whisper-android.aar -d extracted
+          # اگر AndroidManifest.xml دارد، package اضافه کن
+          if [ -f extracted/AndroidManifest.xml ]; then
+            # پاک کردن خط اول و اضافه کردن package
+            python3 -c "
+import re
+with open('extracted/AndroidManifest.xml', 'r') as f:
+    content = f.read()
+# اگر package ندارد، اضافه کن
+if 'package=' not in content:
+    content = re.sub(r'<manifest ', '<manifest package=\"com.whisper.android\" ', content, count=1)
+with open('extracted/AndroidManifest.xml', 'w') as f:
+    f.write(content)
+"
+          fi
+          # بازسازی aar
+          cd extracted
+          zip -r ../whisper-android-fixed.aar . > /dev/null
+          cd ..
+          cp whisper-android-fixed.aar $GITHUB_WORKSPACE/android-app/app/libs/whisper-android.aar
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
