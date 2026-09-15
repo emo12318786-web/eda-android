@@ -44,6 +44,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private var dinlemeJob: Job? = null
     private var ttsHazir = false
     private var whisperHazir = false
+    private var ttsKonusuyor = false
 
     private val securityMode by lazy {
         SecurityMode(this) {
@@ -139,8 +140,17 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         dinlemeJob = serviceScope.launch {
             while (isActive && whisperHazir) {
                 try {
+                    // TTS konusuyorsa bekle (echo onleme)
+                    if (ttsKonusuyor) {
+                        delay(200L)
+                        continue
+                    }
+                    // Echo icin ekstra bekleme
+                    delay(500L)
+                    if (ttsKonusuyor) continue
+
                     // Her dongude: kayit al + Whisper'a gonder
-                    val sure = if (mod == Mod.UYKU) 4 else 8
+                    val sure = if (mod == Mod.UYKU) 6 else 15
                     Log.d(TAG, "Dinleniyor: ${sure}sn (mod=$mod)")
                     val metin = whisper.dinleVeMetneCevir(sure)
 
@@ -221,11 +231,15 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private fun konus(metin: String) {
         if (!ttsHazir) return
         val id = "eda_${System.currentTimeMillis()}"
+        ttsKonusuyor = true
         tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) {}
-            override fun onDone(utteranceId: String?) {}
+            override fun onStart(utteranceId: String?) { ttsKonusuyor = true }
+            override fun onDone(utteranceId: String?) {
+                ttsKonusuyor = false
+                Log.d(TAG, "TTS bitti")
+            }
             @Deprecated("Deprecated in Java")
-            override fun onError(utteranceId: String?) {}
+            override fun onError(utteranceId: String?) { ttsKonusuyor = false }
         })
         val params = Bundle()
         tts.speak(metin, TextToSpeech.QUEUE_FLUSH, params, id)

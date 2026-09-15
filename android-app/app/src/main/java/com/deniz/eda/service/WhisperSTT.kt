@@ -11,11 +11,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileOutputStream
 
 /**
- * Whisper tabanli, tamamen offline STT (Speech-to-Text) motoru.
- * Model: /storage/emulated/0/EdaModels/ggml-medium-q5_0.bin
+ * Whisper STT - maksimum kalite icin optimize edildi.
+ * - Model: ggml-medium-q5_0.bin
+ * - 8 thread (Snapdragon icin)
+ * - VAD kapali (daha uzun ve kesintisiz metin)
+ * - maxTextCtx = 0 (whisper otomatik belirler)
  */
 class WhisperSTT(private val context: Context) {
 
@@ -31,6 +33,9 @@ class WhisperSTT(private val context: Context) {
         private const val SAMPLE_RATE = 16000
         private const val CHANNEL = AudioFormat.CHANNEL_IN_MONO
         private const val ENCODING = AudioFormat.ENCODING_PCM_16BIT
+
+        // حداکثر کردن تعداد تردها بر اساس CPU
+        private val MAX_THREADS = Runtime.getRuntime().availableProcessors().coerceAtLeast(4)
     }
 
     private var whisperContext: WhisperContext? = null
@@ -39,7 +44,6 @@ class WhisperSTT(private val context: Context) {
     suspend fun baslat(): Boolean = withContext(Dispatchers.IO) {
         if (whisperContext != null) return@withContext true
         try {
-            // اپ اول از پوشه خودش می‌خواند
             val appDir = context.getExternalFilesDir(null)
             val hedefDosya = File(appDir, MODEL_NAME)
 
@@ -67,9 +71,9 @@ class WhisperSTT(private val context: Context) {
             }
 
             modelFile = hedefDosya
-            Log.i(TAG, "Whisper context olusturuluyor...")
+            Log.i(TAG, "Whisper context olusturuluyor (${MAX_THREADS} threads)...")
             whisperContext = WhisperContext.createContextFromFile(hedefDosya.absolutePath)
-            Log.i(TAG, "Whisper hazir!")
+            Log.i(TAG, "Whisper hazir! Threads: $MAX_THREADS")
             true
         } catch (e: Exception) {
             Log.e(TAG, "Whisper baslatma hatasi: ${e.message}", e)
@@ -77,20 +81,27 @@ class WhisperSTT(private val context: Context) {
         }
     }
 
-    suspend fun dinleVeMetneCevir(sureSaniye: Int = 6): String? = withContext(Dispatchers.IO) {
+    suspend fun dinleVeMetneCevir(sureSaniye: Int = 10): String? = withContext(Dispatchers.IO) {
         val ctx = whisperContext ?: return@withContext null
         try {
             val ses = kayitAl(sureSaniye) ?: return@withContext null
             if (ses.isEmpty()) return@withContext null
+
+            Log.d(TAG, "Whisper'a gonderiliyor: ${ses.size} ornek (${sureSaniye}sn)")
+
+            // حداکثر کیفیت: 8 ترد، VAD خاموش، context خودکار
             val config = TranscribeConfig(
-                numThreads = 4,
-                maxTextCtx = 256,
+                numThreads = MAX_THREADS,
+                maxTextCtx = 0,          // whisper خودکار
                 language = "tr",
-                enableVad = true,
-                vadThreshold = 0.4f
+                enableVad = false,       // VAD خاموش = پاسخ‌های بلندتر
+                vadThreshold = 0.0f,
+                printTimestamps = false
             )
+
             val result = ctx.transcribeStream(ses, config)
             val metin = result.segments.joinToString(" ") { it.text.trim() }.trim()
+            Log.i(TAG, "Duyulan (${metin.length} karakter): $metin")
             if (metin.isBlank()) null else metin
         } catch (e: Exception) {
             Log.e(TAG, "STT hatasi: ${e.message}", e)
@@ -100,11 +111,15 @@ class WhisperSTT(private val context: Context) {
 
     private fun kayitAl(sureSaniye: Int): FloatArray? {
         val minBuffer = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL, ENCODING)
-        if (minBuffer == AudioRecord.ERROR || minBuffer == AudioRecord.ERROR_BAD_VALUE) return null
+        if (minBuffer == AudioRecord.ERROR || minBuffer == AudioRecord.ERROR_BAD_VALUE) {
+            Log.e(TAG, "getMinBufferSize hatasi: $minBuffer")
+            return null
+        }
         val bufferSize = maxOf(minBuffer, SAMPLE_RATE * 2 * sureSaniye)
         val recorder = try {
             AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, SAMPLE_RATE, CHANNEL, ENCODING, bufferSize)
         } catch (e: Exception) {
+            Log.e(TAG, "AudioRecord olusturulamadi: ${e.message}", e)
             return null
         }
         if (recorder.state != AudioRecord.STATE_INITIALIZED) {
@@ -116,6 +131,7 @@ class WhisperSTT(private val context: Context) {
             val shortBuffer = ShortArray(toplamOrnek)
             var okunan = 0
             recorder.startRecording()
+            Log.d(TAG, "Kayit basladi (${sureSaniye} sn, ${toplamOrnek} ornek)")
             while (okunan < toplamOrnek) {
                 val kalan = toplamOrnek - okunan
                 val parca = recorder.read(shortBuffer, okunan, kalan)
@@ -123,12 +139,14 @@ class WhisperSTT(private val context: Context) {
                 okunan += parca
             }
             recorder.stop()
+            Log.d(TAG, "Kayit bitti: $okunan ornek")
             val floatBuffer = FloatArray(okunan)
             for (i in 0 until okunan) {
                 floatBuffer[i] = shortBuffer[i] / 32768.0f
             }
             return floatBuffer
         } catch (e: Exception) {
+            Log.e(TAG, "Kayit hatasi: ${e.message}", e)
             return null
         } finally {
             try {
