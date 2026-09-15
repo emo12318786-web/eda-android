@@ -8,6 +8,7 @@ import android.util.Log
 import com.whispercpp.whisper.WhisperContext
 import com.whispercpp.whisper.TranscribeConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -125,7 +126,9 @@ class WhisperSTT(private val context: Context) {
 
     fun kapat() {
         try {
-            whisperContext?.release()
+            runBlocking {
+                whisperContext?.release()
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Kapatma hatasi: ${e.message}")
         } finally {
