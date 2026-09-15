@@ -15,13 +15,19 @@ import java.io.FileOutputStream
 
 /**
  * Whisper tabanli, tamamen offline STT (Speech-to-Text) motoru.
- * Model: assets/models/ggml-medium-q5_0.bin
+ * Model: /storage/emulated/0/EdaModels/ggml-medium-q5_0.bin
  */
 class WhisperSTT(private val context: Context) {
 
     companion object {
         private const val TAG = "WhisperSTT"
-        private const val MODEL_ASSET = "models/ggml-medium-q5_0.bin"
+        private const val MODEL_NAME = "ggml-medium-q5_0.bin"
+
+        private val MODEL_SOURCES = listOf(
+            "/storage/emulated/0/EdaModels/$MODEL_NAME",
+            "/storage/emulated/0/Download/$MODEL_NAME"
+        )
+
         private const val SAMPLE_RATE = 16000
         private const val CHANNEL = AudioFormat.CHANNEL_IN_MONO
         private const val ENCODING = AudioFormat.ENCODING_PCM_16BIT
@@ -33,22 +39,33 @@ class WhisperSTT(private val context: Context) {
     suspend fun baslat(): Boolean = withContext(Dispatchers.IO) {
         if (whisperContext != null) return@withContext true
         try {
-            val hariciDosya = File("/storage/emulated/0/Android/data/com.deniz.eda/files/ggml-medium-q5_0.bin")
-            val hedefDosya = if (hariciDosya.exists()) {
-                Log.i(TAG, "Model harici: ${hariciDosya.absolutePath}")
-                hariciDosya
-            } else {
-                File(context.filesDir, "ggml-medium-q5_0.bin")
-            }
+            // اپ اول از پوشه خودش می‌خواند
+            val appDir = context.getExternalFilesDir(null)
+            val hedefDosya = File(appDir, MODEL_NAME)
+
             if (!hedefDosya.exists()) {
-                Log.i(TAG, "Model cikariliyor...")
-                context.assets.open(MODEL_ASSET).use { input ->
-                    FileOutputStream(hedefDosya).use { output ->
-                        input.copyTo(output, bufferSize = 64 * 1024)
+                Log.i(TAG, "Model uygulama klasorunde yok, kaynak aranıyor...")
+                var kaynakBulundu = false
+                for (kaynakYol in MODEL_SOURCES) {
+                    val kaynak = File(kaynakYol)
+                    if (kaynak.exists()) {
+                        Log.i(TAG, "Kaynak bulundu: ${kaynak.absolutePath} (${kaynak.length() / 1024 / 1024} MB)")
+                        Log.i(TAG, "Kopyalaniyor...")
+                        kaynak.copyTo(hedefDosya, overwrite = true)
+                        Log.i(TAG, "Kopyalandi: ${hedefDosya.length() / 1024 / 1024} MB")
+                        kaynakBulundu = true
+                        break
                     }
                 }
-                Log.i(TAG, "Model cikarildi: ${hedefDosya.length() / 1024 / 1024} MB")
+                if (!kaynakBulundu) {
+                    Log.e(TAG, "Model hicbir kaynakta bulunamadi!")
+                    MODEL_SOURCES.forEach { Log.e(TAG, "  - $it") }
+                    return@withContext false
+                }
+            } else {
+                Log.i(TAG, "Model zaten uygulama klasorunde: ${hedefDosya.length() / 1024 / 1024} MB")
             }
+
             modelFile = hedefDosya
             Log.i(TAG, "Whisper context olusturuluyor...")
             whisperContext = WhisperContext.createContextFromFile(hedefDosya.absolutePath)
@@ -65,7 +82,6 @@ class WhisperSTT(private val context: Context) {
         try {
             val ses = kayitAl(sureSaniye) ?: return@withContext null
             if (ses.isEmpty()) return@withContext null
-            Log.d(TAG, "Whisper'a gonderiliyor: ${ses.size} ornek")
             val config = TranscribeConfig(
                 numThreads = 4,
                 maxTextCtx = 256,
@@ -75,7 +91,6 @@ class WhisperSTT(private val context: Context) {
             )
             val result = ctx.transcribeStream(ses, config)
             val metin = result.segments.joinToString(" ") { it.text.trim() }.trim()
-            Log.i(TAG, "Duyulan: $metin")
             if (metin.isBlank()) null else metin
         } catch (e: Exception) {
             Log.e(TAG, "STT hatasi: ${e.message}", e)
@@ -85,15 +100,11 @@ class WhisperSTT(private val context: Context) {
 
     private fun kayitAl(sureSaniye: Int): FloatArray? {
         val minBuffer = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL, ENCODING)
-        if (minBuffer == AudioRecord.ERROR || minBuffer == AudioRecord.ERROR_BAD_VALUE) {
-            Log.e(TAG, "getMinBufferSize hatasi: $minBuffer")
-            return null
-        }
+        if (minBuffer == AudioRecord.ERROR || minBuffer == AudioRecord.ERROR_BAD_VALUE) return null
         val bufferSize = maxOf(minBuffer, SAMPLE_RATE * 2 * sureSaniye)
         val recorder = try {
             AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, SAMPLE_RATE, CHANNEL, ENCODING, bufferSize)
         } catch (e: Exception) {
-            Log.e(TAG, "AudioRecord olusturulamadi: ${e.message}", e)
             return null
         }
         if (recorder.state != AudioRecord.STATE_INITIALIZED) {
@@ -105,7 +116,6 @@ class WhisperSTT(private val context: Context) {
             val shortBuffer = ShortArray(toplamOrnek)
             var okunan = 0
             recorder.startRecording()
-            Log.d(TAG, "Kayit basladi (${sureSaniye} sn)")
             while (okunan < toplamOrnek) {
                 val kalan = toplamOrnek - okunan
                 val parca = recorder.read(shortBuffer, okunan, kalan)
@@ -113,14 +123,12 @@ class WhisperSTT(private val context: Context) {
                 okunan += parca
             }
             recorder.stop()
-            Log.d(TAG, "Kayit bitti: $okunan ornek")
             val floatBuffer = FloatArray(okunan)
             for (i in 0 until okunan) {
                 floatBuffer[i] = shortBuffer[i] / 32768.0f
             }
             return floatBuffer
         } catch (e: Exception) {
-            Log.e(TAG, "Kayit hatasi: ${e.message}", e)
             return null
         } finally {
             try {
@@ -132,9 +140,7 @@ class WhisperSTT(private val context: Context) {
 
     fun kapat() {
         try {
-            runBlocking {
-                whisperContext?.release()
-            }
+            runBlocking { whisperContext?.release() }
         } catch (e: Exception) {
             Log.e(TAG, "Kapatma hatasi: ${e.message}")
         } finally {
