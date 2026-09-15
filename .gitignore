@@ -33,3 +33,4 @@ env/
 
 # Whisper model (too large for git, downloaded in GitHub Actions)
 android-app/app/src/main/assets/models/*.bin
+android-app/.gradle/
