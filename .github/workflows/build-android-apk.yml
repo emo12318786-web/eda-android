@@ -1,7 +1,5 @@
 name: Eda Android APK Derle
 
-# Sadece android-app/ klasorunde bir degisiklik oldugunda calisir - v2 - v2 - eda.py
-# (Termux tarafi) degisince bosuna tetiklenmesin diye.
 on:
   push:
     paths:
@@ -26,6 +24,16 @@ jobs:
 
       - name: SDK bilesenlerini indir
         run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Whisper modelini indir (git'te yok, cok buyuk)
+        run: |
+          mkdir -p android-app/app/src/main/assets/models/
+          echo "Model indiriliyor..."
+          wget -q --show-progress -O android-app/app/src/main/assets/models/ggml-medium-q5_0.bin \
+            "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium-q5_0.bin" || \
+          wget -q --show-progress -O android-app/app/src/main/assets/models/ggml-medium-q5_0.bin \
+            "https://hf-mirror.com/ggerganov/whisper.cpp/resolve/main/ggml-medium-q5_0.bin"
+          ls -la android-app/app/src/main/assets/models/
 
       - name: Gradle kur
         uses: gradle/actions/setup-gradle@v4

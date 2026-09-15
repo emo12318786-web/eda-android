@@ -33,6 +33,12 @@ android {
     buildFeatures {
         viewBinding = true
     }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
 }
 
 dependencies {
@@ -43,7 +49,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-service:2.8.4")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
 
-    // Ag networking (AI saglayicilari icin)
+    implementation(files("libs/whisper-android.aar"))
+    implementation("net.java.dev.jna:jna:5.13.0@aar")
+
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")

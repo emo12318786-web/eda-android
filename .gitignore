@@ -13,10 +13,10 @@ eda_beep.wav
 whisper_cikti.txt
 foto_*.jpg
 
-# Local Whisper/Vosk models and local AI data
+# Local Whisper/Vosk models (not the one in assets!)
 vosk-model-tr/
 whisper.cpp/
-*.bin
+for-tests-*.bin
 
 # Python
 __pycache__/
@@ -30,3 +30,6 @@ env/
 .idea/
 .vscode/
 .DS_Store
+
+# Whisper model (too large for git, downloaded in GitHub Actions)
+android-app/app/src/main/assets/models/*.bin
