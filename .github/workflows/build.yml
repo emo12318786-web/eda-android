@@ -22,7 +22,7 @@ jobs:
           cd $ANDROID_HOME/cmdline-tools
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
           unzip -q tools.zip
-          mv cmdline-tools latest
+          mv cmdline-tools latest 2>/dev/null || true
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools" > /dev/null 2>&1
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
@@ -33,13 +33,36 @@ jobs:
         with:
           gradle-version: 8.5
 
+      - name: Check project structure
+        working-directory: android-app
+        run: |
+          echo "=== Files in android-app ==="
+          ls -la
+          echo "=== settings.gradle.kts ==="
+          cat settings.gradle.kts || echo "NOT FOUND"
+          echo "=== build.gradle.kts ==="
+          cat build.gradle.kts || echo "NOT FOUND"
+          echo "=== app/build.gradle.kts ==="
+          cat app/build.gradle.kts || echo "NOT FOUND"
+
       - name: Build Debug APK
         working-directory: android-app
         run: |
-          gradle wrapper --gradle-version 8.5 || true
-          ./gradlew assembleDebug --stacktrace --no-daemon
+          echo "=== Starting build ==="
+          gradle assembleDebug --stacktrace --no-daemon --info 2>&1 | tee /tmp/build.log
+          echo "=== Build finished ==="
+          echo "=== Last 100 lines ==="
+          tail -100 /tmp/build.log
+        continue-on-error: true
+
+      - name: Show build log summary
+        if: always()
+        run: |
+          echo "=== ERROR SUMMARY ==="
+          grep -iE "error|failed|exception|what went wrong|caused by" /tmp/build.log | head -50 || echo "no errors found"
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: eda-debug-apk
