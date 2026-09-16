@@ -95,8 +95,7 @@ class WhisperSTT(private val context: Context) {
                 maxTextCtx = 0,          // whisper خودکار
                 language = "tr",
                 enableVad = false,       // VAD خاموش = پاسخ‌های بلندتر
-                vadThreshold = 0.0f,
-                printTimestamps = false
+                vadThreshold = 0.0f
             )
 
             val result = ctx.transcribeStream(ses, config)
