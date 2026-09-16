@@ -27,7 +27,7 @@ class WhisperSTT(private val context: Context) {
         private const val SAMPLE_RATE = 16000
         private const val CHANNEL = AudioFormat.CHANNEL_IN_MONO
         private const val ENCODING = AudioFormat.ENCODING_PCM_16BIT
-        private val MAX_THREADS = Runtime.getRuntime().availableProcessors().coerceAtLeast(4)
+        private val MAX_THREADS = 2
     }
 
     private var whisperContext: WhisperContext? = null
