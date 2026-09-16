@@ -251,7 +251,16 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         dinlemeJob?.cancel()
         securityMode.durdur()
         serviceScope.cancel()
-        whisper.kapat()
+
+        // whisper.kapat() ayri thread'de calistir (ANR onleme)
+        Thread {
+            try {
+                whisper.kapat()
+            } catch (e: Exception) {
+                Log.e(TAG, "kapat hatasi: ${e.message}")
+            }
+        }.start()
+
         if (ttsHazir) tts.shutdown()
         super.onDestroy()
     }
