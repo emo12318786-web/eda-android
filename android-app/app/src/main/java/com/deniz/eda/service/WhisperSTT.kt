@@ -12,22 +12,24 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
 
-/**
- * Whisper STT - Model: /storage/emulated/0/EdaModels/ggml-medium-q5_0.bin
- * MANAGE_EXTERNAL_STORAGE izni gerekir.
- */
 class WhisperSTT(private val context: Context) {
 
     companion object {
         private const val TAG = "WhisperSTT"
         private const val MODEL_NAME = "ggml-medium-q5_0.bin"
-        const val MODEL_DIR = "/storage/emulated/0/EdaModels"
-        const val MODEL_PATH = "/storage/emulated/0/EdaModels/$MODEL_NAME"
+
+        // اپ اول پوشه خودش را می‌سازد، بعد این مسیرها را امتحان می‌کند
+        private val MODEL_SOURCES = listOf(
+            "/storage/emulated/0/EdaModels/$MODEL_NAME",
+            "/storage/emulated/0/Android/$MODEL_NAME",
+            "/storage/emulated/0/Download/$MODEL_NAME",
+            "/storage/emulated/0/Download/eda-android-repo/android-app/app/src/main/assets/models/$MODEL_NAME"
+        )
 
         private const val SAMPLE_RATE = 16000
         private const val CHANNEL = AudioFormat.CHANNEL_IN_MONO
         private const val ENCODING = AudioFormat.ENCODING_PCM_16BIT
-        private val MAX_THREADS = 2
+        private const val MAX_THREADS = 2
     }
 
     private var whisperContext: WhisperContext? = null
@@ -36,13 +38,40 @@ class WhisperSTT(private val context: Context) {
     suspend fun baslat(): Boolean = withContext(Dispatchers.IO) {
         if (whisperContext != null) return@withContext true
         try {
-            val hedefDosya = File(MODEL_PATH)
-            if (!hedefDosya.exists()) {
-                Log.e(TAG, "Model bulunamadi: $MODEL_PATH")
-                return@withContext false
+            // پوشه اپ
+            val appDir = context.getExternalFilesDir(null)
+            if (appDir != null && !appDir.exists()) {
+                appDir.mkdirs()
+                Log.i(TAG, "Klasor olusturuldu: ${appDir.absolutePath}")
             }
-            Log.i(TAG, "Model bulundu: ${hedefDosya.length() / 1024 / 1024} MB")
+            val hedefDosya = File(appDir, MODEL_NAME)
+
+            // اگر مدل در پوشه اپ نیست، از منابع کپی کن
+            if (!hedefDosya.exists()) {
+                Log.i(TAG, "Model uygulama klasorunde yok, kaynak aranıyor...")
+                var kaynakBulundu = false
+                for (kaynakYol in MODEL_SOURCES) {
+                    val kaynak = File(kaynakYol)
+                    if (kaynak.exists()) {
+                        Log.i(TAG, "Kaynak bulundu: ${kaynak.absolutePath} (${kaynak.length() / 1024 / 1024} MB)")
+                        Log.i(TAG, "Kopyalaniyor...")
+                        kaynak.copyTo(hedefDosya, overwrite = true)
+                        Log.i(TAG, "Kopyalandi: ${hedefDosya.length() / 1024 / 1024} MB")
+                        kaynakBulundu = true
+                        break
+                    }
+                }
+                if (!kaynakBulundu) {
+                    Log.e(TAG, "Model hicbir kaynakta bulunamadi!")
+                    MODEL_SOURCES.forEach { Log.e(TAG, "  - $it") }
+                    return@withContext false
+                }
+            } else {
+                Log.i(TAG, "Model uygulama klasorunde: ${hedefDosya.length() / 1024 / 1024} MB")
+            }
+
             modelFile = hedefDosya
+            Log.i(TAG, "Whisper context olusturuluyor (${MAX_THREADS} threads)...")
             whisperContext = WhisperContext.createContextFromFile(hedefDosya.absolutePath)
             Log.i(TAG, "Whisper hazir! Threads: $MAX_THREADS")
             true
@@ -52,11 +81,12 @@ class WhisperSTT(private val context: Context) {
         }
     }
 
-    suspend fun dinleVeMetneCevir(sureSaniye: Int = 10): String? = withContext(Dispatchers.IO) {
+    suspend fun dinleVeMetneCevir(sureSaniye: Int = 6): String? = withContext(Dispatchers.IO) {
         val ctx = whisperContext ?: return@withContext null
         try {
             val ses = kayitAl(sureSaniye) ?: return@withContext null
             if (ses.isEmpty()) return@withContext null
+
             val config = TranscribeConfig(
                 numThreads = MAX_THREADS,
                 maxTextCtx = 0,
@@ -64,6 +94,8 @@ class WhisperSTT(private val context: Context) {
                 enableVad = false,
                 vadThreshold = 0.0f
             )
+
+            Log.d(TAG, "Transcribe basliyor: ${ses.size} ornek")
             val result = ctx.transcribeStream(ses, config)
             val metin = result.segments.joinToString(" ") { it.text.trim() }.trim()
             Log.i(TAG, "Duyulan (${metin.length} karakter): $metin")
