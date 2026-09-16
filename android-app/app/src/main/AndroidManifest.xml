@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- AI saglayicilarina (Groq/DeepSeek/OpenRouter) ve hava/dolar/altin icin -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Surekli calisan arka plan servisi (bidarbash dinleme) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
