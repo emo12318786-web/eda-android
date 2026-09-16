@@ -22,7 +22,7 @@ class WhisperSTT(private val context: Context) {
         private const val TAG = "WhisperSTT"
         private const val MODEL_NAME = "ggml-medium-q5_0.bin"
         const val MODEL_DIR = "/storage/emulated/0/EdaModels"
-        const val MODEL_PATH = "$MODEL_DIR/$MODEL_NAME"
+        const val MODEL_PATH = "/storage/emulated/0/EdaModels/$MODEL_NAME"
 
         private const val SAMPLE_RATE = 16000
         private const val CHANNEL = AudioFormat.CHANNEL_IN_MONO
