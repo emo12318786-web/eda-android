@@ -16,7 +16,7 @@ class WhisperSTT(private val context: Context) {
 
     companion object {
         private const val TAG = "WhisperSTT"
-        private const val MODEL_NAME = "ggml-medium-q5_0.bin"
+        private const val MODEL_NAME = "ggml-small.bin"
 
         // اپ اول پوشه خودش را می‌سازد، بعد این مسیرها را امتحان می‌کند
         private val MODEL_SOURCES = listOf(
@@ -89,7 +89,7 @@ class WhisperSTT(private val context: Context) {
 
             val config = TranscribeConfig(
                 numThreads = MAX_THREADS,
-                maxTextCtx = 0,
+                maxTextCtx = 448,
                 language = "tr",
                 enableVad = false,
                 vadThreshold = 0.0f
