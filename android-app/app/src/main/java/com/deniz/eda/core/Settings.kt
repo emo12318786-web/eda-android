@@ -97,10 +97,6 @@ object Settings {
         get() = getBool("sessiz_mod", false)
         set(v) = setBool("sessiz_mod", v)
 
-    var pilBildirimAraligiDk: Int
-        get() = getInt("pil_bildirim_araligi_dk", 15)
-        set(v) = setInt("pil_bildirim_araligi_dk", v)
-
     // حالت خواب — مثل eda.py یا APK فعلی
     // true = خواب عمیق (میکروفون خاموش، فقط pil bildirimi، مصرف ~1%)
     // false = خواب بیدار (میکروفون روشن، با "Eda" بیدار، مصرف ~2-3%)

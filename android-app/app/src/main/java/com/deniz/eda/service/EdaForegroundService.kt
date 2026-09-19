@@ -151,7 +151,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         pilJob?.cancel()
         pilJob = serviceScope.launch {
             while (isActive) {
-                delay(Settings.pilBildirimAraligiDk * 60_000L)
+                delay(Settings.pilBildirimAraligiDk.toLong() * 60_000L)
                 val bilgi = BatteryUtils.pilBilgisiAl(this@EdaForegroundService)
                 if (bilgi != null) {
                     konus("Pil yüzde ${bilgi.yuzde} ${Settings.kullaniciAdi}.")

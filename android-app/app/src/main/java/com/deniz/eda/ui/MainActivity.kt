@@ -6,6 +6,9 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Spinner
+import android.widget.ArrayAdapter
+import androidx.appcompat.widget.SwitchCompat
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.result.contract.ActivityResultContracts
@@ -61,6 +64,49 @@ class MainActivity : AppCompatActivity() {
         findViewById<android.widget.Button>(R.id.kaydetButon).setOnClickListener { ayarlariKaydet() }
 
         // ═══ داشبورد ═══
+        // ═══ تنظیمات پیشرفته ═══
+        val derinUykuSwitch = findViewById<SwitchCompat>(R.id.derinUykuSwitch)
+        val pilBildirimSwitch = findViewById<SwitchCompat>(R.id.pilBildirimSwitch)
+        val sessizModSwitch = findViewById<SwitchCompat>(R.id.sessizModSwitch)
+        val pilBildirimSpinner = findViewById<Spinner>(R.id.pilBildirimSpinner)
+
+        // مقدار اولیه
+        derinUykuSwitch.isChecked = Settings.derinUyku
+        pilBildirimSwitch.isChecked = Settings.pilBildirimAktif
+        sessizModSwitch.isChecked = Settings.sessizMod
+
+        // Spinner: 15/30/60/120 dakika
+        val pilSecenekler = listOf("15 dakika", "30 dakika", "60 dakika", "120 dakika")
+        val pilDegerler = listOf(15, 30, 60, 120)
+        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, pilSecenekler)
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        pilBildirimSpinner.adapter = spinnerAdapter
+
+        // مقدار فعلی
+        val mevcutIndex = pilDegerler.indexOf(Settings.pilBildirimAraligiDk)
+        if (mevcutIndex >= 0) pilBildirimSpinner.setSelection(mevcutIndex)
+
+        // ═══ لیسنرها ═══
+        derinUykuSwitch.setOnCheckedChangeListener { _, checked ->
+            Settings.derinUyku = checked
+            Toast.makeText(this, if (checked) "🛌 Derin uyku aktif" else "😴 Uyku bidar", Toast.LENGTH_SHORT).show()
+        }
+
+        pilBildirimSwitch.setOnCheckedChangeListener { _, checked ->
+            Settings.pilBildirimAktif = checked
+        }
+
+        sessizModSwitch.setOnCheckedChangeListener { _, checked ->
+            Settings.sessizMod = checked
+        }
+
+        pilBildirimSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                Settings.pilBildirimAraligiDk = pilDegerler[position]
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        }
+
         findViewById<android.widget.Button>(R.id.dashboardButon).setOnClickListener {
             startActivity(Intent(this, DashboardActivity::class.java))
         }
