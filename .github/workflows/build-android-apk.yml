@@ -1,43 +1,51 @@
-name: Eda Android APK Derle
+name: Build Android APK
 
-# Sadece android-app/ klasorunde bir degisiklik oldugunda calisir - v2 - v2 - eda.py
-# (Termux tarafi) degisince bosuna tetiklenmesin diye.
 on:
   push:
+    branches: [ main ]
     paths:
       - "android-app/**"
+      - ".github/workflows/**"
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Kodu al
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: JDK 17 kur
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Android SDK kur
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: 11076708
+          packages: 'platforms;android-34 build-tools;34.0.0'
 
-      - name: SDK bilesenlerini indir
-        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
-
-      - name: Gradle kur
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.7
 
-      - name: Debug APK derle
+      - name: Build Debug APK
         working-directory: android-app
-        run: gradle assembleDebug --no-daemon
+        run: |
+          echo "=== gradle version ==="
+          gradle --version
+          echo ""
+          echo "=== build ==="
+          gradle assembleDebug --stacktrace --no-daemon
 
-      - name: APK'yi Actions sekmesine yukle
+      - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: eda-debug-apk
-          path: android-app/app/build/outputs/apk/debug/app-debug.apk
+          path: android-app/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
