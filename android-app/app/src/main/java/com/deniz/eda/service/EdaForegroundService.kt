@@ -106,6 +106,34 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // ═══ هندل کردن action های Widget ═══
+        when (intent?.action) {
+            "ACTION_BASLAT" -> {
+                // 🟢 Başlat — mod'u AKTIF yap و dinlemeye başla
+                mod = Mod.AKTIF
+                Settings.derinUyku = false
+                bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
+                baslatDinleme()
+            }
+            
+            "ACTION_DERIN_UYKU" -> {
+                // 💤 Uyku — mod'u UYKU yap، میکروفون خاموش
+                mod = Mod.UYKU
+                Settings.derinUyku = true
+                dinlemeAktif = false
+                speechRecognizer?.stopListening()
+                bildirimGuncelle("💤 Derin uyku — Widget ile uyandır")
+                android.util.Log.d("EdaService", "Derin uyku moduna geçildi")
+            }
+            
+            else -> {
+                // معمولی — اگه اولین باره، uyku modunda başla
+                if (!Settings.derinUyku && speechRecognizer != null) {
+                    baslatDinleme()
+                }
+            }
+        }
+        
         return START_STICKY
     }
 
@@ -155,6 +183,14 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private fun baslatDinleme() {
         if (dinlemeAktif) return
         if (speechRecognizer == null) return // cihazda konusma tanima yok
+        
+        // ═══ خواب عمیق: تو حالت خواب عمیق، میکروفون روشن نمی‌شه ═══
+        if (mod == Mod.UYKU && Settings.derinUyku) {
+            android.util.Log.d("EdaService", "خواب عمیق — dinleme başlatılmadı")
+            bildirimGuncelle("💤 Derin uyku — Widget ile uyandır")
+            return
+        }
+        
         dinlemeAktif = true
         val uykuModu = mod == Mod.UYKU
         val offlineDenensin = uykuModu && !offlineDestekYok

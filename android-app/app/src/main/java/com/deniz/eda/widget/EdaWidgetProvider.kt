@@ -65,20 +65,42 @@ class EdaWidgetProvider : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
+        val serviceIntent = Intent(context, com.deniz.eda.service.EdaForegroundService::class.java)
+        
         when (intent.action) {
+            // 🟢 Başlat — sıfırdan başlat (خواب عمیق رو می‌شکنه)
             "com.deniz.eda.WIDGET_BASLAT" -> {
-                Settings.arabaModuAktif = false
-                // Servisi başlat
-                val serviceIntent = Intent(context, com.deniz.eda.service.EdaForegroundService::class.java)
-                context.startForegroundService(serviceIntent)
+                Settings.derinUyku = false  // ═══ خواب عمیق رو خاموش کن
+                serviceIntent.action = "ACTION_BASLAT"
+                try {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        context.startForegroundService(serviceIntent)
+                    } else {
+                        context.startService(serviceIntent)
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("EdaWidget", "Başlatma hatası: ${e.message}")
+                }
             }
+            
+            // ❌ Durdur
             "com.deniz.eda.WIDGET_DURDUR" -> {
-                // Servisi durdur
-                val serviceIntent = Intent(context, com.deniz.eda.service.EdaForegroundService::class.java)
                 context.stopService(serviceIntent)
             }
+            
+            // 💤 Uyku — derin uyku moduna al
             "com.deniz.eda.WIDGET_UYKU" -> {
-                Settings.uykuBeklemeAraligiMs = 60000L
+                Settings.derinUyku = true   // ═══ خواب عمیق رو روشن کن
+                serviceIntent.action = "ACTION_DERIN_UYKU"
+                try {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        context.startForegroundService(serviceIntent)
+                    } else {
+                        context.startService(serviceIntent)
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("EdaWidget", "Uyku hatası: ${e.message}")
+                }
             }
         }
     }

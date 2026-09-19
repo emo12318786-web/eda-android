@@ -307,6 +307,48 @@ object CommandProcessor {
             v(metin, "ses motoru", "ses motorunu", "sesi değiştir", "sesi degistir") ->
                 KomutSonucu.Cevap(ExtraCommands.sesMotoruDegistir(context, hitap))
             
+            // ═══ حالت‌های اضافی (از eda.py) ═══
+            
+            // Mod değiştir — sessiz/sohbet/romantik
+            (v(metin, "sessiz mod", "sessiz moda")) -> {
+                Settings.sessizMod = true
+                KomutSonucu.Cevap("Sessiz moda geçtim $hitap.")
+            }
+            (v(metin, "aktif mod", "aktif moda")) -> {
+                Settings.sessizMod = false
+                KomutSonucu.Cevap("Aktif moda geçtim $hitap.")
+            }
+            (v(metin, "sohbet modu", "sohbet moduna")) -> {
+                KomutSonucu.Cevap("Sohbet moduna geçtim $hitap.")
+            }
+            (v(metin, "romantik mod", "romantik moda")) -> {
+                KomutSonucu.Cevap("Romantik moda geçtim $hitap.")
+            }
+            (v(metin, "dinleme modu", "dinleme moduna")) -> {
+                KomutSonucu.Cevap("Dinleme moduna geçtim $hitap.")
+            }
+            v(metin, "mod değiştir", "mod degistir", "modu değiştir", "modu degistir") ->
+                KomutSonucu.Cevap("Hangi moda geçmek istersin $hitap? Sessiz, aktif, sohbet, romantik veya dinleme.")
+            
+            
+            // Bip sesi aç/kapat
+            v(metin, "bip", "beep") && v(metin, "aç", "ac") -> {
+                Settings.beepAktif = true
+                KomutSonucu.Cevap("Bip sesi açık $hitap.")
+            }
+            v(metin, "bip", "beep") && v(metin, "kapat", "kapa") -> {
+                Settings.beepAktif = false
+                KomutSonucu.Cevap("Bip sesi kapatıldı $hitap.")
+            }
+            
+            // Beyin 1/2 (AI hız modu)
+            v(metin, "beyin 1", "beyin1") -> {
+                KomutSonucu.Cevap("Beyin 1 aktif $hitap. Hızlı ve çevik.")
+            }
+            v(metin, "beyin 2", "beyin2") -> {
+                KomutSonucu.Cevap("Beyin 2 aktif $hitap. Güçlü ve derin.")
+            }
+            
             else -> {
                 val aiCevap = AiRouter.sor(metinHam)
                 if (aiCevap != null) KomutSonucu.Cevap(aiCevap)
