@@ -41,6 +41,23 @@
         android:layout_marginTop="8dp"
         android:text="Eda'yı Durdur" />
 
+    <!-- ═══ داشبورد + کنترل پنل ═══ -->
+    <Button
+        android:id="@+id/dashboardButon"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="📊 Dashboard"
+        android:backgroundTint="#9C27B0" />
+
+    <Button
+        android:id="@+id/panelButon"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="🎛 Kontrol Paneli"
+        android:backgroundTint="#00BCD4" />
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

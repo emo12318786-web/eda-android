@@ -8,6 +8,7 @@ import com.deniz.eda.data.MemoryStore
 import com.deniz.eda.data.ReminderStore
 import com.deniz.eda.utils.BatteryUtils
 import com.deniz.eda.utils.CurrencyUtils
+import com.deniz.eda.utils.ExtraCommands
 import com.deniz.eda.utils.FlashlightUtils
 import com.deniz.eda.utils.JalaliCalendar
 import com.deniz.eda.utils.LocationUtils
@@ -252,6 +253,60 @@ object CommandProcessor {
                         "konum, eve mesafe, mesaj gönderme, güvenlik modu, araba modu ve serbest sohbeti biliyorum $hitap."
             )
 
+            // ═══ ۹ دستور جدید (از eda.py Termux) ═══
+            
+            // ۱. Hesapla — "2+3 kaç eder"
+            (metin.contains("hesapla") || metin.contains("kaç eder") || metin.contains("kac eder")) -> {
+                val ifade = metin
+                    .replace("hesapla", "")
+                    .replace("kaç eder", "")
+                    .replace("kac eder", "")
+                    .trim()
+                ExtraCommands.hesapla(ifade, hitap)?.let { return KomutSonucu.Cevap(it) }
+                KomutSonucu.Cevap("Hesaplayamadım $hitap, ifadeyi anlayamadım.")
+            }
+            
+            // ۲. Günün sözü
+            v(metin, "günün sözü", "gunun sozu", "bugünün sözü", "bugunun sozu") ->
+                KomutSonucu.Cevap(ExtraCommands.gununSozu(hitap))
+            
+            // ۳. Müzik
+            v(metin, "müzik", "muzik") && v(metin, "aç", "ac", "başlat", "baslat", "çal", "cal") ->
+                KomutSonucu.Cevap(ExtraCommands.muzikBaslat(context, hitap))
+            
+            v(metin, "müzik", "muzik") && v(metin, "durdur", "duraklat") ->
+                KomutSonucu.Cevap(ExtraCommands.muzikDurdur(context, hitap))
+            
+            v(metin, "müzik", "muzik", "şarkı", "sarki") && v(metin, "sonraki", "atla") ->
+                KomutSonucu.Cevap(ExtraCommands.muzikSonraki(context, hitap))
+            
+            v(metin, "müzik", "muzik", "şarkı", "sarki") && v(metin, "önceki", "onceki") ->
+                KomutSonucu.Cevap(ExtraCommands.muzikOnceki(context, hitap))
+            
+            // ۴. Telefonu kilitle
+            v(metin, "telefonu kilitle", "ekranı kilitle", "ekrani kilitle") ->
+                KomutSonucu.Cevap(ExtraCommands.telefonuKilitle(context, hitap))
+            
+            // ۵. Telefonu bul
+            v(metin, "telefonu bul", "telefonumu bul", "telefonu ara", "telefonumu ara") ->
+                KomutSonucu.Cevap(ExtraCommands.telefonuBul(context, hitap))
+            
+            // ۶. Fotoğraf çek
+            v(metin, "fotoğraf çek", "fotograf cek", "foto çek", "foto cek", "kamera aç", "kamera ac") ->
+                KomutSonucu.Cevap(ExtraCommands.fotografCek(context, hitap))
+            
+            // ۷. Konum gönder
+            v(metin, "konumumu gönder", "konumumu gonder", "konum gönder", "konum gonder") ->
+                KomutSonucu.Cevap(ExtraCommands.konumGonder(context, hitap, Settings.guvenlikNumara))
+            
+            // ۸. Ayarları aç
+            v(metin, "ayarları aç", "ayarlari ac", "ayarları açsana", "ayarlari acsana") ->
+                KomutSonucu.Cevap(ExtraCommands.ayarlariAc(context, hitap))
+            
+            // ۹. Ses motoru
+            v(metin, "ses motoru", "ses motorunu", "sesi değiştir", "sesi degistir") ->
+                KomutSonucu.Cevap(ExtraCommands.sesMotoruDegistir(context, hitap))
+            
             else -> {
                 val aiCevap = AiRouter.sor(metinHam)
                 if (aiCevap != null) KomutSonucu.Cevap(aiCevap)

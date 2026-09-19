@@ -11,7 +11,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import com.deniz.eda.R
 import com.deniz.eda.core.Settings
+import com.deniz.eda.panel.PanelActivity
 import com.deniz.eda.service.EdaForegroundService
+import com.deniz.eda.ui.dashboard.DashboardActivity
 
 class MainActivity : AppCompatActivity() {
 
@@ -57,6 +59,16 @@ class MainActivity : AppCompatActivity() {
         findViewById<android.widget.Button>(R.id.baslatButon).setOnClickListener { izinleriKontrolEt() }
         findViewById<android.widget.Button>(R.id.durdurButon).setOnClickListener { servisiDurdur() }
         findViewById<android.widget.Button>(R.id.kaydetButon).setOnClickListener { ayarlariKaydet() }
+
+        // ═══ داشبورد ═══
+        findViewById<android.widget.Button>(R.id.dashboardButon).setOnClickListener {
+            startActivity(Intent(this, DashboardActivity::class.java))
+        }
+
+        // ═══ کنترل پنل ═══
+        findViewById<android.widget.Button>(R.id.panelButon).setOnClickListener {
+            startActivity(Intent(this, PanelActivity::class.java))
+        }
     }
 
     private fun ayarlariKaydet() {

@@ -44,6 +44,20 @@
             </intent-filter>
         </activity>
 
+
+        <!-- Dashboard — eda.py dashboard() karsiligi -->
+        <activity
+            android:name=".ui.dashboard.DashboardActivity"
+            android:exported="false"
+            android:label="EDA Dashboard" />
+
+        <!-- Control Panel — WebView + NanoHTTPD -->
+        <activity
+            android:name=".panel.PanelActivity"
+            android:exported="false"
+            android:label="EDA Panel"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+
         <service
             android:name=".service.EdaForegroundService"
             android:exported="false"
@@ -61,6 +75,32 @@
             android:name=".receiver.ReminderReceiver"
             android:exported="false" />
 
+
+        <!-- Telefonu kilitleme icin Device Admin Receiver -->
+        <receiver
+            android:name=".receiver.EdaDeviceAdminReceiver"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
+
+        <!-- Home Screen Widget — Termux:Widget karsiligi -->
+        <receiver
+            android:name=".widget.EdaWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info" />
+        </receiver>
     </application>
 
 </manifest>

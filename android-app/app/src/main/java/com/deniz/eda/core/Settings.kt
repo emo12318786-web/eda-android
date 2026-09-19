@@ -77,6 +77,11 @@ object Settings {
         get() = getString("navasan_api_key", "")
         set(v) = setString("navasan_api_key", v)
 
+    // Guvenlik numarasi — konum gonderme icin kullanilir
+    var guvenlikNumara: String
+        get() = getString("guvenlik_numara", "")
+        set(v) = setString("guvenlik_numara", v)
+
     var guvenlikModuAktif: Boolean
         get() = getBool("guvenlik_modu_aktif", false)
         set(v) = setBool("guvenlik_modu_aktif", v)

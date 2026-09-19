@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="tr" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f0f1e">
+<title>EDA Control Panel</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #0f0f1e 0%, #1a1a3e 100%);
+    color: #fff;
+    min-height: 100vh;
+    padding: 16px;
+    overflow-x: hidden;
+}
+
+.container { max-width: 500px; margin: 0 auto; }
+
+/* Header */
+.header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+.header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    background: linear-gradient(90deg, #00d4ff, #a855f7, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 4px;
+}
+.header p { color: #888; font-size: 12px; letter-spacing: 2px; }
+
+/* Status */
+.status-card {
+    background: rgba(255,255,255,0.04);
+    border-radius: 20px;
+    padding: 16px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.status-row:last-child { border-bottom: none; }
+.status-label { color: #999; font-size: 13px; }
+.status-value { font-weight: 700; font-size: 14px; }
+
+.mode-active { color: #00ff88; }
+.mode-sleep  { color: #00d4ff; }
+.mode-off    { color: #ff4757; }
+
+/* Grid */
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.btn-main {
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 22px 12px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-family: inherit;
+    min-height: 110px;
+    justify-content: center;
+}
+.btn-main:active { transform: scale(0.94); }
+.btn-icon { font-size: 34px; line-height: 1; }
+.btn-label { font-size: 14px; font-weight: 700; }
+
+.btn-wake  { border-color: rgba(0,255,136,0.3); }
+.btn-wake:active  { background: rgba(0,255,136,0.15); box-shadow: 0 0 24px rgba(0,255,136,0.3); }
+
+.btn-sleep { border-color: rgba(0,212,255,0.3); }
+.btn-sleep:active { background: rgba(0,212,255,0.15); box-shadow: 0 0 24px rgba(0,212,255,0.3); }
+
+.btn-stop  { border-color: rgba(255,71,87,0.3); }
+.btn-stop:active  { background: rgba(255,71,87,0.15); box-shadow: 0 0 24px rgba(255,71,87,0.3); }
+
+.btn-info  { border-color: rgba(168,85,247,0.3); }
+.btn-info:active  { background: rgba(168,85,247,0.15); }
+
+.btn-log   { border-color: rgba(251,191,36,0.3); }
+.btn-log:active  { background: rgba(251,191,36,0.15); box-shadow: 0 0 24px rgba(251,191,36,0.3); }
+
+/* Section */
+.section {
+    background: rgba(255,255,255,0.03);
+    border-radius: 20px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+.section-title {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 12px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+}
+.chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.chip {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 10px 16px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    flex: 1;
+    min-width: 80px;
+    text-align: center;
+}
+.chip:active { transform: scale(0.94); }
+.chip.active {
+    background: linear-gradient(135deg, #00d4ff, #a855f7);
+    border-color: transparent;
+    box-shadow: 0 0 20px rgba(168,85,247,0.4);
+}
+.chip small { opacity: 0.7; font-size: 10px; }
+
+/* Toast */
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(20,20,40,0.95);
+    backdrop-filter: blur(20px);
+    color: #fff;
+    padding: 14px 24px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 999;
+    border: 1px solid rgba(255,255,255,0.1);
+    max-width: 90vw;
+    text-align: center;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* Modal (Log Viewer) */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 16px;
+}
+.modal.show { display: flex; }
+.modal-content {
+    background: linear-gradient(135deg, #0f0f1e, #1a1a3e);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.modal-header {
+    padding: 16px 20px;
+    background: rgba(255,255,255,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.modal-close {
+    background: rgba(255,71,87,0.2);
+    border: 1px solid rgba(255,71,87,0.4);
+    color: #ff4757;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+}
+.modal-close:active { transform: scale(0.9); }
+
+.modal-tabs {
+    display: flex;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.modal-tab {
+    flex: 1;
+    padding: 12px;
+    background: transparent;
+    border: none;
+    color: #888;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+.modal-tab.active {
+    color: #00d4ff;
+    border-bottom-color: #00d4ff;
+    background: rgba(0,212,255,0.05);
+}
+
+.log-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    color: #a0e0a0;
+    background: rgba(0,0,0,0.3);
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+.log-line { padding: 2px 0; }
+.log-line.error { color: #ff6b6b; }
+.log-line.warn { color: #ffd93d; }
+.log-line.info { color: #6bcfff; }
+.log-line.success { color: #6bff8f; }
+.log-empty { color: #666; text-align: center; padding: 40px 20px; }
+
+.modal-footer {
+    padding: 12px 20px;
+    background: rgba(255,255,255,0.03);
+    border-top: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #888;
+}
+.auto-refresh {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.auto-refresh input { cursor: pointer; }
+
+/* Animations */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+.pulse { animation: pulse 2s infinite; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+.modal.show .modal-content { animation: fadeIn 0.2s ease-out; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>🤖 EDA V5</h1>
+        <p>CONTROL PANEL</p>
+    </div>
+
+    <div class="status-card">
+        <div class="status-row">
+            <span class="status-label">🎯 Durum</span>
+            <span class="status-value pulse" id="s-mode">...</span>
+        </div>
+        <div class="status-row">
+            <span class="status-label">🔋 Pil</span>
+            <span class="status-value" id="s-batt">...</span>
+        </div>
+        <div class="status-row">
+            <span class="status-label">🎙 Ses Tanıma</span>
+            <span class="status-value" id="s-whisper">...</span>
+        </div>
+        <div class="status-row">
+            <span class="status-label">🧠 Beyin</span>
+            <span class="status-value" id="s-gemma">...</span>
+        </div>
+        <div class="status-row">
+            <span class="status-label">🔌 Yapay Zeka</span>
+            <span class="status-value" id="s-ai">...</span>
+        </div>
+    </div>
+
+    <div class="grid">
+        <button class="btn-main btn-wake" onclick="action('wake')">
+            <span class="btn-icon">🟢</span>
+            <span class="btn-label">Aktif</span>
+        </button>
+        <button class="btn-main btn-sleep" onclick="action('sleep')">
+            <span class="btn-icon">💤</span>
+            <span class="btn-label">Uyku</span>
+        </button>
+        <button class="btn-main btn-stop" onclick="action('stop')">
+            <span class="btn-icon">❌</span>
+            <span class="btn-label">Durdur</span>
+        </button>
+        <button class="btn-main btn-log" onclick="openLogs()">
+            <span class="btn-icon">📜</span>
+            <span class="btn-label">Log</span>
+        </button>
+    </div>
+
+    <div class="section">
+        <div class="section-title">🎙 Ses Tanıma Sistemi</div>
+        <div class="chips">
+            <button class="chip" data-whisper="hiz" onclick="setWhisper('hiz')">Sistem 1<br><small>base</small></button>
+            <button class="chip" data-whisper="denge" onclick="setWhisper('denge')">Sistem 2<br><small>small</small></button>
+            <button class="chip" data-whisper="dogruluk" onclick="setWhisper('dogruluk')">Sistem 3<br><small>medium</small></button>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">🧠 Beyin (Offline AI)</div>
+        <div class="chips">
+            <button class="chip" data-gemma="gemma3:1b" onclick="setGemma('gemma3:1b')">Beyin 1<br><small>Gemma 3.1</small></button>
+            <button class="chip" data-gemma="gemma2:2b" onclick="setGemma('gemma2:2b')">Beyin 2<br><small>Gemma 2.2</small></button>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">🔌 Yapay Zeka (Online)</div>
+        <div class="chips">
+            <button class="chip" data-ai="pollinations" onclick="setAI('pollinations')">Pollinations<br><small>رایگان</small></button>
+            <button class="chip" data-ai="openrouter" onclick="setAI('openrouter')">OpenRouter</button>
+            <button class="chip" data-ai="groq" onclick="setAI('groq')">Groq</button>
+            <button class="chip" data-ai="deepseek" onclick="setAI('deepseek')">DeepSeek</button>
+            <button class="chip" data-ai="gemma" onclick="setAI('gemma')">Gemma<br><small>آفلاین</small></button>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal: Log Viewer -->
+<div class="modal" id="logModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">📜 Loglar</div>
+            <button class="modal-close" onclick="closeLogs()">×</button>
+        </div>
+        <div class="modal-tabs">
+            <button class="modal-tab active" onclick="switchTab('eda')">📋 EDA Log</button>
+            <button class="modal-tab" onclick="switchTab('sleep')">💤 Sleep Log</button>
+        </div>
+        <div class="log-container" id="logContent">
+            <div class="log-empty">⏳ یükleniyor...</div>
+        </div>
+        <div class="modal-footer">
+            <label class="auto-refresh">
+                <input type="checkbox" id="autoRefresh" checked>
+                <span>🔄 Otomatik (2s)</span>
+            </label>
+            <span id="logCount">0 satır</span>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let currentStatus = {};
+let currentTab = 'eda';
+let logTimer = null;
+
+// ─── Status ───
+async function refresh() {
+    try {
+        const r = await fetch('/api/status');
+        const data = await r.json();
+        currentStatus = data;
+        updateUI(data);
+    } catch(e) {
+        console.error(e);
+    }
+}
+
+function updateUI(data) {
+    const modes = {
+        'WAKE':    ['🟢 Aktif',   'mode-active'],
+        'SLEEP':   ['💤 Uyku',    'mode-sleep'],
+        'STOPPED': ['❌ Kapalı',  'mode-off']
+    };
+    const [modeText, modeClass] = modes[data.mode] || ['?', ''];
+    
+    const el = document.getElementById('s-mode');
+    el.textContent = modeText;
+    el.className = 'status-value ' + modeClass;
+    
+    document.getElementById('s-batt').textContent = data.battery + '%';
+    
+    const whisperNames = { 'hiz': 'Sistem 1', 'denge': 'Sistem 2', 'dogruluk': 'Sistem 3' };
+    document.getElementById('s-whisper').textContent = whisperNames[data.whisper] || data.whisper;
+    
+    const gemmaNames = { 'gemma3:1b': 'Beyin 1', 'gemma2:2b': 'Beyin 2' };
+    document.getElementById('s-gemma').textContent = gemmaNames[data.gemma] || data.gemma;
+    
+    const aiNames = { 
+        'pollinations': 'Pollinations', 
+        'openrouter': 'OpenRouter', 
+        'groq': 'Groq',
+        'deepseek': 'DeepSeek',
+        'gemma': 'Gemma'
+    };
+    document.getElementById('s-ai').textContent = aiNames[data.ai] || data.ai;
+    
+    document.querySelectorAll('.chip').forEach(c => {
+        c.classList.remove('active');
+        if (c.dataset.whisper === data.whisper) c.classList.add('active');
+        if (c.dataset.gemma === data.gemma) c.classList.add('active');
+        if (c.dataset.ai === data.ai) c.classList.add('active');
+    });
+}
+
+async function action(name) {
+    try {
+        const r = await fetch('/api/' + name);
+        const data = await r.json();
+        if (data.ok) {
+            showToast('✅ ' + data.message);
+        } else {
+            showToast('❌ ' + (data.error || 'Hata'));
+        }
+        setTimeout(refresh, 800);
+    } catch(e) {
+        showToast('❌ Bağlantı hatası');
+    }
+}
+
+async function setWhisper(value) { await action('whisper-' + value); }
+async function setGemma(value)   { await action('gemma-' + value.replace(':', '-')); }
+async function setAI(value)      { await action('ai-' + value); }
+
+// ─── Logs ───
+function openLogs() {
+    document.getElementById('logModal').classList.add('show');
+    loadLogs();
+    
+    // Auto refresh
+    if (document.getElementById('autoRefresh').checked) {
+        logTimer = setInterval(loadLogs, 2000);
+    }
+}
+
+function closeLogs() {
+    document.getElementById('logModal').classList.remove('show');
+    if (logTimer) {
+        clearInterval(logTimer);
+        logTimer = null;
+    }
+}
+
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    loadLogs();
+}
+
+async function loadLogs() {
+    try {
+        const endpoint = currentTab === 'eda' ? '/api/logs' : '/api/sleep-logs';
+        const r = await fetch(endpoint);
+        const data = await r.json();
+        
+        const container = document.getElementById('logContent');
+        const lines = data.logs || [];
+        
+        if (lines.length === 0 || (lines.length === 1 && !lines[0].trim())) {
+            container.innerHTML = '<div class="log-empty">📭 لاگ خالی است</div>';
+        } else {
+            container.innerHTML = lines.map(line => {
+                if (!line.trim()) return '';
+                let cls = 'log-line';
+                const l = line.toLowerCase();
+                if (l.includes('error') || l.includes('hata') || l.includes('❌')) cls += ' error';
+                else if (l.includes('warn') || l.includes('uyarı') || l.includes('⚠')) cls += ' warn';
+                else if (l.includes('✅') || l.includes('ok') || l.includes('başarı')) cls += ' success';
+                else if (l.includes('info') || l.includes('ℹ')) cls += ' info';
+                return `<div class="${cls}">${escapeHtml(line)}</div>`;
+            }).join('');
+            
+            // Auto scroll to bottom
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        document.getElementById('logCount').textContent = lines.length + ' satır';
+    } catch(e) {
+        document.getElementById('logContent').innerHTML = 
+            '<div class="log-empty">❌ لاگ خوانده نشد</div>';
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Auto refresh toggle
+document.getElementById('autoRefresh').addEventListener('change', function(e) {
+    if (logTimer) {
+        clearInterval(logTimer);
+        logTimer = null;
+    }
+    if (e.target.checked) {
+        logTimer = setInterval(loadLogs, 2000);
+    }
+});
+
+// ─── Toast ───
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ─── Start ───
+refresh();
+setInterval(refresh, 3000);
+
+// Close modal with ESC
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeLogs();
+});
+</script>
+</body>
+</html>

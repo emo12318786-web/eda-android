@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.kapt")
 }
 
 android {
@@ -32,6 +33,11 @@ android {
 
     buildFeatures {
         viewBinding = true
+        compose = true
+    }
+    
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.14"
     }
 }
 
@@ -50,4 +56,23 @@ dependencies {
     implementation("com.google.code.gson:gson:2.11.0")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+
+    // ═══ Room DB (SQLite yerine) ═══
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
+
+    // ═══ WebView + Panel Server ═══
+    implementation("androidx.webkit:webkit:1.11.0")
+    implementation("org.nanohttpd:nanohttpd:2.3.1")
+
+    // ═══ Compose (برای Dashboard) ═══
+    implementation("androidx.compose.ui:ui:1.6.8")
+    implementation("androidx.compose.material3:material3:1.2.1")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.6.8")
+    implementation("androidx.activity:activity-compose:1.9.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+    
+    // ═══ Coil (تصویر) ═══
+    implementation("io.coil-kt:coil-compose:2.6.0")
 }
