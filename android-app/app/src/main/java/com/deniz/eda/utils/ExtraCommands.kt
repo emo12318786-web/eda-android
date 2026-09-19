@@ -42,43 +42,46 @@ object ExtraCommands {
         }
     }
 
+    private var evalPos = 0
+
     private fun eval(ifade: String): Double {
-        var pos = 0
-        fun expr(): Double {
-            var r = term()
-            while (pos < ifade.length && (ifade[pos] == '+' || ifade[pos] == '-')) {
-                val op = ifade[pos]; pos++
-                val n = term()
-                r = if (op == '+') r + n else r - n
-            }
-            return r
+        evalPos = 0
+        return evalExpr(ifade)
+    }
+
+    private fun evalExpr(ifade: String): Double {
+        var r = evalTerm(ifade)
+        while (evalPos < ifade.length && (ifade[evalPos] == '+' || ifade[evalPos] == '-')) {
+            val op = ifade[evalPos]; evalPos++
+            val n = evalTerm(ifade)
+            r = if (op == '+') r + n else r - n
         }
-        fun term(): Double {
-            var r = factor()
-            while (pos < ifade.length && (ifade[pos] == '*' || ifade[pos] == '/')) {
-                val op = ifade[pos]; pos++
-                val n = factor()
-                r = if (op == '*') r * n else r / n
-            }
-            return r
-        }
-        fun factor(): Double {
-            if (pos < ifade.length && ifade[pos] == '-') { pos++; return -factor() }
-            if (pos < ifade.length && ifade[pos] == '+') { pos++; return factor() }
-            if (pos < ifade.length && ifade[pos] == '(') {
-                pos++
-                val r = expr()
-                if (pos < ifade.length && ifade[pos] == ')') pos++
-                return r
-            }
-            val s = pos
-            while (pos < ifade.length && (ifade[pos].isDigit() || ifade[pos] == '.')) pos++
-            if (s == pos) throw IllegalArgumentException("Sayi bekleniyordu")
-            return ifade.substring(s, pos).toDouble()
-        }
-        val r = expr()
-        if (pos < ifade.length) throw IllegalArgumentException("Fazla karakter")
         return r
+    }
+
+    private fun evalTerm(ifade: String): Double {
+        var r = evalFactor(ifade)
+        while (evalPos < ifade.length && (ifade[evalPos] == '*' || ifade[evalPos] == '/')) {
+            val op = ifade[evalPos]; evalPos++
+            val n = evalFactor(ifade)
+            r = if (op == '*') r * n else r / n
+        }
+        return r
+    }
+
+    private fun evalFactor(ifade: String): Double {
+        if (evalPos < ifade.length && ifade[evalPos] == '-') { evalPos++; return -evalFactor(ifade) }
+        if (evalPos < ifade.length && ifade[evalPos] == '+') { evalPos++; return evalFactor(ifade) }
+        if (evalPos < ifade.length && ifade[evalPos] == '(') {
+            evalPos++
+            val r = evalExpr(ifade)
+            if (evalPos < ifade.length && ifade[evalPos] == ')') evalPos++
+            return r
+        }
+        val s = evalPos
+        while (evalPos < ifade.length && (ifade[evalPos].isDigit() || ifade[evalPos] == '.')) evalPos++
+        if (s == evalPos) throw IllegalArgumentException("Sayi bekleniyordu")
+        return ifade.substring(s, evalPos).toDouble()
     }
 
     // ═══════════════════════════════════════════════════════════

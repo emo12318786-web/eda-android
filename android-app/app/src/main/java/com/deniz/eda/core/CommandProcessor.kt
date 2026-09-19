@@ -189,7 +189,7 @@ object CommandProcessor {
 
             // Eve mesafe
             v(metin, "mesafe", "eve", "evden") -> {
-                val konum = LocationUtils.aktifKonum(context)
+                val konum = LocationUtils.sonBilinenKonum(context)
                 if (konum == null) {
                     KomutSonucu.Cevap("Konum alınamadı $hitap, GPS'i kontrol eder misin?")
                 } else {
@@ -210,7 +210,7 @@ object CommandProcessor {
             }
 
             v(metin, "hava", "hawa") -> {
-                val konum = LocationUtils.aktifKonum(context)
+                val konum = LocationUtils.sonBilinenKonum(context)
                 if (konum == null) {
                     KomutSonucu.Cevap("Hava durumu için önce konumunu almam lazım $hitap, GPS açık mı?")
                 } else {
