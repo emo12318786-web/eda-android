@@ -4,34 +4,68 @@ import com.deniz.eda.core.Settings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/**
- * Orijinal "AI ZINCIRI: OpenRouter > DeepSeek > Groq/Gemma" mantiginin karsiligi.
- * Sirayla dener, ilk basarili cevabi doner; hicbiri calismazsa null doner ve
- * CommandProcessor kullaniciya "internet/AI baglantisi yok" tarzi bir mesaj verir.
- *
- * NOT: API anahtarlari Settings uzerinden (SharedPreferences) okunur - ayni
- * orijinal script'teki gibi kullanicidan alinip saklanmasi gerekir. Bu
- * ortamda internet erisimi olmadigi icin bu cagrilar test edilemedi; model
- * adlari/endpoint'ler saglayicilarin genel bilinen OpenAI-uyumlu semasina
- * gore yazildi, gerekirse Settings uzerinden model adini degistirebilirsin.
- */
 object AiRouter {
 
-    private data class Saglayici(val ad: String, val baseUrl: String, val model: String, val apiKey: () -> String)
+    private data class Saglayici(
+        val ad: String,
+        val baseUrl: String,
+        val model: String,
+        val apiKey: () -> String,
+        val needsKey: Boolean = true
+    )
+
+    private const val OLLAMA_URL = "http://192.168.1.2:11434/v1/"
 
     private fun saglayicilar(): List<Saglayici> = listOf(
-        Saglayici("OpenRouter", "https://openrouter.ai/api/v1/", "google/gemma-3-27b-it:free") { Settings.openrouterApiKey },
-        Saglayici("DeepSeek", "https://api.deepseek.com/", "deepseek-chat") { Settings.deepseekApiKey },
-        Saglayici("Groq", "https://api.groq.com/openai/v1/", "gemma2-9b-it") { Settings.groqApiKey }
+        // ═══ ۱. Pollinations (رایگان، بدون API Key) ═══
+        Saglayici(
+            ad = "Pollinations",
+            baseUrl = "https://text.pollinations.ai/openai/",
+            model = "openai",
+            apiKey = { "no-key" },
+            needsKey = false
+        ),
+        // ═══ ۲. Ollama Gemma2 (شبکه محلی) ═══
+        Saglayici(
+            ad = "Ollama-Gemma2",
+            baseUrl = OLLAMA_URL,
+            model = "gemma2:2b",
+            apiKey = { "ollama-local" },
+            needsKey = false
+        ),
+        // ═══ ۳. Groq ═══
+        Saglayici(
+            ad = "Groq",
+            baseUrl = "https://api.groq.com/openai/v1/",
+            model = "gemma2-9b-it",
+            apiKey = { Settings.groqApiKey },
+            needsKey = true
+        ),
+        // ═══ ۴. OpenRouter ═══
+        Saglayici(
+            ad = "OpenRouter",
+            baseUrl = "https://openrouter.ai/api/v1/",
+            model = "google/gemma-2-9b-it:free",
+            apiKey = { Settings.openrouterApiKey },
+            needsKey = true
+        ),
+        // ═══ ۵. DeepSeek ═══
+        Saglayici(
+            ad = "DeepSeek",
+            baseUrl = "https://api.deepseek.com/",
+            model = "deepseek-chat",
+            apiKey = { Settings.deepseekApiKey },
+            needsKey = true
+        )
     )
 
     suspend fun sor(
         kullaniciSorusu: String,
-        sistemMesaji: String = "Sen Eda adında, kısa ve samimi cevaplar veren Türkçe bir sesli asistansın."
+        sistemMesaji: String = "Sen Eda'sın. Kullanıcıya 'denizçim' diye hitap et. Maksimum 1 cümle cevap ver. Emoji kullanma."
     ): String? = withContext(Dispatchers.IO) {
         for (s in saglayicilar()) {
             val anahtar = s.apiKey()
-            if (anahtar.isBlank()) continue
+            if (s.needsKey && anahtar.isBlank()) continue
             try {
                 val api = OpenAiCompatibleApi.olustur(s.baseUrl)
                 val istek = ChatCompletionRequest(
@@ -39,15 +73,22 @@ object AiRouter {
                     messages = listOf(
                         ChatMessage("system", sistemMesaji),
                         ChatMessage("user", kullaniciSorusu)
-                    )
+                    ),
+                    temperature = 0.3,
+                    max_tokens = 150
                 )
                 val yanit = api.sohbetTamamla("Bearer $anahtar", istek)
                 if (yanit.isSuccessful) {
                     val cevap = yanit.body()?.choices?.firstOrNull()?.message?.content?.trim()
-                    if (!cevap.isNullOrBlank()) return@withContext cevap
+                    if (!cevap.isNullOrBlank()) {
+                        android.util.Log.d("AiRouter", "✅ ${s.ad}: $cevap")
+                        return@withContext cevap
+                    }
+                } else {
+                    android.util.Log.w("AiRouter", "⚠️ ${s.ad}: HTTP ${yanit.code()}")
                 }
             } catch (e: Exception) {
-                continue
+                android.util.Log.e("AiRouter", "❌ ${s.ad}: ${e.message}")
             }
         }
         null
