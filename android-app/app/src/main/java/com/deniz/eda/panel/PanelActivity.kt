@@ -7,6 +7,7 @@ import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.deniz.eda.R
+import com.deniz.eda.core.Settings
 
 /**
  * Kontrol Paneli — WebView icinde localhost:8080'i acar.
@@ -20,6 +21,9 @@ class PanelActivity : AppCompatActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // ═══ Settings init (mühim!) ═══
+        Settings.init(applicationContext)
 
         // WebView
         webView = WebView(this).apply {
