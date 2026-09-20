@@ -40,6 +40,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // ═══ وضعیت واقعی رو از Settings بخون ═══
+        durumText.text = when (Settings.sonMod) {
+            "AKTIF" -> "✅ Eda çalışıyor - 'Eda' de ve dinlemeye başlasın"
+            "UYKU" -> "💤 Eda uyku modunda"
+            else -> "💤 Servis durduruldu"
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
