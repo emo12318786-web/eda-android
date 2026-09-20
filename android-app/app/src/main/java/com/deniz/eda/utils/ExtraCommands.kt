@@ -130,7 +130,7 @@ object ExtraCommands {
     )
 
     fun gununSozu(hitap: String): String {
-        return "${SOZLER.random()}
+        return "${SOZLER.random()} $hitap."
 
     // ═══════════════════════════════════════════════════════════
     //  ودا مساژلاری (پیام‌های خداحافظی)
@@ -163,7 +163,6 @@ object ExtraCommands {
     fun modMesaji(mod: String, hitap: String): String {
         val mesaj = MOD_MESAJLARI[mod] ?: "Mod değişti"
         return "$mesaj $hitap."
-    } $hitap."
     }
 
     // ═══════════════════════════════════════════════════════════
