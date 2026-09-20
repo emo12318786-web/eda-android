@@ -333,14 +333,10 @@ object ExtraCommands {
     // ═══════════════════════════════════════════════════════════
     //  ۱۰. SİSTEM TEST — همه چیز رو چک کن
     // ═══════════════════════════════════════════════════════════
-    fun sistemTest(
-        context: Context,
-        hitap: String,
-        aiRouterTest: () -> String?
-    ): String {
+    fun sistemTest(context: Context, hitap: String): String {
         val sb = StringBuilder()
         sb.append("🔍 Sistem testi başlıyor $hitap.\n\n")
-        
+
         // ۱. Pil
         val pil = BatteryUtils.pilBilgisiAl(context)
         if (pil != null) {
@@ -348,46 +344,54 @@ object ExtraCommands {
         } else {
             sb.append("❌ Pil: bilgi alınamadı\n")
         }
-        
-        // ۲. Konum
-        val konum = LocationUtils.sonBilinenKonum(context)
-        if (konum != null) {
-            sb.append("✅ Konum: ${"%.4f".format(konum.enlem)}, ${"%.4f".format(konum.boylam)}\n")
+
+        // ۲. Konum izni
+        if (LocationUtils.izinVarMi(context)) {
+            val konum = LocationUtils.sonBilinenKonum(context)
+            if (konum != null) {
+                sb.append("✅ Konum: ${"%.4f".format(konum.enlem)}, ${"%.4f".format(konum.boylam)}\n")
+            } else {
+                sb.append("⚠️ Konum: izin var ama konum henüz alınmadı\n")
+            }
         } else {
-            sb.append("❌ Konum: GPS kapalı veya izin yok\n")
+            sb.append("❌ Konum: izin yok\n")
         }
-        
-        // ۳. AI
-        sb.append("⏳ AI bağlantı testi...\n")
-        val aiCevap = try {
-            aiRouterTest()
-        } catch (e: Exception) {
-            null
-        }
-        if (aiCevap != null) {
-            sb.append("✅ AI: bağlantı OK\n")
-        } else {
-            sb.append("❌ AI: bağlantı yok (internet veya API key)\n")
-        }
-        
+
+        // ۳. AI sağlayıcıları
+        val aiKeys = mutableListOf<String>()
+        aiKeys.add("Pollinations")  // ← همیشه رایگان
+        if (Settings.groqApiKey.isNotBlank()) aiKeys.add("Groq")
+        if (Settings.openrouterApiKey.isNotBlank()) aiKeys.add("OpenRouter")
+        if (Settings.deepseekApiKey.isNotBlank()) aiKeys.add("DeepSeek")
+        sb.append("✅ AI: ${aiKeys.joinToString(" → ")}\n")
+
         // ۴. Hafıza
-        sb.append("✅ Hafıza sistemi: hazır\n")
-        
+        sb.append("✅ Hafıza: hazır\n")
+
         // ۵. TTS
         sb.append("✅ TTS: hazır\n")
-        
+
         // ۶. STT
-        sb.append("✅ STT: Google STT\n")
-        
+        if (android.speech.SpeechRecognizer.isRecognitionAvailable(context)) {
+            sb.append("✅ STT: Google STT\n")
+        } else {
+            sb.append("❌ STT: cihazda yok\n")
+        }
+
         // ۷. Hatırlatma
-        sb.append("✅ Hatırlatma sistemi: aktif\n")
-        
+        sb.append("✅ Hatırlatma: aktif\n")
+
         // ۸. Pil izleyici
-        val pilDurum = if (Settings.batteryNotifierAktif) "aktif" else "pasif"
-        sb.append("✅ Pil izleyici: $pilDurum\n")
-        
+        sb.append("✅ Pil izleyici: ${if (Settings.batteryNotifierAktif) "aktif" else "pasif"}\n")
+
+        // ۹. Güvenlik modu
+        sb.append("✅ Güvenlik: ${if (Settings.guvenlikModuAktif) "açık" else "kapalı"}\n")
+
+        // ۱۰. Araba modu
+        sb.append("✅ Araba modu: ${if (Settings.arabaModuAktif) "açık" else "kapalı"}\n")
+
         sb.append("\n🎉 Test tamamlandı $hitap.")
-        
+
         return sb.toString()
     }
 

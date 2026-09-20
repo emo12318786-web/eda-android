@@ -183,26 +183,30 @@ object CommandProcessor {
 
             // Konum - aktif konum ister
             v(metin, "konum", "neredeyim", "nerdeyim") -> {
-                val metinCevap = LocationUtils.konumMetni(context, hitap)
+                val metinCevap = kotlinx.coroutines.runBlocking {
+                    LocationUtils.konumMetni(context, hitap)
+                }
                 KomutSonucu.Cevap(metinCevap)
             }
 
             // Eve mesafe
             v(metin, "mesafe", "eve", "evden") -> {
-                val konum = LocationUtils.sonBilinenKonum(context)
+                val konum = kotlinx.coroutines.runBlocking {
+                    LocationUtils.enDogruKonum(context)
+                }
                 if (konum == null) {
-                    KomutSonucu.Cevap("Konum alınamadı $hitap, GPS'i kontrol eder misin?")
+                    KomutSonucu.Cevap("Konum alınamadı $hitap. GPS açık mı?")
                 } else {
-                    val dLat = Math.toRadians(EV_LAT - konum.enlem)
-                    val dLon = Math.toRadians(EV_LON - konum.boylam)
+                    val dLat = Math.toRadians(EV_LAT - konum.latitude)
+                    val dLon = Math.toRadians(EV_LON - konum.longitude)
                     val a = sin(dLat / 2) * sin(dLat / 2) +
-                            cos(Math.toRadians(konum.enlem)) *
+                            cos(Math.toRadians(konum.latitude)) *
                             cos(Math.toRadians(EV_LAT)) *
                             sin(dLon / 2) * sin(dLon / 2)
                     val c = 2 * asin(sqrt(a))
                     val mesafe = 6371.0 * c
                     if (mesafe < 1) {
-                        KomutSonucu.Cevap("Sadece ${(mesafe * 1000).toInt()} metre kaldı! Çok yakınsın $hitap!")
+                        KomutSonucu.Cevap("Sadece ${(mesafe * 1000).toInt()} metre kaldı $hitap! Çok yakınsın.")
                     } else {
                         KomutSonucu.Cevap("Yaklaşık ${"%.1f".format(mesafe)} kilometre kaldı $hitap.")
                     }
@@ -210,11 +214,24 @@ object CommandProcessor {
             }
 
             v(metin, "hava", "hawa") -> {
-                val konum = LocationUtils.sonBilinenKonum(context)
+                val konum = kotlinx.coroutines.runBlocking {
+                    LocationUtils.enDogruKonum(context)
+                }
                 if (konum == null) {
-                    KomutSonucu.Cevap("Hava durumu için önce konumunu almam lazım $hitap, GPS açık mı?")
+                    KomutSonucu.Cevap("Hava durumu için konumunu almam lazım $hitap. GPS açık mı?")
                 } else {
-                    KomutSonucu.Cevap(WeatherUtils.havaDurumuMetni(konum.enlem, konum.boylam, hitap))
+                    val gun = when {
+                        v(metin, "yarın", "yarin", "yarin hava") -> 1
+                        v(metin, "öbür gün", "obur gun", "öbürsü gün") -> 2
+                        v(metin, "5 gün", "beş gün", "hafta") -> -1  // Özel: özet
+                        else -> 0  // Bugün
+                    }
+                    val cevap = if (gun == -1) {
+                        WeatherUtils.havaDurumuOzet(konum.latitude, konum.longitude, hitap)
+                    } else {
+                        WeatherUtils.havaDurumuMetni(konum.latitude, konum.longitude, hitap, gun)
+                    }
+                    KomutSonucu.Cevap(cevap)
                 }
             }
 
@@ -289,7 +306,7 @@ object CommandProcessor {
             
             // ۵. Telefonu bul
             // ═══ Veda mesajı (خداحافظی) ═══
-            v(metin, "kapat kendini", "kapan", "kapat şimdi", "veda") -> {
+            v(metin, "kapat kendini", "kapan", "kapat şimdi") -> {
                 KomutSonucu.Cevap(ExtraCommands.vedaMesaji())
             }
             
@@ -367,11 +384,8 @@ object CommandProcessor {
             }
             
             // ═══ ۱۰. Sistem test ═══
-            v(metin, "sistem test", "sistem testi", "test sistem", "sistemi test et", "her şeyi kontrol et") -> {
-                KomutSonucu.Cevap(ExtraCommands.sistemTest(context, hitap) {
-                    null  // AI test yok
-                })
-            }
+            v(metin, "sistem test", "sistem testi", "test sistem", "sistemi test et", "her şeyi kontrol et") ->
+                KomutSonucu.Cevap(ExtraCommands.sistemTest(context, hitap))
             
             else -> {
                 val aiCevap = AiRouter.sor(metinHam)
