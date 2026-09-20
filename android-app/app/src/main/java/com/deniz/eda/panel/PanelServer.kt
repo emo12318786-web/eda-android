@@ -129,6 +129,13 @@ class PanelServer(
             action == "wake" -> "EDA aktif"
             action == "sleep" -> "EDA uyku moduna alındı"
             action == "stop" -> "EDA durduruldu"
+            action.startsWith("gemma-") -> {
+                // "gemma-gemma3-1b" → "gemma3:1b"
+                val model = action.removePrefix("gemma-").replaceFirst("-", ":")
+                Settings.gemmaModel = model
+                android.util.Log.d("PanelServer", "gemmaModel = $model")
+                "Beyin: $model"
+            }
             action.startsWith("ai-") -> {
                 val ai = action.removePrefix("ai-")
                 Settings.aiSaglayici = ai

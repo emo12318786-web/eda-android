@@ -29,7 +29,7 @@ object AiRouter {
         Saglayici(
             ad = "Ollama-Gemma2",
             baseUrl = OLLAMA_URL,
-            model = "gemma2:2b",
+            model = Settings.gemmaModel,
             apiKey = { "ollama-local" },
             needsKey = false
         ),
