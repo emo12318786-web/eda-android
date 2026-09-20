@@ -131,6 +131,7 @@ object ExtraCommands {
 
     fun gununSozu(hitap: String): String {
         return "${SOZLER.random()} $hitap."
+    }
 
     // ═══════════════════════════════════════════════════════════
     //  ودا مساژلاری (پیام‌های خداحافظی)
@@ -396,5 +397,4 @@ object ExtraCommands {
     fun sessizDurdur(hitap: String): String {
         return telefonuBulDurdur(hitap)
     }
-}
 }
