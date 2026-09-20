@@ -104,6 +104,27 @@ object Settings {
         get() = getBool("derin_uyku", false)  // پیش‌فرض: خواب بیدار (مثل APK فعلی)
         set(v) = setBool("derin_uyku", v)
 
+    // ═══ Battery Notifier (سرویس جدا) ═══
+    var batteryNotifierAktif: Boolean
+        get() = getBool("battery_notifier_aktif", true)
+        set(v) = setBool("battery_notifier_aktif", v)
+
+    var pilDusukEsik: Int
+        get() = getInt("pil_dusuk_esik", 30)
+        set(v) = setInt("pil_dusuk_esik", v)
+
+    var pilKritikEsik: Int
+        get() = getInt("pil_kritik_esik", 15)
+        set(v) = setInt("pil_kritik_esik", v)
+
+    var pilDusukUyariAktif: Boolean
+        get() = getBool("pil_dusuk_uyari_aktif", true)
+        set(v) = setBool("pil_dusuk_uyari_aktif", v)
+
+    var pilKritikUyariAktif: Boolean
+        get() = getBool("pil_kritik_uyari_aktif", true)
+        set(v) = setBool("pil_kritik_uyari_aktif", v)
+
     var pilBildirimAktif: Boolean
         get() = getBool("pil_bildirim_aktif", true)
         set(v) = setBool("pil_bildirim_aktif", v)

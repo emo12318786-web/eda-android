@@ -17,7 +17,13 @@ import com.deniz.eda.service.EdaForegroundService
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action != Intent.ACTION_BOOT_COMPLETED) return
+        
+        // ═══ EDA Servisi ═══
         val servisIntent = Intent(context, EdaForegroundService::class.java)
         ContextCompat.startForegroundService(context, servisIntent)
+        
+        // ═══ Battery Notifier (bağımsız pil servisi) ═══
+        val pilIntent = Intent(context, com.deniz.eda.service.BatteryNotifierService::class.java)
+        ContextCompat.startForegroundService(context, pilIntent)
     }
 }

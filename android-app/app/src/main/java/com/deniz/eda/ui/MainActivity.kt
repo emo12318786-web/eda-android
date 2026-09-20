@@ -65,12 +65,14 @@ class MainActivity : AppCompatActivity() {
 
         // ═══ داشبورد ═══
         // ═══ تنظیمات پیشرفته ═══
+        val batteryNotifierSwitch = findViewById<SwitchCompat>(R.id.batteryNotifierSwitch)
         val derinUykuSwitch = findViewById<SwitchCompat>(R.id.derinUykuSwitch)
         val pilBildirimSwitch = findViewById<SwitchCompat>(R.id.pilBildirimSwitch)
         val sessizModSwitch = findViewById<SwitchCompat>(R.id.sessizModSwitch)
         val pilBildirimSpinner = findViewById<Spinner>(R.id.pilBildirimSpinner)
 
         // مقدار اولیه
+        batteryNotifierSwitch.isChecked = Settings.batteryNotifierAktif
         derinUykuSwitch.isChecked = Settings.derinUyku
         pilBildirimSwitch.isChecked = Settings.pilBildirimAktif
         sessizModSwitch.isChecked = Settings.sessizMod
@@ -87,6 +89,22 @@ class MainActivity : AppCompatActivity() {
         if (mevcutIndex >= 0) pilBildirimSpinner.setSelection(mevcutIndex)
 
         // ═══ لیسنرها ═══
+        batteryNotifierSwitch.setOnCheckedChangeListener { _, checked ->
+            Settings.batteryNotifierAktif = checked
+            val intent = Intent(this, com.deniz.eda.service.BatteryNotifierService::class.java)
+            if (checked) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(intent)
+                } else {
+                    startService(intent)
+                }
+                Toast.makeText(this, "🔋 Pil izleyici başlatıldı", Toast.LENGTH_SHORT).show()
+            } else {
+                stopService(intent)
+                Toast.makeText(this, "🔋 Pil izleyici durduruldu", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         derinUykuSwitch.setOnCheckedChangeListener { _, checked ->
             Settings.derinUyku = checked
             Toast.makeText(this, if (checked) "🛌 Derin uyku aktif" else "😴 Uyku bidar", Toast.LENGTH_SHORT).show()

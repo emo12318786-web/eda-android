@@ -59,6 +59,12 @@
             android:label="EDA Panel"
             android:configChanges="orientation|screenSize|keyboardHidden" />
 
+        <!-- Battery Notifier - bağımsız pil servisi -->
+        <service
+            android:name=".service.BatteryNotifierService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
         <service
             android:name=".service.EdaForegroundService"
             android:exported="false"
