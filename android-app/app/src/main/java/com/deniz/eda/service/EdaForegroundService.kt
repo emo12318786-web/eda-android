@@ -65,7 +65,6 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     }
 
     override fun onCreate() {
-        sonAktif = System.currentTimeMillis()
         super.onCreate()
         Settings.init(this)
         NotificationHelper.channelOlustur(this)
