@@ -429,38 +429,47 @@ async function refresh() {
 }
 
 function updateUI(data) {
-    const modes = {
-        'WAKE':    ['🟢 Aktif',   'mode-active'],
-        'SLEEP':   ['💤 Uyku',    'mode-sleep'],
-        'STOPPED': ['❌ Kapalı',  'mode-off']
-    };
+    // ═══ Durum ═══
     const durum = (data.durum || data.mod || data.mode || 'AKTIF').toUpperCase();
+    const modes = {
+        'AKTIF':   ['🟢 Aktif',   'mode-active'],
+        'WAKE':    ['🟢 Aktif',   'mode-active'],
+        'UYKU':    ['💤 Uyku',    'mode-sleep'],
+        'SLEEP':   ['💤 Uyku',    'mode-sleep'],
+        'STOPPED': ['❌ Kapalı',  'mode-off'],
+        'KAPALI':  ['❌ Kapalı',  'mode-off']
+    };
     const [modeText, modeClass] = modes[durum] || ['🟢 Aktif', 'mode-active'];
-    
-    const el = document.getElementById('s-mode');
-    el.textContent = modeText;
-    el.className = 'status-value ' + modeClass;
-    
-    // ═══ Pil — data.pil.yuzde (API formatı) ═══
+    const elMode = document.getElementById('s-mode');
+    elMode.textContent = modeText;
+    elMode.className = 'status-value ' + modeClass;
+
+    // ═══ Pil ═══
     const pilYuzde = (data.pil && typeof data.pil.yuzde !== 'undefined') ? data.pil.yuzde : '?';
     const pilDurum = (data.pil && data.pil.durum) ? data.pil.durum : '';
-    document.getElementById('s-batt').textContent = pilYuzde + '% ' + (pilDurum ? '(' + pilDurum + ')' : '');
-    
-    // whisperNames kaldırıldı (Whisper yok)
+    const pilSarj = (data.pil && data.pil.sarj) ? ' ⚡' : '';
+    document.getElementById('s-batt').textContent = pilYuzde + '%' + pilSarj + (pilDurum ? ' (' + pilDurum + ')' : '');
+
+    // ═══ Ses Tanıma ═══
     document.getElementById('s-whisper').textContent = '🎤 Google STT';
-    
-    const gemmaNames = { 'gemma3:1b': 'Beyin 1', 'gemma2:2b': 'Beyin 2' };
-    document.getElementById('s-gemma').textContent = gemmaNames[data.gemma] || data.gemma;
-    
-    const aiNames = { 
-        'pollinations': 'Pollinations', 
-        'openrouter': 'OpenRouter', 
+
+    // ═══ Beyin ═══
+    const gemmaName = data.gemma || 'gemma3:1b';
+    const gemmaNames = { 'gemma3:1b': 'Beyin 1 (Gemma 3.1)', 'gemma2:2b': 'Beyin 2 (Gemma 2.2)' };
+    document.getElementById('s-gemma').textContent = gemmaNames[gemmaName] || gemmaName;
+
+    // ═══ Yapay Zeka ═══
+    const aiName = data.ai || 'pollinations';
+    const aiNames = {
+        'pollinations': 'Pollinations',
+        'openrouter': 'OpenRouter',
         'groq': 'Groq',
         'deepseek': 'DeepSeek',
-        'gemma': 'Gemma'
+        'gemma': 'Gemma (Offline)'
     };
-    document.getElementById('s-ai').textContent = aiNames[data.ai] || data.ai;
-    
+    document.getElementById('s-ai').textContent = aiNames[aiName] || aiName;
+
+    // ═══ Chip active state ═══
     document.querySelectorAll('.chip').forEach(c => {
         c.classList.remove('active');
         if (c.dataset.gemma === data.gemma) c.classList.add('active');
