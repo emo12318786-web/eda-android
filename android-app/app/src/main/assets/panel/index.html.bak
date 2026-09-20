@@ -482,9 +482,9 @@ async function action(name) {
         const r = await fetch('/api/' + name);
         const data = await r.json();
         if (data.ok) {
-            showToast('✅ ' + (data.mesaj || data.message || 'OK'));
+            showToast('✅ ' + data.message);
         } else {
-            showToast('❌ ' + (data.error || data.mesaj || 'Hata'));
+            showToast('❌ ' + (data.error || 'Hata'));
         }
         setTimeout(refresh, 800);
     } catch(e) {
