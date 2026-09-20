@@ -382,7 +382,8 @@ object ExtraCommands {
         sb.append("✅ Hatırlatma sistemi: aktif\n")
         
         // ۸. Pil izleyici
-        sb.append("✅ Pil izleyici: ${if (Settings.batteryNotifierAktif) "aktif" else "pasif"}\n")
+        val pilDurum = if (Settings.batteryNotifierAktif) "aktif" else "pasif"
+        sb.append("✅ Pil izleyici: $pilDurum\n")
         
         sb.append("\n🎉 Test tamamlandı $hitap.")
         
@@ -395,4 +396,5 @@ object ExtraCommands {
     fun sessizDurdur(hitap: String): String {
         return telefonuBulDurdur(hitap)
     }
+}
 }
