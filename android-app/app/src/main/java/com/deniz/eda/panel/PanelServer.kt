@@ -87,6 +87,8 @@ class PanelServer(
                     put("log", logSayi)
                     put("hatirlatma", hatirlatmaSayi)
                 })
+                put("ai", Settings.aiSaglayici)
+                put("gemma", Settings.gemmaModel ?: "gemma3:1b")
                 put("saat", SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()))
                 put("tarih", SimpleDateFormat("dd MMM yyyy", Locale("tr", "TR")).format(Date()))
             }

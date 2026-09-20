@@ -434,8 +434,8 @@ function updateUI(data) {
         'SLEEP':   ['💤 Uyku',    'mode-sleep'],
         'STOPPED': ['❌ Kapalı',  'mode-off']
     };
-    const durum = (data.durum || data.mode || '?').toUpperCase();
-    const [modeText, modeClass] = modes[durum] || ['?', ''];
+    const durum = (data.durum || data.mod || data.mode || 'AKTIF').toUpperCase();
+    const [modeText, modeClass] = modes[durum] || ['🟢 Aktif', 'mode-active'];
     
     const el = document.getElementById('s-mode');
     el.textContent = modeText;
