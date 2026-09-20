@@ -360,9 +360,7 @@ body {
     <div class="section">
         <div class="section-title">🎙 Ses Tanıma Sistemi</div>
         <div class="chips">
-            <button class="chip" data-whisper="hiz" onclick="setWhisper('hiz')">Sistem 1<br><small>base</small></button>
-            <button class="chip" data-whisper="denge" onclick="setWhisper('denge')">Sistem 2<br><small>small</small></button>
-            <button class="chip" data-whisper="dogruluk" onclick="setWhisper('dogruluk')">Sistem 3<br><small>medium</small></button>
+            <!-- Sistem 1/2/3 kaldırıldı (Whisper yok) -->
         </div>
     </div>
 
@@ -444,7 +442,7 @@ function updateUI(data) {
     
     document.getElementById('s-batt').textContent = data.battery + '%';
     
-    const whisperNames = { 'hiz': 'Sistem 1', 'denge': 'Sistem 2', 'dogruluk': 'Sistem 3' };
+    // whisperNames kaldırıldı (Whisper yok)
     document.getElementById('s-whisper').textContent = whisperNames[data.whisper] || data.whisper;
     
     const gemmaNames = { 'gemma3:1b': 'Beyin 1', 'gemma2:2b': 'Beyin 2' };
@@ -482,7 +480,7 @@ async function action(name) {
     }
 }
 
-async function setWhisper(value) { await action('whisper-' + value); }
+async // setWhisper kaldırıldı
 async function setGemma(value)   { await action('gemma-' + value.replace(':', '-')); }
 async function setAI(value)      { await action('ai-' + value); }
 
