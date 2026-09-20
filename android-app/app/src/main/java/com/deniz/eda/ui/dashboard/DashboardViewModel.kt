@@ -48,12 +48,27 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
 
     fun yenile() {
         viewModelScope.launch {
+            kotlinx.coroutines.delay(100)  // ← کمی صبر کن
             val ctx = getApplication<Application>()
 
-            // Pil
-            val pil = BatteryUtils.pilBilgisiAl(ctx)
-            val pilYuzde = pil?.yuzde ?: 0
-            val pilDurum = pil?.durum ?: "?"
+            // Pil — با error handling
+            var pilYuzde = 0
+            var pilDurum = "?"
+            try {
+                val pil = BatteryUtils.pilBilgisiAl(ctx)
+                if (pil != null) {
+                    pilYuzde = pil.yuzde
+                    pilDurum = pil.durum
+                } else {
+                    // Fallback: از BatteryManager استفاده کن
+                    val bm = ctx.getSystemService(android.content.Context.BATTERY_SERVICE) as android.os.BatteryManager
+                    pilYuzde = bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
+                    pilDurum = "OK"
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("Dashboard", "Pil hatası: ${e.message}")
+            }
+            android.util.Log.d("Dashboard", "Pil: $pilYuzde% ($pilDurum)")
 
             // AI saglayici
             val aiAd = aktifAiSaglayici()
