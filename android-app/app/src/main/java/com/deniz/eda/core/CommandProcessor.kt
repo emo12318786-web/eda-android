@@ -368,12 +368,9 @@ object CommandProcessor {
             
             // ═══ ۱۰. Sistem test ═══
             v(metin, "sistem test", "sistem testi", "test sistem", "sistemi test et", "her şeyi kontrol et") -> {
-                // Yeni bir coroutine içinde çağır
-                kotlinx.coroutines.runBlocking {
-                    KomutSonucu.Cevap(ExtraCommands.sistemTest(context, hitap) {
-                        AiRouter.sor("merhaba")
-                    })
-                }
+                KomutSonucu.Cevap(ExtraCommands.sistemTest(context, hitap) {
+                    null  // AI test yok
+                })
             }
             
             else -> {

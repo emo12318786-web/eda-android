@@ -9,7 +9,7 @@ import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.net.Uri
 import android.provider.MediaStore
-import android.provider.Settings
+import android.provider.Settings as AndroidSettings
 import android.view.KeyEvent
 import com.deniz.eda.core.Settings
 import com.deniz.eda.receiver.EdaDeviceAdminReceiver
@@ -43,14 +43,14 @@ object ExtraCommands {
         }
     }
 
-    private var evalPos = 0
+    var evalPos = 0
 
-    private fun eval(ifade: String): Double {
+    fun eval(ifade: String): Double {
         evalPos = 0
         return evalExpr(ifade)
     }
 
-    private fun evalExpr(ifade: String): Double {
+    fun evalExpr(ifade: String): Double {
         var r = evalTerm(ifade)
         while (evalPos < ifade.length && (ifade[evalPos] == '+' || ifade[evalPos] == '-')) {
             val op = ifade[evalPos]; evalPos++
@@ -60,7 +60,7 @@ object ExtraCommands {
         return r
     }
 
-    private fun evalTerm(ifade: String): Double {
+    fun evalTerm(ifade: String): Double {
         var r = evalFactor(ifade)
         while (evalPos < ifade.length && (ifade[evalPos] == '*' || ifade[evalPos] == '/')) {
             val op = ifade[evalPos]; evalPos++
@@ -70,7 +70,7 @@ object ExtraCommands {
         return r
     }
 
-    private fun evalFactor(ifade: String): Double {
+    fun evalFactor(ifade: String): Double {
         if (evalPos < ifade.length && ifade[evalPos] == '-') { evalPos++; return -evalFactor(ifade) }
         if (evalPos < ifade.length && ifade[evalPos] == '+') { evalPos++; return evalFactor(ifade) }
         if (evalPos < ifade.length && ifade[evalPos] == '(') {
@@ -88,7 +88,7 @@ object ExtraCommands {
     // ═══════════════════════════════════════════════════════════
     //  ۲. GÜNÜN SÖZÜ
     // ═══════════════════════════════════════════════════════════
-    private val SOZLER = listOf(
+    val SOZLER = listOf(
         "Damlaya damlaya göl olur.",
         "Sabreden derviş muradına ermiş.",
         "Ağaç yaşken eğilir.",
@@ -135,7 +135,7 @@ object ExtraCommands {
     // ═══════════════════════════════════════════════════════════
     //  ودا مساژلاری (پیام‌های خداحافظی)
     // ═══════════════════════════════════════════════════════════
-    private val VEDA_MESAJLARI = listOf(
+    val VEDA_MESAJLARI = listOf(
         "Tamam denizçim, sistemleri kapatıyorum. Görüşmek üzere.",
         "Işıkları söndürüyorum denizçim. İhtiyacın olduğunda buradayım.",
         "Tamam denizçim, bir sonrakine kadar hoşça kal.",
@@ -150,7 +150,7 @@ object ExtraCommands {
     // ═══════════════════════════════════════════════════════════
     //  مود مساژلاری (پیام‌های حالت)
     // ═══════════════════════════════════════════════════════════
-    private val MOD_MESAJLARI = mapOf(
+    val MOD_MESAJLARI = mapOf(
         "uyku" to "Uyku moduna geçtim",
         "aktif" to "Aktif moddayım",
         "sessiz" to "Sessiz moda geçtim",
@@ -168,7 +168,7 @@ object ExtraCommands {
     // ═══════════════════════════════════════════════════════════
     //  ۳. MÜZİK — Medya kumandası
     // ═══════════════════════════════════════════════════════════
-    private fun sendMediaKey(context: Context, keyCode: Int): Boolean {
+    fun sendMediaKey(context: Context, keyCode: Int): Boolean {
         return try {
             val am = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             am.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
@@ -221,7 +221,7 @@ object ExtraCommands {
     // ═══════════════════════════════════════════════════════════
     //  ۵. TELEFONU BUL — Ringtone çal
     // ═══════════════════════════════════════════════════════════
-    private var bulPlayer: MediaPlayer? = null
+    var bulPlayer: MediaPlayer? = null
 
     fun telefonuBul(context: Context, hitap: String): String {
         return try {
@@ -296,7 +296,7 @@ object ExtraCommands {
     // ═══════════════════════════════════════════════════════════
     fun ayarlariAc(context: Context, hitap: String): String {
         return try {
-            val intent = Intent(Settings.ACTION_SETTINGS).apply {
+            val intent = Intent(AndroidSettings.ACTION_SETTINGS).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
@@ -318,7 +318,7 @@ object ExtraCommands {
             "Ses motoru ayarları açılıyor $hitap."
         } catch (e: Exception) {
             try {
-                val intent2 = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                val intent2 = Intent(AndroidSettings.ACTION_ACCESSIBILITY_SETTINGS).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(intent2)
@@ -332,10 +332,10 @@ object ExtraCommands {
     // ═══════════════════════════════════════════════════════════
     //  ۱۰. SİSTEM TEST — همه چیز رو چک کن
     // ═══════════════════════════════════════════════════════════
-    suspend fun sistemTest(
+    fun sistemTest(
         context: Context,
         hitap: String,
-        aiRouterTest: suspend () -> String?
+        aiRouterTest: () -> String?
     ): String {
         val sb = StringBuilder()
         sb.append("🔍 Sistem testi başlıyor $hitap.\n\n")
