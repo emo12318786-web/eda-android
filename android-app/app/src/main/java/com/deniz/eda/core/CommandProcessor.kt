@@ -341,24 +341,20 @@ object CommandProcessor {
                 KomutSonucu.Cevap("Bip sesi kapatıldı $hitap.")
             }
             
-            // ═══ Beyin 1/2 (AI hız modu) ═══
-            // کلمات کلیدی: "beyin 1", "hızlı beyin", "hizli beyin", "küçük beyin"
-            (v(metin, "beyin 1", "beyin1", "hızlı beyin", "hizli beyin", "küçük beyin", "kucuk beyin", "base beyin", "gemma 3")) -> {
-                Settings.gemmaModel = "gemma3:1b"
-                android.util.Log.d("CommandProcessor", "gemmaModel → gemma3:1b (Beyin 1)")
-                KomutSonucu.Cevap("Beyin 1 aktif $hitap. Hızlı ve çevik.")
-            }
-            // کلمات کلیدی: "beyin 2", "güçlü beyin", "guclu beyin", "بزرگ beyin", "gemma 2"
-            (v(metin, "beyin 2", "beyin2", "güçlü beyin", "guclu beyin", "guclu beyin", "büyük beyin", "buyuk beyin", "gemma 2", "gemma2")) -> {
+            // ═══ Beyin (فقط Gemma 2.2 فعاله) ═══
+            // هر ترکیبی از "beyin 2" یا "güçlü beyin" → gemma2:2b
+            (v(metin, "beyin 2", "beyin2", "güçlü beyin", "guclu beyin", "büyük beyin", "buyuk beyin", "gemma 2", "gemma2", "beyin")) -> {
                 Settings.gemmaModel = "gemma2:2b"
-                android.util.Log.d("CommandProcessor", "gemmaModel → gemma2:2b (Beyin 2)")
+                android.util.Log.d("CommandProcessor", "gemmaModel → gemma2:2b (Beyin)")
                 KomutSonucu.Cevap("Beyin 2 aktif $hitap. Güçlü ve derin.")
+            }
+            // Beyin 1 → صرفاً پیام، settings عوض نمی‌شه
+            (v(metin, "beyin 1", "beyin1", "hızlı beyin", "hizli beyin", "küçük beyin", "kucuk beyin", "base beyin", "gemma 3")) -> {
+                KomutSonucu.Cevap("Beyin 1 (Gemma 3.1) devre dışı $hitap. Sadece Beyin 2 (Gemma 2.2) kullanılıyor.")
             }
             // ═══ Beyin değiştir (سوال) ═══
             v(metin, "beyin değiştir", "beyin degistir", "hangi beyin", "beyin seç") -> {
-                val mevcut = Settings.gemmaModel
-                val ad = if (mevcut == "gemma2:2b") "Beyin 2 (Gemma 2.2)" else "Beyin 1 (Gemma 3.1)"
-                KomutSonucu.Cevap("Şu an $ad aktif $hitap. Beyin 1 (hızlı) veya Beyin 2 (güçlü) diyebilirsin.")
+                KomutSonucu.Cevap("Şu an Beyin 2 (Gemma 2.2) aktif $hitap.")
             }
             
             else -> {

@@ -39,6 +39,11 @@ import java.util.Locale
  */
 class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
+    companion object {
+        @Volatile
+        var sonMod: String = "KAPALI"
+    }
+
     enum class Mod { UYKU, AKTIF }
 
     private lateinit var tts: TextToSpeech
@@ -60,6 +65,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     }
 
     override fun onCreate() {
+        sonAktif = System.currentTimeMillis()
         super.onCreate()
         Settings.init(this)
         NotificationHelper.channelOlustur(this)
@@ -111,6 +117,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             "ACTION_BASLAT" -> {
                 // 🟢 Başlat — mod'u AKTIF yap و dinlemeye başla
                 mod = Mod.AKTIF
+                sonMod = "AKTIF"
                 Settings.derinUyku = false
                 bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
                 baslatDinleme()
@@ -119,6 +126,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             "ACTION_AKTIF" -> {
                 // 🟢 Aktif moda geç
                 mod = Mod.AKTIF
+                sonMod = "AKTIF"
                 Settings.derinUyku = false
                 if (speechRecognizer == null && SpeechRecognizer.isRecognitionAvailable(this)) {
                     speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
@@ -133,6 +141,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             "ACTION_UYKU" -> {
                 // 💤 Uyku (کنترل پنل)
                 mod = Mod.UYKU
+                sonMod = "UYKU"
                 Settings.derinUyku = true
                 dinlemeAktif = false
                 try {
@@ -155,6 +164,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             "ACTION_DERIN_UYKU" -> {
                 // 💤 Uyku — mod'u UYKU yap، میکروفون خاموش
                 mod = Mod.UYKU
+                sonMod = "UYKU"
                 Settings.derinUyku = true
                 dinlemeAktif = false
                 speechRecognizer?.stopListening()
@@ -313,6 +323,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         if (mod == Mod.UYKU) {
             if (WakeWordDetector.uyandiMi(metin)) {
                 mod = Mod.AKTIF
+                sonMod = "AKTIF"
                 bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
                 konus("Buradayım ${Settings.kullaniciAdi}! Dinliyorum.") { baslatDinleme() }
             } else {
@@ -347,6 +358,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 is KomutSonucu.Cevap -> konus(sonuc.metin) { baslatDinleme() }
                 KomutSonucu.UykuyaDon -> {
                     mod = Mod.UYKU
+                sonMod = "UYKU"
                     bildirimGuncelle(getString(com.deniz.eda.R.string.notif_sleeping))
                     konus("Uyku moduna dönüyorum ${Settings.kullaniciAdi}.") { baslatDinleme() }
                 }
@@ -395,6 +407,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     }
 
     override fun onDestroy() {
+        sonMod = "KAPALI"
         pilJob?.cancel()
         hatirlatmaJob?.cancel()
         securityMode.durdur()

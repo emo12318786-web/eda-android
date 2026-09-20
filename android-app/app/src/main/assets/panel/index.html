@@ -367,8 +367,7 @@ body {
     <div class="section">
         <div class="section-title">🧠 Beyin (Offline AI)</div>
         <div class="chips">
-            <button class="chip" data-gemma="gemma3:1b" onclick="setGemma('gemma3:1b')">Beyin 1<br><small>Gemma 3.1</small></button>
-            <button class="chip" data-gemma="gemma2:2b" onclick="setGemma('gemma2:2b')">Beyin 2<br><small>Gemma 2.2</small></button>
+            <button class="chip" data-gemma="gemma2:2b" onclick="setGemma('gemma2:2b')">Beyin<br><small>Gemma 2.2</small></button>
         </div>
     </div>
 
@@ -454,8 +453,8 @@ function updateUI(data) {
     document.getElementById('s-whisper').textContent = '🎤 Google STT';
 
     // ═══ Beyin ═══
-    const gemmaName = data.gemma || 'gemma3:1b';
-    const gemmaNames = { 'gemma3:1b': 'Beyin 1 (Gemma 3.1)', 'gemma2:2b': 'Beyin 2 (Gemma 2.2)' };
+    const gemmaName = data.gemma || 'gemma2:2b';
+    const gemmaNames = { 'gemma2:2b': 'Beyin (Gemma 2.2)' };
     document.getElementById('s-gemma').textContent = gemmaNames[gemmaName] || gemmaName;
 
     // ═══ Yapay Zeka ═══

@@ -126,7 +126,7 @@ object Settings {
         set(v) = setBool("pil_kritik_uyari_aktif", v)
 
     var gemmaModel: String
-        get() = getString("gemma_model", "gemma3:1b")
+        get() = getString("gemma_model", "gemma2:2b")
         set(v) = setString("gemma_model", v)
 
     var pilBildirimAktif: Boolean

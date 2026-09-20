@@ -72,13 +72,13 @@ class PanelServer(
             }
 
             val json = JSONObject().apply {
-                put("durum", "AKTIF")
+                put("durum", com.deniz.eda.service.EdaForegroundService.sonMod)
                 put("pil", JSONObject().apply {
                     put("yuzde", pil?.yuzde ?: 0)
                     put("durum", pil?.durum ?: "?")
                     put("sarj", pil?.sarjOluyorMu ?: false)
                 })
-                put("mod", if (Settings.arabaModuAktif) "ARABA" else "AKTIF")
+                put("mod", if (Settings.arabaModuAktif) "ARABA" else com.deniz.eda.service.EdaForegroundService.sonMod)
                 put("guvenlik", Settings.guvenlikModuAktif)
                 put("ogrenme", Settings.ogrenmeAktif)
                 put("kullanici", Settings.kullaniciAdi)
@@ -88,7 +88,7 @@ class PanelServer(
                     put("hatirlatma", hatirlatmaSayi)
                 })
                 put("ai", Settings.aiSaglayici)
-                put("gemma", Settings.gemmaModel ?: "gemma3:1b")
+                put("gemma", Settings.gemmaModel ?: "gemma2:2b")
                 put("saat", SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()))
                 put("tarih", SimpleDateFormat("dd MMM yyyy", Locale("tr", "TR")).format(Date()))
             }
