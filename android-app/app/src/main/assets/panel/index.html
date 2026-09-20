@@ -434,16 +434,20 @@ function updateUI(data) {
         'SLEEP':   ['💤 Uyku',    'mode-sleep'],
         'STOPPED': ['❌ Kapalı',  'mode-off']
     };
-    const [modeText, modeClass] = modes[data.mode] || ['?', ''];
+    const durum = (data.durum || data.mode || '?').toUpperCase();
+    const [modeText, modeClass] = modes[durum] || ['?', ''];
     
     const el = document.getElementById('s-mode');
     el.textContent = modeText;
     el.className = 'status-value ' + modeClass;
     
-    document.getElementById('s-batt').textContent = data.battery + '%';
+    // ═══ Pil — data.pil.yuzde (API formatı) ═══
+    const pilYuzde = (data.pil && typeof data.pil.yuzde !== 'undefined') ? data.pil.yuzde : '?';
+    const pilDurum = (data.pil && data.pil.durum) ? data.pil.durum : '';
+    document.getElementById('s-batt').textContent = pilYuzde + '% ' + (pilDurum ? '(' + pilDurum + ')' : '');
     
     // whisperNames kaldırıldı (Whisper yok)
-    document.getElementById('s-whisper').textContent = whisperNames[data.whisper] || data.whisper;
+    document.getElementById('s-whisper').textContent = '🎤 Google STT';
     
     const gemmaNames = { 'gemma3:1b': 'Beyin 1', 'gemma2:2b': 'Beyin 2' };
     document.getElementById('s-gemma').textContent = gemmaNames[data.gemma] || data.gemma;
@@ -459,7 +463,6 @@ function updateUI(data) {
     
     document.querySelectorAll('.chip').forEach(c => {
         c.classList.remove('active');
-        if (c.dataset.whisper === data.whisper) c.classList.add('active');
         if (c.dataset.gemma === data.gemma) c.classList.add('active');
         if (c.dataset.ai === data.ai) c.classList.add('active');
     });
