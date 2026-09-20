@@ -16,7 +16,8 @@ object AiRouter {
 
     private const val OLLAMA_URL = "http://192.168.1.2:11434/v1/"
 
-    private fun saglayicilar(): List<Saglayici> = listOf(
+    private fun saglayicilar(): List<Saglayici> {
+        val tum = listOf(
         // ═══ ۱. Pollinations (رایگان، بدون API Key) ═══
         Saglayici(
             ad = "Pollinations",
@@ -57,7 +58,19 @@ object AiRouter {
             apiKey = { Settings.deepseekApiKey },
             needsKey = true
         )
-    )
+        )
+        // ═══ اولویت: انتخاب کاربر ═══
+        val secili = Settings.aiSaglayici.lowercase()
+        val oncelikli = tum.filter { it.ad.lowercase().contains(secili) || 
+            (secili == "pollinations" && it.ad == "Pollinations") ||
+            (secili == "groq" && it.ad == "Groq") ||
+            (secili == "deepseek" && it.ad == "DeepSeek") ||
+            (secili == "openrouter" && it.ad == "OpenRouter") ||
+            (secili == "gemma" && it.ad.contains("Ollama"))
+        }
+        val fallback = tum.filter { it !in oncelikli }
+        return oncelikli + fallback
+    }
 
     suspend fun sor(
         kullaniciSorusu: String,

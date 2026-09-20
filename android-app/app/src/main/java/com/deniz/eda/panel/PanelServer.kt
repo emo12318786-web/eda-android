@@ -126,9 +126,45 @@ class PanelServer(
     private fun serveAction(uri: String): Response {
         val action = uri.removePrefix("/api/")
         val sonuc = when {
-            action == "wake" -> "EDA aktif"
-            action == "sleep" -> "EDA uyku moduna alındı"
-            action == "stop" -> "EDA durduruldu"
+            action == "wake" -> {
+                val intent = android.content.Intent(context, com.deniz.eda.service.EdaForegroundService::class.java).apply {
+                    this.action = "ACTION_AKTIF"
+                }
+                try {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        context.startForegroundService(intent)
+                    } else {
+                        context.startService(intent)
+                    }
+                } catch (e: Exception) { Log.e(TAG, "wake: ${e.message}") }
+                "EDA aktif"
+            }
+            action == "sleep" -> {
+                val intent = android.content.Intent(context, com.deniz.eda.service.EdaForegroundService::class.java).apply {
+                    this.action = "ACTION_UYKU"
+                }
+                try {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        context.startForegroundService(intent)
+                    } else {
+                        context.startService(intent)
+                    }
+                } catch (e: Exception) { Log.e(TAG, "sleep: ${e.message}") }
+                "EDA uyku moduna alındı"
+            }
+            action == "stop" -> {
+                val intent = android.content.Intent(context, com.deniz.eda.service.EdaForegroundService::class.java).apply {
+                    this.action = "ACTION_STOP"
+                }
+                try {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        context.startForegroundService(intent)
+                    } else {
+                        context.startService(intent)
+                    }
+                } catch (e: Exception) { Log.e(TAG, "stop: ${e.message}") }
+                "EDA durduruldu"
+            }
             action.startsWith("gemma-") -> {
                 // "gemma-gemma3-1b" → "gemma3:1b"
                 val model = action.removePrefix("gemma-").replaceFirst("-", ":")
