@@ -288,6 +288,15 @@ object CommandProcessor {
                 KomutSonucu.Cevap(ExtraCommands.telefonuKilitle(context, hitap))
             
             // ۵. Telefonu bul
+            // ═══ Veda mesajı (خداحافظی) ═══
+            v(metin, "kapat kendini", "kapan", "kapat şimdi", "veda") -> {
+                KomutSonucu.Cevap(ExtraCommands.vedaMesaji())
+            }
+            
+            // ═══ ۶. Telefonu bul durdur ═══
+            v(metin, "sus", "sessiz ol", "sustur", "kes sesini") -> {
+                KomutSonucu.Cevap(ExtraCommands.telefonuBulDurdur(hitap))
+            }
             v(metin, "telefonu bul", "telefonumu bul", "telefonu ara", "telefonumu ara") ->
                 KomutSonucu.Cevap(ExtraCommands.telefonuBul(context, hitap))
             
@@ -355,6 +364,16 @@ object CommandProcessor {
             // ═══ Beyin değiştir (سوال) ═══
             v(metin, "beyin değiştir", "beyin degistir", "hangi beyin", "beyin seç") -> {
                 KomutSonucu.Cevap("Şu an Beyin 2 (Gemma 2.2) aktif $hitap.")
+            }
+            
+            // ═══ ۱۰. Sistem test ═══
+            v(metin, "sistem test", "sistem testi", "test sistem", "sistemi test et", "her şeyi kontrol et") -> {
+                // Yeni bir coroutine içinde çağır
+                kotlinx.coroutines.runBlocking {
+                    KomutSonucu.Cevap(ExtraCommands.sistemTest(context, hitap) {
+                        AiRouter.sor("merhaba")
+                    })
+                }
             }
             
             else -> {

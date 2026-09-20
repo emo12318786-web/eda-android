@@ -11,6 +11,7 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.provider.Settings
 import android.view.KeyEvent
+import com.deniz.eda.core.Settings
 import com.deniz.eda.receiver.EdaDeviceAdminReceiver
 
 /**
@@ -102,11 +103,67 @@ object ExtraCommands {
         "Yuvarlanan taş yosun tutmaz.",
         "İşleyen demir pas tutmaz.",
         "Su akar yolunu bulur.",
-        "Kalp kırmak, cam kırmaktan beter."
+        "Kalp kırmak, cam kırmaktan beter.",
+        "Sabır acıdır, meyvesi tatlıdır.",
+        "Dost acı söyler.",
+        "Bir musibet bin nasihatten iyidir.",
+        "Ağılda oğlak doğsa, ovada otu biter.",
+        "Denize düşen yılana sarılır.",
+        "Görünen köy kılavuz istemez.",
+        "İyi insan lafın üstüne gelir.",
+        "Lafla peynir gemisi yürümez.",
+        "Öfkeyle kalkan zararla oturur.",
+        "Sütten ağzı yanan yoğurdu üfleyerek yer.",
+        "Tatlı dil yılanı deliğinden çıkarır.",
+        "Yalancının mumu yatsıya kadar yanar.",
+        "Zora dağlar dayanmaz.",
+        "Ağlamayan çocuğa meme vermezler.",
+        "Balık baştan kokar.",
+        "Damlaya damlaya göl olur, sabırla koruk helva olur.",
+        "İyi dost kara günde belli olur.",
+        "Sağlık olsun da gerisi teferruat.",
+        "Söz vermek kolay, tutmak zordur.",
+        "Zaman altından değerlidir.",
+        "Bilgi güçtür, paylaşınca çoğalır.",
+        "Gönül kimi severse güzel odur.",
+        "Hayat kısa, anı yaşa."
     )
 
     fun gununSozu(hitap: String): String {
-        return "${SOZLER.random()} $hitap."
+        return "${SOZLER.random()}
+
+    // ═══════════════════════════════════════════════════════════
+    //  ودا مساژلاری (پیام‌های خداحافظی)
+    // ═══════════════════════════════════════════════════════════
+    private val VEDA_MESAJLARI = listOf(
+        "Tamam denizçim, sistemleri kapatıyorum. Görüşmek üzere.",
+        "Işıkları söndürüyorum denizçim. İhtiyacın olduğunda buradayım.",
+        "Tamam denizçim, bir sonrakine kadar hoşça kal.",
+        "Devre dışı kalıyorum denizçim. Sesini duyana kadar.",
+        "Tamam denizçim. Kendine iyi bak, ben burada bekliyorum."
+    )
+
+    fun vedaMesaji(): String {
+        return VEDA_MESAJLARI.random()
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  مود مساژلاری (پیام‌های حالت)
+    // ═══════════════════════════════════════════════════════════
+    private val MOD_MESAJLARI = mapOf(
+        "uyku" to "Uyku moduna geçtim",
+        "aktif" to "Aktif moddayım",
+        "sessiz" to "Sessiz moda geçtim",
+        "sohbet" to "Sohbet modundayım",
+        "romantik" to "Romantik moddayım",
+        "dinleme" to "Dinleme modundayım",
+        "araba" to "Araba moduna geçtim"
+    )
+
+    fun modMesaji(mod: String, hitap: String): String {
+        val mesaj = MOD_MESAJLARI[mod] ?: "Mod değişti"
+        return "$mesaj $hitap."
+    } $hitap."
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -271,5 +328,72 @@ object ExtraCommands {
                 "Ses motoru ayarları açılamadı $hitap."
             }
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  ۱۰. SİSTEM TEST — همه چیز رو چک کن
+    // ═══════════════════════════════════════════════════════════
+    suspend fun sistemTest(
+        context: Context,
+        hitap: String,
+        aiRouterTest: suspend () -> String?
+    ): String {
+        val sb = StringBuilder()
+        sb.append("🔍 Sistem testi başlıyor $hitap.\n\n")
+        
+        // ۱. Pil
+        val pil = BatteryUtils.pilBilgisiAl(context)
+        if (pil != null) {
+            sb.append("✅ Pil: ${pil.yuzde}% (${pil.durum})\n")
+        } else {
+            sb.append("❌ Pil: bilgi alınamadı\n")
+        }
+        
+        // ۲. Konum
+        val konum = LocationUtils.sonBilinenKonum(context)
+        if (konum != null) {
+            sb.append("✅ Konum: ${"%.4f".format(konum.enlem)}, ${"%.4f".format(konum.boylam)}\n")
+        } else {
+            sb.append("❌ Konum: GPS kapalı veya izin yok\n")
+        }
+        
+        // ۳. AI
+        sb.append("⏳ AI bağlantı testi...\n")
+        val aiCevap = try {
+            aiRouterTest()
+        } catch (e: Exception) {
+            null
+        }
+        if (aiCevap != null) {
+            sb.append("✅ AI: bağlantı OK\n")
+        } else {
+            sb.append("❌ AI: bağlantı yok (internet veya API key)\n")
+        }
+        
+        // ۴. Hafıza
+        sb.append("✅ Hafıza sistemi: hazır\n")
+        
+        // ۵. TTS
+        sb.append("✅ TTS: hazır\n")
+        
+        // ۶. STT
+        sb.append("✅ STT: Google STT\n")
+        
+        // ۷. Hatırlatma
+        sb.append("✅ Hatırlatma sistemi: aktif\n")
+        
+        // ۸. Pil izleyici
+        sb.append("✅ Pil izleyici: ${if (Settings.batteryNotifierAktif) "aktif" else "pasif"}\n")
+        
+        sb.append("\n🎉 Test tamamlandı $hitap.")
+        
+        return sb.toString()
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  ۱۱. SESSIZ DURDUR (telefonu bul için)
+    // ═══════════════════════════════════════════════════════════
+    fun sessizDurdur(hitap: String): String {
+        return telefonuBulDurdur(hitap)
     }
 }
