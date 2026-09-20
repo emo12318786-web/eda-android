@@ -60,6 +60,11 @@ class PanelServer(
         }
     }
 
+    private fun sonModAl(): String {
+        return if (Settings.sonMod != "KAPALI") Settings.sonMod 
+               else com.deniz.eda.service.EdaForegroundService.sonMod
+    }
+    
     private fun serveStatus(): Response {
         return try {
             val pil = BatteryUtils.pilBilgisiAl(context)
@@ -72,13 +77,13 @@ class PanelServer(
             }
 
             val json = JSONObject().apply {
-                put("durum", com.deniz.eda.service.EdaForegroundService.sonMod)
+                put("durum", sonModAl())
                 put("pil", JSONObject().apply {
                     put("yuzde", pil?.yuzde ?: 0)
                     put("durum", pil?.durum ?: "?")
                     put("sarj", pil?.sarjOluyorMu ?: false)
                 })
-                put("mod", if (Settings.arabaModuAktif) "ARABA" else com.deniz.eda.service.EdaForegroundService.sonMod)
+                put("mod", if (Settings.arabaModuAktif) "ARABA" else sonModAl())
                 put("guvenlik", Settings.guvenlikModuAktif)
                 put("ogrenme", Settings.ogrenmeAktif)
                 put("kullanici", Settings.kullaniciAdi)

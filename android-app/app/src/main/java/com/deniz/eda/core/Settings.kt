@@ -125,6 +125,11 @@ object Settings {
         get() = getBool("pil_kritik_uyari_aktif", true)
         set(v) = setBool("pil_kritik_uyari_aktif", v)
 
+    // ═══ Son mod (PanelServer için kalıcı) ═══
+    var sonMod: String
+        get() = getString("son_mod", "KAPALI")
+        set(v) = setString("son_mod", v)
+
     var gemmaModel: String
         get() = getString("gemma_model", "gemma2:2b")
         set(v) = setString("gemma_model", v)
