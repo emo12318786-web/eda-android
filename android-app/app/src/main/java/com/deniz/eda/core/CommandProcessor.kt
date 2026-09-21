@@ -183,17 +183,13 @@ object CommandProcessor {
 
             // Konum - aktif konum ister
             v(metin, "konum", "neredeyim", "nerdeyim") -> {
-                val metinCevap = kotlinx.coroutines.runBlocking {
-                    LocationUtils.konumMetni(context, hitap)
-                }
+                val metinCevap = LocationUtils.konumMetni(context, hitap)
                 KomutSonucu.Cevap(metinCevap)
             }
 
             // Eve mesafe
             v(metin, "mesafe", "eve", "evden") -> {
-                val konum = kotlinx.coroutines.runBlocking {
-                    LocationUtils.enDogruKonum(context)
-                }
+                val konum = LocationUtils.enDogruKonum(context)
                 if (konum == null) {
                     KomutSonucu.Cevap("Konum alınamadı $hitap. GPS açık mı?")
                 } else {
@@ -214,9 +210,7 @@ object CommandProcessor {
             }
 
             v(metin, "hava", "hawa") -> {
-                val konum = kotlinx.coroutines.runBlocking {
-                    LocationUtils.enDogruKonum(context)
-                }
+                val konum = LocationUtils.enDogruKonum(context)
                 if (konum == null) {
                     KomutSonucu.Cevap("Hava durumu için konumunu almam lazım $hitap. GPS açık mı?")
                 } else {

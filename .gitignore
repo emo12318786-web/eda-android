@@ -1,32 +1,23 @@
-# EDA personal/runtime data
-settings.json
-memory.json
-diary.json
-car.json
-öğrenme.json
-hatırlatmalar.json
-
-# Runtime audio / generated files
-eda_record.m4a
-eda_record.wav
-eda_beep.wav
-whisper_cikti.txt
-foto_*.jpg
-
-# Local Whisper/Vosk models and local AI data
-vosk-model-tr/
-whisper.cpp/
-*.bin
-
 # Python
 __pycache__/
-*.py[cod]
-.venv/
-venv/
-env/
+*.pyc
+*.pyo
 
-# Termux / editor / OS
-.termux/
-.idea/
-.vscode/
-.DS_Store
+# Kotlin/Android
+build/
+.gradle/
+*.apk
+*.aab
+local.properties
+
+# Backups
+*.backup
+*.backup-*
+*.backup_*
+
+# Logs
+*.log
+
+# Termux junk
+KOTLIN_EOF
+PYEOF
