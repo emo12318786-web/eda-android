@@ -50,8 +50,17 @@ class BatteryNotifierService : Service() {
         Settings.init(this)
         kanallariOlustur()
         
-        // Foreground Service شروع کن
-        startForeground(NOTIF_ID, bildirimOlustur("Pil izleniyor...", false))
+        // Foreground Service شروع کن (type اجباری تو اندروید ۱۴+)
+        val bildirim = bildirimOlustur("Pil izleniyor...", false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIF_ID,
+                bildirim,
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            )
+        } else {
+            startForeground(NOTIF_ID, bildirim)
+        }
         
         // حلقه‌ی اصلی
         bildirimDongusu()

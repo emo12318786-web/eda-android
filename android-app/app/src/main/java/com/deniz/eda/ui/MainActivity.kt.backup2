@@ -54,22 +54,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Settings.init(this)
-        
-        // ═══ POST_NOTIFICATIONS مستقیم (اندروید ۱۳+) ═══
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (androidx.core.content.ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
-            ) {
-                androidx.core.app.ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                    2001
-                )
-                android.util.Log.d("MainActivity", "درخواست POST_NOTIFICATIONS")
-            }
-        }
 
         durumText = findViewById(R.id.durumText)
         kullaniciAdiInput = findViewById(R.id.kullaniciAdiInput)
