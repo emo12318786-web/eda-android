@@ -37,36 +37,67 @@ object LocationUtils {
      * En doğru konumu al (requestSingleUpdate ile).
      * GPS her zaman açık olduğu için 5 saniye içinde yanıt gelir.
      */
-    suspend fun enDogruKonum(context: Context, timeoutMs: Long = 5000): Location? {
+    suspend fun enDogruKonum(context: Context, timeoutMs: Long = 15000): Location? {
         if (!izinVarMi(context)) return null
 
         val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
-        // ═══ ۱. GPS_PROVIDER با requestSingleUpdate ═══
-        val gps = trySingleUpdate(context, lm, LocationManager.GPS_PROVIDER, timeoutMs)
-        if (gps != null) return gps
+        // ═══ ۱. اول cache رو چک کن (سریع‌ترین راه) ═══
+        val cacheMax = System.currentTimeMillis() - (5 * 60 * 1000L)
+        var enIyiCache: Location? = null
+        for (p in listOf(
+            LocationManager.GPS_PROVIDER,
+            LocationManager.NETWORK_PROVIDER,
+            LocationManager.PASSIVE_PROVIDER
+        )) {
+            try {
+                val k = lm.getLastKnownLocation(p) ?: continue
+                if (k.time >= cacheMax) {
+                    if (enIyiCache == null || k.accuracy < enIyiCache!!.accuracy) {
+                        enIyiCache = k
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        if (enIyiCache != null) {
+            android.util.Log.d("LocationUtils",
+                "✅ cache hit (${enIyiCache.provider}, age=${(System.currentTimeMillis() - enIyiCache.time) / 1000}s)")
+            return enIyiCache
+        }
 
-        // ═══ ۲. NETWORK_PROVIDER با requestSingleUpdate ═══
-        val network = trySingleUpdate(context, lm, LocationManager.NETWORK_PROVIDER, timeoutMs)
-        if (network != null) return network
+        // ═══ ۲. GPS_PROVIDER ═══
+        val gps = tryLocationUpdates(lm, LocationManager.GPS_PROVIDER, timeoutMs / 2)
+        if (gps != null) {
+            android.util.Log.d("LocationUtils", "✅ GPS fix")
+            return gps
+        }
 
-        // ═══ ۳. getLastKnownLocation (cache) ═══
+        // ═══ ۳. NETWORK_PROVIDER ═══
+        val net = tryLocationUpdates(lm, LocationManager.NETWORK_PROVIDER, timeoutMs / 2)
+        if (net != null) {
+            android.util.Log.d("LocationUtils", "✅ NETWORK fix")
+            return net
+        }
+
+        // ═══ ۴. آخرین راه — قدیمی‌ترین cache ═══
         var enIyi: Location? = null
         for (p in listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)) {
             try {
                 val k = lm.getLastKnownLocation(p) ?: continue
-                if (enIyi == null || k.accuracy < enIyi!!.accuracy) enIyi = k
+                if (enIyi == null || k.time > enIyi!!.time) enIyi = k
             } catch (_: Exception) {}
         }
-
+        if (enIyi != null) {
+            android.util.Log.w("LocationUtils",
+                "⚠️ fallback cache قدیمی (age=${(System.currentTimeMillis() - enIyi.time) / 1000}s)")
+        }
         return enIyi
     }
 
     /**
-     * requestSingleUpdate با timeout.
+     * requestLocationUpdates با timeout — پایدارتر از requestSingleUpdate
      */
-    private suspend fun trySingleUpdate(
-        context: Context,
+    private suspend fun tryLocationUpdates(
         lm: LocationManager,
         provider: String,
         timeoutMs: Long
@@ -76,33 +107,48 @@ object LocationUtils {
         } catch (_: Exception) { return@withContext null }
 
         suspendCancellableCoroutine { cont ->
+            val handler = android.os.Handler(android.os.Looper.getMainLooper())
+            var bitti = false
+
             val listener = object : android.location.LocationListener {
                 override fun onLocationChanged(location: Location) {
+                    if (bitti) return
+                    bitti = true
                     try { lm.removeUpdates(this) } catch (_: Exception) {}
+                    handler.removeCallbacksAndMessages(null)
                     if (cont.isActive) cont.resume(location)
                 }
-                override fun onProviderDisabled(p: String) {
-                    try { lm.removeUpdates(this) } catch (_: Exception) {}
-                    if (cont.isActive) cont.resume(null)
-                }
+                override fun onProviderDisabled(p: String) {}
                 override fun onProviderEnabled(p: String) {}
                 override fun onStatusChanged(p: String?, status: Int, extras: android.os.Bundle?) {}
             }
 
             try {
                 @Suppress("MissingPermission")
-                lm.requestSingleUpdate(provider, listener, null)
+                lm.requestLocationUpdates(
+                    provider, 0L, 0f, listener,
+                    android.os.Looper.getMainLooper()
+                )
 
-                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                handler.postDelayed({
+                    if (bitti) return@postDelayed
+                    bitti = true
                     try { lm.removeUpdates(listener) } catch (_: Exception) {}
                     if (cont.isActive) cont.resume(null)
                 }, timeoutMs)
-
             } catch (e: Exception) {
-                if (cont.isActive) cont.resume(null)
+                if (!bitti) {
+                    bitti = true
+                    if (cont.isActive) cont.resume(null)
+                }
             }
         }
     }
+
+    /**
+     * requestSingleUpdate با timeout.
+     */
+    
 
     /**
      * Adres bilgisi (şehir, mahalle, cadde) al.
