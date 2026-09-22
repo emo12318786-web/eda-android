@@ -12,6 +12,7 @@ import com.deniz.eda.R
 import com.deniz.eda.core.Settings
 import com.deniz.eda.panel.PanelActivity
 import com.deniz.eda.service.EdaForegroundService
+import com.deniz.eda.service.BatteryNotifierService
 import com.deniz.eda.ui.dashboard.DashboardActivity
 
 class MainActivity : AppCompatActivity() {
@@ -35,6 +36,21 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Settings.init(this)
+
+        // ═══ Auto-start BatteryNotifier (مستقل از EDA) ═══
+        if (Settings.batteryNotifierAktif) {
+            try {
+                val pilIntent = Intent(this, BatteryNotifierService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(pilIntent)
+                } else {
+                    startService(pilIntent)
+                }
+                android.util.Log.d("MainActivity", "✅ BatteryNotifier auto-start")
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "❌ Battery start error: ${e.message}")
+            }
+        }
 
         // POST_NOTIFICATIONS (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
