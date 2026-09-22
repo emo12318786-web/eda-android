@@ -133,7 +133,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun servisiBaslat() {
-        val intent = Intent(this, EdaForegroundService::class.java)
+        // ═══ اول سرویس قبلی رو متوقف کن (اگه هست) ═══
+        try {
+            val stopIntent = Intent(this, EdaForegroundService::class.java)
+            stopService(stopIntent)
+            android.util.Log.d("MainActivity", "سرویس قبلی متوقف شد")
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "stop error: ${e.message}")
+        }
+
+        // ═══ بعد سرویس جدید رو start کن ═══
+        val intent = Intent(this, EdaForegroundService::class.java).apply {
+            action = "ACTION_BASLAT"
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(intent)
         } else {

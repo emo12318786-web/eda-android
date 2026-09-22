@@ -136,10 +136,14 @@ class PanelServer(
                     this.action = "ACTION_AKTIF"
                 }
                 try {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                        context.startForegroundService(intent)
-                    } else {
+                    // ═══ اول startService (چون سرویس ممکنه already running باشه) ═══
+                    try {
                         context.startService(intent)
+                    } catch (e: Exception) {
+                        // اگه startService خطا داد، startForegroundService
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            context.startForegroundService(intent)
+                        }
                     }
                 } catch (e: Exception) { Log.e(TAG, "wake: ${e.message}") }
                 "EDA aktif"
@@ -149,10 +153,12 @@ class PanelServer(
                     this.action = "ACTION_UYKU"
                 }
                 try {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                        context.startForegroundService(intent)
-                    } else {
+                    try {
                         context.startService(intent)
+                    } catch (e: Exception) {
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            context.startForegroundService(intent)
+                        }
                     }
                 } catch (e: Exception) { Log.e(TAG, "sleep: ${e.message}") }
                 "EDA uyku moduna alındı"
@@ -162,10 +168,12 @@ class PanelServer(
                     this.action = "ACTION_STOP"
                 }
                 try {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                        context.startForegroundService(intent)
-                    } else {
+                    try {
                         context.startService(intent)
+                    } catch (e: Exception) {
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            context.startForegroundService(intent)
+                        }
                     }
                 } catch (e: Exception) { Log.e(TAG, "stop: ${e.message}") }
                 "EDA durduruldu"
