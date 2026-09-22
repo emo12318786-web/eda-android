@@ -50,13 +50,7 @@ object Settings {
         get() = getString("groq_api_key", "")
         set(v) = setString("groq_api_key", v)
 
-    var deepseekApiKey: String
-        get() = getString("deepseek_api_key", "")
-        set(v) = setString("deepseek_api_key", v)
 
-    var openrouterApiKey: String
-        get() = getString("openrouter_api_key", "")
-        set(v) = setString("openrouter_api_key", v)
 
     var ogrenmeAktif: Boolean
         get() = getBool("ogrenme_aktif", true)

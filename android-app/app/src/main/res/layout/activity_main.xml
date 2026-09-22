@@ -85,23 +85,9 @@
         android:textColor="#FFFFFF"
         android:inputType="textPassword" />
 
-    <EditText
-        android:id="@+id/deepseekInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="DeepSeek API anahtarı"
-        android:textColorHint="#8A7FB0"
-        android:textColor="#FFFFFF"
-        android:inputType="textPassword" />
+    
 
-    <EditText
-        android:id="@+id/openrouterInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="OpenRouter API anahtarı"
-        android:textColorHint="#8A7FB0"
-        android:textColor="#FFFFFF"
-        android:inputType="textPassword" />
+    
 
     <EditText
         android:id="@+id/navasanInput"

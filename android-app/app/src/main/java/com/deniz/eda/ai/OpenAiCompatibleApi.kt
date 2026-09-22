@@ -8,7 +8,7 @@ import retrofit2.http.Header
 import retrofit2.http.POST
 
 /**
- * Groq, DeepSeek ve OpenRouter'in ucu ayni sekle sahip (OpenAI-uyumlu
+ * Groq'un ucu OpenAI-uyumlu
  * /chat/completions). Tek bir Retrofit arayuzu uc saglayici icin de yeniden
  * kullanilir, sadece base URL ve API anahtari degisir.
  */

@@ -361,8 +361,6 @@ object ExtraCommands {
         val aiKeys = mutableListOf<String>()
         aiKeys.add("Pollinations")  // ← همیشه رایگان
         if (Settings.groqApiKey.isNotBlank()) aiKeys.add("Groq")
-        if (Settings.openrouterApiKey.isNotBlank()) aiKeys.add("OpenRouter")
-        if (Settings.deepseekApiKey.isNotBlank()) aiKeys.add("DeepSeek")
         sb.append("✅ AI: ${aiKeys.joinToString(" → ")}\n")
 
         // ۴. Hafıza

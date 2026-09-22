@@ -23,8 +23,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var durumText: TextView
     private lateinit var kullaniciAdiInput: EditText
     private lateinit var groqInput: EditText
-    private lateinit var deepseekInput: EditText
-    private lateinit var openrouterInput: EditText
     private lateinit var navasanInput: EditText
 
     private val izinIstegi = registerForActivityResult(
@@ -74,15 +72,11 @@ class MainActivity : AppCompatActivity() {
         durumText = findViewById(R.id.durumText)
         kullaniciAdiInput = findViewById(R.id.kullaniciAdiInput)
         groqInput = findViewById(R.id.groqInput)
-        deepseekInput = findViewById(R.id.deepseekInput)
-        openrouterInput = findViewById(R.id.openrouterInput)
         navasanInput = findViewById(R.id.navasanInput)
 
         // Mevcut ayarlari alanlara doldur.
         kullaniciAdiInput.setText(Settings.kullaniciAdi)
         groqInput.setText(Settings.groqApiKey)
-        deepseekInput.setText(Settings.deepseekApiKey)
-        openrouterInput.setText(Settings.openrouterApiKey)
         navasanInput.setText(Settings.navasanApiKey)
 
         findViewById<android.widget.Button>(R.id.baslatButon).setOnClickListener { izinleriKontrolEt() }
@@ -175,8 +169,6 @@ class MainActivity : AppCompatActivity() {
     private fun ayarlariKaydet() {
         Settings.kullaniciAdi = kullaniciAdiInput.text.toString().ifBlank { Settings.KULLANICI_ADI_VARSAYILAN }
         Settings.groqApiKey = groqInput.text.toString().trim()
-        Settings.deepseekApiKey = deepseekInput.text.toString().trim()
-        Settings.openrouterApiKey = openrouterInput.text.toString().trim()
         Settings.navasanApiKey = navasanInput.text.toString().trim()
         Toast.makeText(this, "Ayarlar kaydedildi", Toast.LENGTH_SHORT).show()
     }

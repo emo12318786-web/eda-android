@@ -114,8 +114,6 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         sirali.add("Pollinations")
         sirali.add("Ollama-Gemma2")
         if (Settings.groqApiKey.isNotBlank()) sirali.add("Groq")
-        if (Settings.openrouterApiKey.isNotBlank()) sirali.add("OpenRouter")
-        if (Settings.deepseekApiKey.isNotBlank()) sirali.add("DeepSeek")
         return sirali.joinToString(" → ")
     }
 }

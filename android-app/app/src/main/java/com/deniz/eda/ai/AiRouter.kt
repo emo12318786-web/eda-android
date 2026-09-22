@@ -14,7 +14,7 @@ object AiRouter {
         val needsKey: Boolean = true
     )
 
-    private const val OLLAMA_URL = "http://192.168.1.2:11434/v1/"
+    private const val OLLAMA_URL = "http://localhost:11434/v1/"
 
     private fun saglayicilar(): List<Saglayici> {
         val tum = listOf(
@@ -22,7 +22,7 @@ object AiRouter {
         Saglayici(
             ad = "Pollinations",
             baseUrl = "https://text.pollinations.ai/openai/",
-            model = "openai",
+            model = "openai-fast",  // GPT-OSS 20B (OVH)
             apiKey = { "no-key" },
             needsKey = false
         ),
@@ -38,24 +38,8 @@ object AiRouter {
         Saglayici(
             ad = "Groq",
             baseUrl = "https://api.groq.com/openai/v1/",
-            model = "gemma2-9b-it",
+            model = "llama-3.3-70b-versatile",  // Groq جدید
             apiKey = { Settings.groqApiKey },
-            needsKey = true
-        ),
-        // ═══ ۴. OpenRouter ═══
-        Saglayici(
-            ad = "OpenRouter",
-            baseUrl = "https://openrouter.ai/api/v1/",
-            model = "google/gemma-2-9b-it:free",
-            apiKey = { Settings.openrouterApiKey },
-            needsKey = true
-        ),
-        // ═══ ۵. DeepSeek ═══
-        Saglayici(
-            ad = "DeepSeek",
-            baseUrl = "https://api.deepseek.com/",
-            model = "deepseek-chat",
-            apiKey = { Settings.deepseekApiKey },
             needsKey = true
         )
         )
@@ -64,8 +48,6 @@ object AiRouter {
         val oncelikli = tum.filter { it.ad.lowercase().contains(secili) || 
             (secili == "pollinations" && it.ad == "Pollinations") ||
             (secili == "groq" && it.ad == "Groq") ||
-            (secili == "deepseek" && it.ad == "DeepSeek") ||
-            (secili == "openrouter" && it.ad == "OpenRouter") ||
             (secili == "gemma" && it.ad.contains("Ollama"))
         }
         val fallback = tum.filter { it !in oncelikli }

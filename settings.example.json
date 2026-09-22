@@ -17,8 +17,6 @@
   "öğrenme_aktif": true,
   "ai_aktif": true,
   "ai_provider": "openrouter",
-  "openrouter_api_key": "",
-  "openrouter_model": "openrouter/free",
   "groq_api_key": "",
   "groq_model": "openai/gpt-oss-20b",
   "deepseek_api_key": "",

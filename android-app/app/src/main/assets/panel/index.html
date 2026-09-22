@@ -379,9 +379,7 @@ body {
         <div class="section-title">🔌 Yapay Zeka (Online)</div>
         <div class="chips">
             <button class="chip" data-ai="pollinations" onclick="setAI('pollinations')">Pollinations<br><small>رایگان</small></button>
-            <button class="chip" data-ai="openrouter" onclick="setAI('openrouter')">OpenRouter</button>
             <button class="chip" data-ai="groq" onclick="setAI('groq')">Groq</button>
-            <button class="chip" data-ai="deepseek" onclick="setAI('deepseek')">DeepSeek</button>
             <button class="chip" data-ai="gemma" onclick="setAI('gemma')">Gemma<br><small>آفلاین</small></button>
         </div>
     </div>
@@ -465,9 +463,7 @@ function updateUI(data) {
     const aiName = data.ai || 'pollinations';
     const aiNames = {
         'pollinations': 'Pollinations',
-        'openrouter': 'OpenRouter',
         'groq': 'Groq',
-        'deepseek': 'DeepSeek',
         'gemma': 'Gemma (Offline)'
     };
     document.getElementById('s-ai').textContent = aiNames[aiName] || aiName;
