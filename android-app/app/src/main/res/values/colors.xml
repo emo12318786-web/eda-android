@@ -33,4 +33,8 @@
     <!-- Accent -->
     <color name="accent_cyan">#06B6D4</color>
     <color name="accent_yellow">#FBBF24</color>
+    <!-- ═══ Launcher Colors (اجباری برای آیکن اپ) ═══ -->
+    <color name="ic_launcher_background">#6C5CE7</color>
+    <color name="ic_launcher_foreground">#FFFFFF</color>
+
 </resources>
