@@ -1,3 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#4B32B3</color>
+    <!-- پس‌زمینه -->
+    <color name="bg_dark">#0A0618</color>
+    <color name="bg_card">#1A1433</color>
+    <color name="bg_card_light">#252048</color>
+
+    <!-- گرادیانت آبی-بنفش -->
+    <color name="purple_start">#6C5CE7</color>
+    <color name="purple_end">#A29BFE</color>
+
+    <!-- گرادیانت بنفش-صورتی -->
+    <color name="pink_start">#8B5CF6</color>
+    <color name="pink_end">#EC4899</color>
+
+    <!-- گرادیانت سبز -->
+    <color name="green_start">#10B981</color>
+    <color name="green_end">#34D399</color>
+
+    <!-- گرادیانت قرمز -->
+    <color name="red_start">#EF4444</color>
+    <color name="red_end">#F87171</color>
+
+    <!-- گرادیانت آبی -->
+    <color name="blue_start">#3B82F6</color>
+    <color name="blue_end">#60A5FA</color>
+
+    <!-- متن -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B8AEDB</color>
+    <color name="text_muted">#6B6B8A</color>
+
+    <!-- Accent -->
+    <color name="accent_cyan">#06B6D4</color>
+    <color name="accent_yellow">#FBBF24</color>
 </resources>

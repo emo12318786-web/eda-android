@@ -1,236 +1,182 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0F0B1E">
+    android:background="@drawable/bg_gradient"
+    android:fillViewport="true">
 
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="24dp">
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="E · D · A"
-        android:textSize="32sp"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF"
-        android:layout_marginBottom="8dp" />
-
-    <TextView
-        android:id="@+id/durumText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="💤 Servis çalışmıyor"
-        android:textSize="16sp"
-        android:textColor="#B8AEDB"
-        android:layout_marginBottom="24dp" />
-
-    <Button
-        android:id="@+id/baslatButon"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Eda'yı Başlat" />
-
-    <Button
-        android:id="@+id/durdurButon"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Eda'yı Durdur" />
-
-    <!-- ═══ داشبورد + کنترل پنل ═══ -->
-    <Button
-        android:id="@+id/dashboardButon"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="📊 Dashboard"
-        android:backgroundTint="#9C27B0" />
-
-    <Button
-        android:id="@+id/panelButon"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="🎛 Kontrol Paneli"
-        android:backgroundTint="#00BCD4" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Ayarlar"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF"
-        android:layout_marginTop="32dp"
-        android:layout_marginBottom="8dp" />
-
-    <EditText
-        android:id="@+id/kullaniciAdiInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Hitap (örn. denizçim)"
-        android:textColorHint="#8A7FB0"
-        android:textColor="#FFFFFF" />
-
-    <EditText
-        android:id="@+id/groqInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Groq API anahtarı"
-        android:textColorHint="#8A7FB0"
-        android:textColor="#FFFFFF"
-        android:inputType="textPassword" />
-
-    
-
-    
-
-    <EditText
-        android:id="@+id/navasanInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Navasan (dolar/altın) API anahtarı"
-        android:textColorHint="#8A7FB0"
-        android:textColor="#FFFFFF"
-        android:inputType="textPassword" />
-
-    <!-- ═══ تنظیمات پیشرفته ═══ -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="تنظیمات پیشرفته"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF"
-        android:layout_marginTop="32dp"
-        android:layout_marginBottom="8dp" />
-
-    <!-- Battery Notifier (bağımsız servis) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp">
+        android:orientation="vertical"
+        android:padding="20dp">
 
-        <TextView
-            android:layout_width="0dp"
+        <!-- ═══════════════════════════════════════ -->
+        <!-- ═══ HEADER ═══ -->
+        <!-- ═══════════════════════════════════════ -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="🔋 Pil izleyici (EDA kapalıyken de çalışır)"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="24dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="E · D · A"
+                    android:textSize="36sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:letterSpacing="0.05"
+                    android:fontFamily="sans-serif-black" />
+
+                <TextView
+                    android:id="@+id/durumText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="💤 Servis çalışmıyor"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/ayarlarButon"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:text="⚙"
+                android:textSize="26sp"
+                android:textColor="@color/text_primary"
+                android:gravity="center"
+                android:background="@drawable/circle_bg" />
+        </LinearLayout>
+
+        <!-- ═══════════════════════════════════════ -->
+        <!-- ═══ STATUS CARD ═══ -->
+        <!-- ═══════════════════════════════════════ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="20dp"
+            android:elevation="4dp"
+            android:layout_marginBottom="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <View
+                    android:id="@+id/durumIndicator"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:background="@drawable/circle_bg" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Durum"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginStart="12dp" />
+
+                <TextView
+                    android:id="@+id/durumDeger"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Kapalı"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/red_start" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ═══════════════════════════════════════ -->
+        <!-- ═══ MAIN BUTTONS ═══ -->
+        <!-- ═══════════════════════════════════════ -->
+
+        <!-- BAŞLAT -->
+        <Button
+            android:id="@+id/baslatButon"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:text="▶  EDA'YI BAŞLAT"
+            android:textSize="16sp"
+            android:textStyle="bold"
             android:textColor="#FFFFFF"
-            android:textSize="13sp" />
+            android:background="@drawable/btn_purple"
+            android:elevation="6dp"
+            android:layout_marginBottom="12dp"
+            android:stateListAnimator="@null" />
 
-        <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/batteryNotifierSwitch"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
-
-    <!-- Derin Uyku -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="🛌 Derin Uyku (میکروفون خاموش، مصرف ~1%)"
+        <!-- DURDUR -->
+        <Button
+            android:id="@+id/durdurButon"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:text="⏹  EDA'YI DURDUR"
+            android:textSize="16sp"
+            android:textStyle="bold"
             android:textColor="#FFFFFF"
-            android:textSize="13sp" />
+            android:background="@drawable/btn_pink"
+            android:elevation="6dp"
+            android:layout_marginBottom="20dp"
+            android:stateListAnimator="@null" />
 
-        <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/derinUykuSwitch"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
+        <!-- ═══════════════════════════════════════ -->
+        <!-- ═══ DASHBOARD + PANEL ═══ -->
+        <!-- ═══════════════════════════════════════ -->
 
-    <!-- Pil Bildirim Araligi -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp">
+        <!-- DASHBOARD -->
+        <Button
+            android:id="@+id/dashboardButon"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="📊  DASHBOARD"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:background="@drawable/btn_outline"
+            android:layout_marginBottom="12dp"
+            android:stateListAnimator="@null" />
 
+        <!-- KONTROL PANELI -->
+        <Button
+            android:id="@+id/panelButon"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="🎛  KONTROL PANELI"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:background="@drawable/btn_outline"
+            android:layout_marginBottom="20dp"
+            android:stateListAnimator="@null" />
+
+        <!-- ═══════════════════════════════════════ -->
+        <!-- ═══ FOOTER ═══ -->
+        <!-- ═══════════════════════════════════════ -->
         <TextView
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="🔋 Pil bildirim aralığı"
-            android:textColor="#FFFFFF"
-            android:textSize="13sp" />
+            android:text="EDA v27 · Terminal Desteği"
+            android:textSize="11sp"
+            android:textColor="@color/text_muted"
+            android:gravity="center"
+            android:layout_marginTop="16dp" />
 
-        <Spinner
-            android:id="@+id/pilBildirimSpinner"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:minWidth="100dp" />
     </LinearLayout>
-
-    <!-- Pil Bildirim Aktif -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="🔔 Pil bildirimi aktif"
-            android:textColor="#FFFFFF"
-            android:textSize="13sp" />
-
-        <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/pilBildirimSwitch"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
-
-    <!-- Sessiz Mod -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="🔇 Sessiz mod"
-            android:textColor="#FFFFFF"
-            android:textSize="13sp" />
-
-        <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/sessizModSwitch"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
-
-    <Button
-        android:id="@+id/kaydetButon"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="Ayarları Kaydet" />
-
-</LinearLayout>
 </ScrollView>

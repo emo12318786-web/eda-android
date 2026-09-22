@@ -4,14 +4,10 @@ import android.Manifest
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.widget.EditText
 import android.widget.TextView
-import android.widget.Spinner
-import android.widget.ArrayAdapter
-import androidx.appcompat.widget.SwitchCompat
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import com.deniz.eda.R
 import com.deniz.eda.core.Settings
 import com.deniz.eda.panel.PanelActivity
@@ -21,15 +17,12 @@ import com.deniz.eda.ui.dashboard.DashboardActivity
 class MainActivity : AppCompatActivity() {
 
     private lateinit var durumText: TextView
-    private lateinit var kullaniciAdiInput: EditText
-    private lateinit var groqInput: EditText
-    private lateinit var navasanInput: EditText
+    private lateinit var durumDeger: TextView
+    private lateinit var durumIndicator: android.view.View
 
     private val izinIstegi = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { sonuclar ->
-        // Sadece mikrofon izni zorunlu - konum/SMS/bildirim olmadan da servis
-        // baslayabilir, sadece o komutlar calismaz.
         val mikrofonVar = sonuclar[Manifest.permission.RECORD_AUDIO] == true
         if (mikrofonVar) {
             servisiBaslat()
@@ -38,139 +31,75 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        // ═══ وضعیت واقعی رو از Settings بخون ═══
-        durumText.text = when (Settings.sonMod) {
-            "AKTIF" -> "✅ Eda çalışıyor - 'Eda' de ve dinlemeye başlasın"
-            "UYKU" -> "💤 Eda uyku modunda"
-            else -> "💤 Servis durduruldu"
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Settings.init(this)
-        
-        // ═══ POST_NOTIFICATIONS مستقیم (اندروید ۱۳+) ═══
+
+        // POST_NOTIFICATIONS (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (androidx.core.content.ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
+                    this, Manifest.permission.POST_NOTIFICATIONS
                 ) != android.content.pm.PackageManager.PERMISSION_GRANTED
             ) {
                 androidx.core.app.ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                    2001
+                    this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 2001
                 )
-                android.util.Log.d("MainActivity", "درخواست POST_NOTIFICATIONS")
             }
         }
 
         durumText = findViewById(R.id.durumText)
-        kullaniciAdiInput = findViewById(R.id.kullaniciAdiInput)
-        groqInput = findViewById(R.id.groqInput)
-        navasanInput = findViewById(R.id.navasanInput)
+        durumDeger = findViewById(R.id.durumDeger)
+        durumIndicator = findViewById(R.id.durumIndicator)
 
-        // Mevcut ayarlari alanlara doldur.
-        kullaniciAdiInput.setText(Settings.kullaniciAdi)
-        groqInput.setText(Settings.groqApiKey)
-        navasanInput.setText(Settings.navasanApiKey)
-
-        findViewById<android.widget.Button>(R.id.baslatButon).setOnClickListener { izinleriKontrolEt() }
-        findViewById<android.widget.Button>(R.id.durdurButon).setOnClickListener { servisiDurdur() }
-        findViewById<android.widget.Button>(R.id.kaydetButon).setOnClickListener { ayarlariKaydet() }
-
-        // ═══ داشبورد ═══
-        // ═══ تنظیمات پیشرفته ═══
-        val batteryNotifierSwitch = findViewById<SwitchCompat>(R.id.batteryNotifierSwitch)
-        val derinUykuSwitch = findViewById<SwitchCompat>(R.id.derinUykuSwitch)
-        val pilBildirimSwitch = findViewById<SwitchCompat>(R.id.pilBildirimSwitch)
-        val sessizModSwitch = findViewById<SwitchCompat>(R.id.sessizModSwitch)
-        val pilBildirimSpinner = findViewById<Spinner>(R.id.pilBildirimSpinner)
-
-        // مقدار اولیه
-        batteryNotifierSwitch.isChecked = Settings.batteryNotifierAktif
-
-        // ═══ اگه switch از قبل روشنه، سرویس رو start کن ═══
-        if (Settings.batteryNotifierAktif) {
-            val pilIntent = Intent(this, com.deniz.eda.service.BatteryNotifierService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(pilIntent)
-            } else {
-                startService(pilIntent)
-            }
-            android.util.Log.d("MainActivity", "BatteryNotifier auto-start")
-        }
-        derinUykuSwitch.isChecked = Settings.derinUyku
-        pilBildirimSwitch.isChecked = Settings.pilBildirimAktif
-        sessizModSwitch.isChecked = Settings.sessizMod
-
-        // Spinner: 15/30/60/120 dakika
-        val pilSecenekler = listOf("15 dakika", "30 dakika", "60 dakika", "120 dakika")
-        val pilDegerler = listOf(15, 30, 60, 120)
-        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, pilSecenekler)
-        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        pilBildirimSpinner.adapter = spinnerAdapter
-
-        // مقدار فعلی
-        val mevcutIndex = pilDegerler.indexOf(Settings.pilBildirimAraligiDk)
-        if (mevcutIndex >= 0) pilBildirimSpinner.setSelection(mevcutIndex)
-
-        // ═══ لیسنرها ═══
-        batteryNotifierSwitch.setOnCheckedChangeListener { _, checked ->
-            Settings.batteryNotifierAktif = checked
-            val intent = Intent(this, com.deniz.eda.service.BatteryNotifierService::class.java)
-            if (checked) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    startForegroundService(intent)
-                } else {
-                    startService(intent)
-                }
-                Toast.makeText(this, "🔋 Pil izleyici başlatıldı", Toast.LENGTH_SHORT).show()
-            } else {
-                stopService(intent)
-                Toast.makeText(this, "🔋 Pil izleyici durduruldu", Toast.LENGTH_SHORT).show()
-            }
+        // ═══ کلیک‌ها ═══
+        findViewById<android.view.View>(R.id.ayarlarButon).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
 
-        derinUykuSwitch.setOnCheckedChangeListener { _, checked ->
-            Settings.derinUyku = checked
-            Toast.makeText(this, if (checked) "🛌 Derin uyku aktif" else "😴 Uyku bidar", Toast.LENGTH_SHORT).show()
+        findViewById<android.widget.Button>(R.id.baslatButon).setOnClickListener {
+            izinleriKontrolEt()
         }
 
-        pilBildirimSwitch.setOnCheckedChangeListener { _, checked ->
-            Settings.pilBildirimAktif = checked
-        }
-
-        sessizModSwitch.setOnCheckedChangeListener { _, checked ->
-            Settings.sessizMod = checked
-        }
-
-        pilBildirimSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
-                Settings.pilBildirimAraligiDk = pilDegerler[position]
-            }
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        findViewById<android.widget.Button>(R.id.durdurButon).setOnClickListener {
+            servisiDurdur()
         }
 
         findViewById<android.widget.Button>(R.id.dashboardButon).setOnClickListener {
             startActivity(Intent(this, DashboardActivity::class.java))
         }
 
-        // ═══ کنترل پنل ═══
         findViewById<android.widget.Button>(R.id.panelButon).setOnClickListener {
             startActivity(Intent(this, PanelActivity::class.java))
         }
     }
 
-    private fun ayarlariKaydet() {
-        Settings.kullaniciAdi = kullaniciAdiInput.text.toString().ifBlank { Settings.KULLANICI_ADI_VARSAYILAN }
-        Settings.groqApiKey = groqInput.text.toString().trim()
-        Settings.navasanApiKey = navasanInput.text.toString().trim()
-        Toast.makeText(this, "Ayarlar kaydedildi", Toast.LENGTH_SHORT).show()
+    override fun onResume() {
+        super.onResume()
+        durumGuncelle()
+    }
+
+    private fun durumGuncelle() {
+        when (Settings.sonMod) {
+            "AKTIF" -> {
+                durumText.text = "✅ Eda çalışıyor - 'Eda' de ve dinlemeye başlasın"
+                durumDeger.text = "Aktif"
+                durumDeger.setTextColor(0xFF10B981.toInt())
+                durumIndicator.setBackgroundColor(0xFF10B981.toInt())
+            }
+            "UYKU" -> {
+                durumText.text = "💤 Eda uyku modunda"
+                durumDeger.text = "Uyku"
+                durumDeger.setTextColor(0xFF60A5FA.toInt())
+                durumIndicator.setBackgroundColor(0xFF60A5FA.toInt())
+            }
+            else -> {
+                durumText.text = "💤 Servis çalışmıyor"
+                durumDeger.text = "Kapalı"
+                durumDeger.setTextColor(0xFFEF4444.toInt())
+                durumIndicator.setBackgroundColor(0xFFEF4444.toInt())
+            }
+        }
     }
 
     private fun izinleriKontrolEt() {
@@ -194,11 +123,15 @@ class MainActivity : AppCompatActivity() {
         } else {
             startService(intent)
         }
-        durumText.text = "✅ Eda çalışıyor - 'Eda' de ve dinlemeye başlasın"
+        Toast.makeText(this, "✅ Eda başlatıldı", Toast.LENGTH_SHORT).show()
+        durumGuncelle()
     }
 
     private fun servisiDurdur() {
-        stopService(Intent(this, EdaForegroundService::class.java))
-        durumText.text = "💤 Servis durduruldu"
+        val intent = Intent(this, EdaForegroundService::class.java)
+        stopService(intent)
+        Settings.sonMod = "KAPALI"
+        Toast.makeText(this, "⏹ Eda durduruldu", Toast.LENGTH_SHORT).show()
+        durumGuncelle()
     }
 }
