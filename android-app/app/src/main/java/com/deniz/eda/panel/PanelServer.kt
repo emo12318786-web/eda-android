@@ -107,24 +107,27 @@ class PanelServer(
 
     private fun serveLogs(): Response {
         return try {
-            val db = EdaDatabase.get(context)
-            val loglar = runBlocking { runCatching { db.logDao().listele(50) }.getOrDefault(emptyList()) }
-
+            val satirlar = com.deniz.eda.utils.EdaLog.oku(context, sleep = false)
             val arr = JSONArray()
-            for (log in loglar) {
-                arr.put(JSONObject().apply {
-                    put("id", log.id)
-                    put("kullanici", log.kullaniciMetin)
-                    put("eda", log.edaCevap)
-                    put("kaynak", log.kaynak)
-                    put("tarih", SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(log.tarih)))
-                })
+            for (s in satirlar) {
+                arr.put(s)
             }
-
-            newFixedLengthResponse(Response.Status.OK, "application/json; charset=utf-8", arr.toString())
+            val response = JSONObject().apply {
+                put("logs", arr)
+                put("count", arr.length())
+            }
+            newFixedLengthResponse(
+                Response.Status.OK,
+                "application/json; charset=utf-8",
+                response.toString()
+            )
         } catch (e: Exception) {
             Log.e(TAG, "logs hatasi", e)
-            newFixedLengthResponse(Response.Status.INTERNAL_ERROR, MIME_PLAINTEXT, "[]")
+            newFixedLengthResponse(
+                Response.Status.INTERNAL_ERROR,
+                MIME_PLAINTEXT,
+                "{\"logs\":[],\"count\":0}"
+            )
         }
     }
 

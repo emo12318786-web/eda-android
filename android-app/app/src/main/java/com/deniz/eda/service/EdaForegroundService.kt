@@ -69,6 +69,11 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     override fun onCreate() {
         super.onCreate()
         Settings.init(this)
+
+        // ═══ تنظیم sonMod که MainActivity هم ببینه ═══
+        if (Settings.sonMod == "KAPALI") {
+            Settings.sonMod = "AKTIF"
+        }
         NotificationHelper.channelOlustur(this)
         tts = TextToSpeech(this, this)
 
@@ -358,36 +363,17 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         serviceScope.launch {
             val sonuc = CommandProcessor.isle(this@EdaForegroundService, metin)
 
-            // ═══ ثبت لاگ در دیتابیس ═══
+            // ═══ ثبت لاگ در فایل (بدون Room DB) ═══
             try {
                 val cevapMetni = (sonuc as? KomutSonucu.Cevap)?.metin ?: ""
-                val kaynakAd = when (sonuc) {
-                    is KomutSonucu.Cevap -> "komut"
-                    KomutSonucu.UykuyaDon -> "uyku"
-                    KomutSonucu.KapatOnayIste -> "kapat_onay"
-                    KomutSonucu.Kapat -> "kapat"
-                    is KomutSonucu.GuvenlikModuDegisti -> "guvenlik"
-                    else -> "bilinmiyor"
-                }
-                val sure = System.currentTimeMillis() - baslangicZaman
-
-                withContext(Dispatchers.IO) {
-                    try {
-                        val db = com.deniz.eda.data.db.EdaDatabase.get(this@EdaForegroundService)
-                        db.logDao().ekle(
-                            com.deniz.eda.data.db.LogEntity(
-                                kullaniciMetin = metin,
-                                edaCevap = cevapMetni,
-                                kaynak = kaynakAd,
-                                sureMs = sure,
-                                tarih = System.currentTimeMillis()
-                            )
-                        )
-                        android.util.Log.d("EdaSvc", "log kaydedildi: $metin")
-                    } catch (e: Exception) {
-                        android.util.Log.e("EdaSvc", "log ekleme hatasi: ${e.message}")
-                    }
-                }
+                com.deniz.eda.utils.EdaLog.ekle(
+                    context = this@EdaForegroundService,
+                    kullanici = metin,
+                    eda = cevapMetni,
+                    kaynak = "komut",
+                    sleep = false
+                )
+                android.util.Log.d("EdaSvc", "log kaydedildi: $metin")
             } catch (e: Exception) {
                 android.util.Log.e("EdaSvc", "log kaydetme hatasi: ${e.message}")
             }

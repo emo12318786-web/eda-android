@@ -151,8 +151,15 @@ class MainActivity : AppCompatActivity() {
         } else {
             startService(intent)
         }
+        // ═══ تنظیم sonMod قبل از start ═══
+        Settings.sonMod = "AKTIF"
+
         Toast.makeText(this, "✅ Eda başlatıldı", Toast.LENGTH_SHORT).show()
-        durumGuncelle()
+
+        // ═══ صبر کن و دوباره status رو بخون ═══
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            durumGuncelle()
+        }, 500)
     }
 
     private fun servisiDurdur() {
@@ -160,6 +167,8 @@ class MainActivity : AppCompatActivity() {
         stopService(intent)
         Settings.sonMod = "KAPALI"
         Toast.makeText(this, "⏹ Eda durduruldu", Toast.LENGTH_SHORT).show()
-        durumGuncelle()
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            durumGuncelle()
+        }, 500)
     }
 }
