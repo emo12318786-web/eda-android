@@ -68,14 +68,46 @@ class BatteryNotifierService : Service() {
         }
         
         // TTS راه‌اندازی
+        android.util.Log.d(TAG, "🔧 TTS başlatılıyor...")
         tts = TextToSpeech(this) { status ->
+            android.util.Log.d(TAG, "TTS onInit: status=$status")
             if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale("tr", "TR")
+                // اول ترکیه
+                var sonuc = tts?.setLanguage(Locale("tr", "TR"))
+                android.util.Log.d(TAG, "setLanguage(tr_TR) = $sonuc")
+
+                // اگه نشد → default
+                if (sonuc == TextToSpeech.LANG_MISSING_DATA ||
+                    sonuc == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    sonuc = tts?.setLanguage(Locale.getDefault())
+                    android.util.Log.d(TAG, "setLanguage(default) = $sonuc")
+                }
+
+                // اگه بازم نشد → انگلیسی
+                if (sonuc == TextToSpeech.LANG_MISSING_DATA ||
+                    sonuc == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    sonuc = tts?.setLanguage(Locale.ENGLISH)
+                    android.util.Log.d(TAG, "setLanguage(en) = $sonuc")
+                }
+
                 tts?.setSpeechRate(0.95f)
+                tts?.setPitch(1.0f)
+                tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String?) {
+                        android.util.Log.d(TAG, "🔊 TTS شروع: $utteranceId")
+                    }
+                    override fun onDone(utteranceId: String?) {
+                        android.util.Log.d(TAG, "🔊 TTS تمام: $utteranceId")
+                    }
+                    @Deprecated("Deprecated in Java")
+                    override fun onError(utteranceId: String?) {
+                        android.util.Log.e(TAG, "🔊 TTS خطا: $utteranceId")
+                    }
+                })
                 ttsHazir = true
-                android.util.Log.d(TAG, "✅ TTS hazır")
+                android.util.Log.d(TAG, "✅ TTS hazır - dil=${tts?.language}, voice=${tts?.voice}")
             } else {
-                android.util.Log.e(TAG, "❌ TTS başlatılamadı: $status")
+                android.util.Log.e(TAG, "❌ TTS başlatılamadı: status=$status")
             }
         }
 
@@ -101,9 +133,11 @@ class BatteryNotifierService : Service() {
                 try {
                     // pil kontrol
                     val pil = BatteryUtils.pilBilgisiAl(this@BatteryNotifierService)
+                    android.util.Log.d(TAG, "🔋 Pil okundu: yuzde=${pil?.yuzde}, durum=${pil?.durum}")
                     if (pil != null) {
                         val yuzde = pil.yuzde
                         sonPilSeviyesi = yuzde
+                        android.util.Log.d(TAG, "🔋 KritikEsik=${Settings.pilKritikEsik}, DusukEsik=${Settings.pilDusukEsik}, UyariSeviyesi=$sonUyariSeviyesi")
                         
                         // ═══ ۱. هشدار pil بحرانی (< 15%) ═══
                         if (Settings.pilKritikUyariAktif && yuzde < Settings.pilKritikEsik) {
@@ -132,12 +166,14 @@ class BatteryNotifierService : Service() {
      * صدا زدن با TTS
      */
     private fun sesliSoyle(metin: String) {
+        android.util.Log.d(TAG, "🔊 sesliSoyle çağrıldı: '$metin' (ttsHazir=$ttsHazir, tts=${tts != null})")
         if (!ttsHazir) {
-            android.util.Log.w(TAG, "⚠️ TTS hazır değil")
+            android.util.Log.w(TAG, "⚠️ TTS hazır değil — ses çalınamadı")
             return
         }
-        tts?.speak(metin, TextToSpeech.QUEUE_FLUSH, null, "pil_${System.currentTimeMillis()}")
-        android.util.Log.d(TAG, "🔊 TTS: $metin")
+        val id = "pil_${System.currentTimeMillis()}"
+        val sonuc = tts?.speak(metin, TextToSpeech.QUEUE_FLUSH, null, id)
+        android.util.Log.d(TAG, "🔊 tts.speak() sonuc=$sonuc, utteranceId=$id")
     }
 
     /**
