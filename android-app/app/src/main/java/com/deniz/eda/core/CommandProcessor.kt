@@ -229,8 +229,8 @@ object CommandProcessor {
                 }
             }
 
-            v(metin, "dolar", "altın", "altin") ->
-                KomutSonucu.Cevap(CurrencyUtils.fiyatlariGetir(hitap))
+            v(metin, "dolar", "altın", "altin", "دلار", "طلا", "سکه", "sekke", "euro", "یورو", "تتر", "usdt", "bitcoin", "بیت", "ethereum", "اتریوم", "fiyat", "قیمت") ->
+                KomutSonucu.Cevap(CurrencyUtils.fiyatlariGetir(metin, hitap))
 
             v(metin, "uyku", "uygu", "uyu") -> KomutSonucu.UykuyaDon
 
