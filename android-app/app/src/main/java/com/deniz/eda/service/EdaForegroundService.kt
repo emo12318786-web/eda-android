@@ -17,6 +17,8 @@ import com.deniz.eda.core.ReminderChecker
 import com.deniz.eda.core.SecurityMode
 import com.deniz.eda.core.Settings
 import com.deniz.eda.core.WakeWordDetector
+import com.deniz.eda.data.db.EdaDatabase
+import com.deniz.eda.data.db.LogEntity
 import com.deniz.eda.utils.BatteryUtils
 import kotlinx.coroutines.*
 import java.util.Locale
@@ -352,8 +354,46 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         // CommandProcessor.isle askida kalabilir (AI/hava durumu/konum agdan
         // cekiyor) - bu yuzden coroutine icinde cagiriyoruz, dinleme donguyu
         // bloklamiyor.
+        val baslangicZaman = System.currentTimeMillis()
         serviceScope.launch {
-            when (val sonuc = CommandProcessor.isle(this@EdaForegroundService, metin)) {
+            val sonuc = CommandProcessor.isle(this@EdaForegroundService, metin)
+
+            // ═══ ثبت لاگ در دیتابیس ═══
+            try {
+                val cevapMetni = (sonuc as? KomutSonucu.Cevap)?.metin ?: ""
+                val kaynakAd = when (sonuc) {
+                    is KomutSonucu.Cevap -> "komut"
+                    KomutSonucu.UykuyaDon -> "uyku"
+                    KomutSonucu.KapatOnayIste -> "kapat_onay"
+                    KomutSonucu.Kapat -> "kapat"
+                    is KomutSonucu.GuvenlikModuDegisti -> "guvenlik"
+                    else -> "bilinmiyor"
+                }
+                val sure = System.currentTimeMillis() - baslangicZaman
+
+                withContext(Dispatchers.IO) {
+                    try {
+                        val db = com.deniz.eda.data.db.EdaDatabase.get(this@EdaForegroundService)
+                        db.logDao().ekle(
+                            com.deniz.eda.data.db.LogEntity(
+                                kullaniciMetin = metin,
+                                edaCevap = cevapMetni,
+                                kaynak = kaynakAd,
+                                sureMs = sure,
+                                tarih = System.currentTimeMillis()
+                            )
+                        )
+                        android.util.Log.d("EdaSvc", "log kaydedildi: $metin")
+                    } catch (e: Exception) {
+                        android.util.Log.e("EdaSvc", "log ekleme hatasi: ${e.message}")
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("EdaSvc", "log kaydetme hatasi: ${e.message}")
+            }
+
+            // ═══ پردازش نتیجه ═══
+            when (sonuc) {
                 is KomutSonucu.Cevap -> konus(sonuc.metin) { baslatDinleme() }
                 KomutSonucu.UykuyaDon -> {
                     mod = Mod.UYKU
