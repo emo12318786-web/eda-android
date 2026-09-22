@@ -9,6 +9,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.speech.tts.TextToSpeech
+import java.util.Locale
 import androidx.core.app.NotificationCompat
 import com.deniz.eda.R
 import com.deniz.eda.core.Settings
@@ -44,6 +46,9 @@ class BatteryNotifierService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var notifierJob: Job? = null
     private var sonPilSeviyesi: Int = -1
+    private var sonUyariSeviyesi: Int = -1   // آخرین سطحی که هشدار دادیم (برای ۵٪)
+    private var tts: TextToSpeech? = null
+    private var ttsHazir = false
 
     override fun onCreate() {
         super.onCreate()
@@ -62,6 +67,18 @@ class BatteryNotifierService : Service() {
             startForeground(NOTIF_ID, bildirim)
         }
         
+        // TTS راه‌اندازی
+        tts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts?.language = Locale("tr", "TR")
+                tts?.setSpeechRate(0.95f)
+                ttsHazir = true
+                android.util.Log.d(TAG, "✅ TTS hazır")
+            } else {
+                android.util.Log.e(TAG, "❌ TTS başlatılamadı: $status")
+            }
+        }
+
         // حلقه‌ی اصلی
         bildirimDongusu()
         
@@ -111,6 +128,35 @@ class BatteryNotifierService : Service() {
         }
     }
 
+    /**
+     * صدا زدن با TTS
+     */
+    private fun sesliSoyle(metin: String) {
+        if (!ttsHazir) {
+            android.util.Log.w(TAG, "⚠️ TTS hazır değil")
+            return
+        }
+        tts?.speak(metin, TextToSpeech.QUEUE_FLUSH, null, "pil_${System.currentTimeMillis()}")
+        android.util.Log.d(TAG, "🔊 TTS: $metin")
+    }
+
+    /**
+     * چک کن آیا باید هشدار ۵٪ بده یا نه
+     */
+    private fun hoshdarSeviyesi(yuzde: Int): Boolean {
+        // فقط تو بازه ۰-۳۰ کار می‌کنه
+        if (yuzde > 30) return false
+        if (yuzde < 5) return false
+
+        // اگه ۵٪ یه سطح جدید (مثلاً ۲۵، ۲۰، ۱۵) هست، هشدار بده
+        val seviye = (yuzde / 5) * 5  // 25، 20، 15، 10، 5
+        if (seviye != sonUyariSeviyesi) {
+            sonUyariSeviyesi = seviye
+            return true
+        }
+        return false
+    }
+
     private fun normalBildirimGonder(yuzde: Int, durum: String) {
         val baslik = "🔋 Pil: $yuzde%"
         val mesaj = "Durum: $durum"
@@ -130,6 +176,13 @@ class BatteryNotifierService : Service() {
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(WARN_NOTIF_ID, notif)
         
+        // ═══ صوتی هشدار (هر ۵٪ از ۳۰ به پایین) ═══
+        if (yuzde >= 20) {
+            sesliSoyle("Dikkat! Pil yüzde $yuzde. Şarj etmen iyi olur")
+        } else {
+            sesliSoyle("Pil yüzde $yuzde. Şarj etmen iyi olur")
+        }
+        
         android.util.Log.d(TAG, "Uyarı: pil düşük — $yuzde%")
     }
 
@@ -140,6 +193,9 @@ class BatteryNotifierService : Service() {
         val notif = bildirimOlustur(mesaj, true, baslik, WARN_NOTIF_ID)
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(WARN_NOTIF_ID, notif)
+        
+        // ═══ صوتی بحرانی ═══
+        sesliSoyle("Acil! Pil yüzde $yuzde. Hemen şarja tak!")
         
         android.util.Log.d(TAG, "Kritik uyarı: $yuzde%")
     }
@@ -199,6 +255,9 @@ class BatteryNotifierService : Service() {
     }
 
     override fun onDestroy() {
+        tts?.stop()
+        tts?.shutdown()
+        tts = null
         notifierJob?.cancel()
         serviceScope.cancel()
         android.util.Log.d(TAG, "BatteryNotifierService durduruldu")
