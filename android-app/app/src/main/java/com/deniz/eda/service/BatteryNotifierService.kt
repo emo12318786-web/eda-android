@@ -68,48 +68,7 @@ class BatteryNotifierService : Service() {
         }
         
         // TTS راه‌اندازی
-        android.util.Log.d(TAG, "🔧 TTS başlatılıyor...")
-        tts = TextToSpeech(this) { status ->
-            android.util.Log.d(TAG, "TTS onInit: status=$status")
-            if (status == TextToSpeech.SUCCESS) {
-                // اول ترکیه
-                var sonuc = tts?.setLanguage(Locale("tr", "TR"))
-                android.util.Log.d(TAG, "setLanguage(tr_TR) = $sonuc")
-
-                // اگه نشد → default
-                if (sonuc == TextToSpeech.LANG_MISSING_DATA ||
-                    sonuc == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    sonuc = tts?.setLanguage(Locale.getDefault())
-                    android.util.Log.d(TAG, "setLanguage(default) = $sonuc")
-                }
-
-                // اگه بازم نشد → انگلیسی
-                if (sonuc == TextToSpeech.LANG_MISSING_DATA ||
-                    sonuc == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    sonuc = tts?.setLanguage(Locale.ENGLISH)
-                    android.util.Log.d(TAG, "setLanguage(en) = $sonuc")
-                }
-
-                tts?.setSpeechRate(0.95f)
-                tts?.setPitch(1.0f)
-                tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
-                    override fun onStart(utteranceId: String?) {
-                        android.util.Log.d(TAG, "🔊 TTS شروع: $utteranceId")
-                    }
-                    override fun onDone(utteranceId: String?) {
-                        android.util.Log.d(TAG, "🔊 TTS تمام: $utteranceId")
-                    }
-                    @Deprecated("Deprecated in Java")
-                    override fun onError(utteranceId: String?) {
-                        android.util.Log.e(TAG, "🔊 TTS خطا: $utteranceId")
-                    }
-                })
-                ttsHazir = true
-                android.util.Log.d(TAG, "✅ TTS hazır - dil=${tts?.language}, voice=${tts?.voice}")
-            } else {
-                android.util.Log.e(TAG, "❌ TTS başlatılamadı: status=$status")
-            }
-        }
+        ttsOlustur()
 
         // حلقه‌ی اصلی
         bildirimDongusu()
@@ -167,13 +126,103 @@ class BatteryNotifierService : Service() {
      */
     private fun sesliSoyle(metin: String) {
         android.util.Log.d(TAG, "🔊 sesliSoyle çağrıldı: '$metin' (ttsHazir=$ttsHazir, tts=${tts != null})")
-        if (!ttsHazir) {
-            android.util.Log.w(TAG, "⚠️ TTS hazır değil — ses çalınamadı")
+
+        // ═══ اگه TTS نیست یا خراب شده، از نو بساز ═══
+        if (tts == null || !ttsHazir) {
+            android.util.Log.w(TAG, "⚠️ TTS خراب — داره از نو ساخته می‌شه")
+            ttsOlustur()
+            // صبر کن تا آماده شه (1 ثانیه)
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                sesliSoyle(metin)
+            }, 1500)
             return
         }
-        val id = "pil_${System.currentTimeMillis()}"
-        val sonuc = tts?.speak(metin, TextToSpeech.QUEUE_FLUSH, null, id)
-        android.util.Log.d(TAG, "🔊 tts.speak() sonuc=$sonuc, utteranceId=$id")
+
+        // ═══ speak رو تو Main thread صدا بزن ═══
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            try {
+                // ═══ AudioFocus بگیر ═══
+                try {
+                    val am = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        val attrs = android.media.AudioAttributes.Builder()
+                            .setUsage(android.media.AudioAttributes.USAGE_ASSISTANT)
+                            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build()
+                        val focusReq = android.media.AudioFocusRequest.Builder(
+                            android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
+                        ).setAudioAttributes(attrs).build()
+                        am.requestAudioFocus(focusReq)
+                    }
+                } catch (e: Exception) {}
+
+                // ═══ speak ═══
+                tts?.setAudioAttributes(
+                    android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_ASSISTANT)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build()
+                )
+                val id = "pil_${System.currentTimeMillis()}"
+                val sonuc = tts?.speak(metin, TextToSpeech.QUEUE_FLUSH, null, id)
+                android.util.Log.d(TAG, "🔊 tts.speak() sonuc=$sonuc, utteranceId=$id")
+            } catch (e: Exception) {
+                android.util.Log.e(TAG, "❌ speak error: ${e.message}")
+                ttsHazir = false
+            }
+        }
+    }
+
+    /**
+     * TTS رو از نو می‌سازه
+     */
+    private fun ttsOlustur() {
+        try {
+            tts?.stop()
+            tts?.shutdown()
+            tts = null
+            ttsHazir = false
+
+            tts = TextToSpeech(this) { status ->
+                android.util.Log.d(TAG, "TTS onInit: status=$status")
+                if (status == TextToSpeech.SUCCESS) {
+                    var sonuc = tts?.setLanguage(Locale("tr", "TR"))
+                    android.util.Log.d(TAG, "setLanguage(tr_TR) = $sonuc")
+
+                    if (sonuc == TextToSpeech.LANG_MISSING_DATA ||
+                        sonuc == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        sonuc = tts?.setLanguage(Locale.getDefault())
+                        android.util.Log.d(TAG, "setLanguage(default) = $sonuc")
+                    }
+                    if (sonuc == TextToSpeech.LANG_MISSING_DATA ||
+                        sonuc == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        sonuc = tts?.setLanguage(Locale.ENGLISH)
+                    }
+
+                    tts?.setSpeechRate(0.95f)
+                    tts?.setPitch(1.0f)
+                    tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+                        override fun onStart(utteranceId: String?) {
+                            android.util.Log.d(TAG, "🔊 TTS شروع: $utteranceId")
+                        }
+                        override fun onDone(utteranceId: String?) {
+                            android.util.Log.d(TAG, "🔊 TTS تمام: $utteranceId")
+                        }
+                        @Deprecated("Deprecated in Java")
+                        override fun onError(utteranceId: String?) {
+                            android.util.Log.e(TAG, "🔊 TTS خطا: $utteranceId")
+                        }
+                    })
+                    ttsHazir = true
+                    android.util.Log.d(TAG, "✅ TTS آماده - dil=${tts?.language}")
+                } else {
+                    android.util.Log.e(TAG, "❌ TTS خطا: status=$status")
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "ttsOlustur error: ${e.message}")
+            ttsHazir = false
+        }
     }
 
     /**
