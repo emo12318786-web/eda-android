@@ -137,23 +137,8 @@
             android:stateListAnimator="@null" />
 
         <!-- ═══════════════════════════════════════ -->
-        <!-- ═══ DASHBOARD + PANEL ═══ -->
         <!-- ═══════════════════════════════════════ -->
-
-        <!-- DASHBOARD -->
-        <Button
-            android:id="@+id/dashboardButon"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="📊  DASHBOARD"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_primary"
-            android:background="@drawable/btn_outline"
-            android:layout_marginBottom="12dp"
-            android:stateListAnimator="@null" />
-
-        <!-- KONTROL PANELI -->
+<!-- KONTROL PANELI -->
         <Button
             android:id="@+id/panelButon"
             android:layout_width="match_parent"

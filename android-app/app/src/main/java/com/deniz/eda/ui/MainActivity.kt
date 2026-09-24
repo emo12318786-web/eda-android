@@ -12,8 +12,6 @@ import com.deniz.eda.R
 import com.deniz.eda.core.Settings
 import com.deniz.eda.panel.PanelActivity
 import com.deniz.eda.service.EdaForegroundService
-import com.deniz.eda.service.BatteryNotifierService
-import com.deniz.eda.ui.dashboard.DashboardActivity
 
 class MainActivity : AppCompatActivity() {
 
@@ -37,21 +35,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         Settings.init(this)
 
-        // ═══ Auto-start BatteryNotifier (مستقل از EDA) ═══
-        if (Settings.batteryNotifierAktif) {
-            try {
-                val pilIntent = Intent(this, BatteryNotifierService::class.java)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    startForegroundService(pilIntent)
-                } else {
-                    startService(pilIntent)
-                }
-                android.util.Log.d("MainActivity", "✅ BatteryNotifier auto-start")
-            } catch (e: Exception) {
-                android.util.Log.e("MainActivity", "❌ Battery start error: ${e.message}")
-            }
-        }
-
         // POST_NOTIFICATIONS (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (androidx.core.content.ContextCompat.checkSelfPermission(
@@ -68,21 +51,37 @@ class MainActivity : AppCompatActivity() {
         durumDeger = findViewById(R.id.durumDeger)
         durumIndicator = findViewById(R.id.durumIndicator)
 
+        // ═══ چک کن از دکمه Asistan باز شده؟ ═══
+        val isAssist = intent?.action == Intent.ACTION_ASSIST ||
+                       intent?.action == "android.intent.action.VOICE_COMMAND"
+        if (isAssist) {
+            android.util.Log.d("MainActivity", "🎤 از دکمه Asistan باز شد")
+            Toast.makeText(this, "🎤 Eda aktif oluyor...", Toast.LENGTH_SHORT).show()
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                servisiBaslat()
+            }, 500)
+        }
+
         // ═══ کلیک‌ها ═══
         findViewById<android.view.View>(R.id.ayarlarButon).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
         findViewById<android.widget.Button>(R.id.baslatButon).setOnClickListener {
-            izinleriKontrolEt()
+            // اگه permission داده شده، مستقیم start کن
+            val mikrofonVar = androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.RECORD_AUDIO
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+            if (mikrofonVar) {
+                servisiBaslat()
+            } else {
+                izinleriKontrolEt()
+            }
         }
 
         findViewById<android.widget.Button>(R.id.durdurButon).setOnClickListener {
             servisiDurdur()
-        }
-
-        findViewById<android.widget.Button>(R.id.dashboardButon).setOnClickListener {
-            startActivity(Intent(this, DashboardActivity::class.java))
         }
 
         findViewById<android.widget.Button>(R.id.panelButon).setOnClickListener {
@@ -133,16 +132,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun servisiBaslat() {
-        // ═══ اول سرویس قبلی رو متوقف کن (اگه هست) ═══
+        // اول سرویس قبلی رو متوقف کن
         try {
-            val stopIntent = Intent(this, EdaForegroundService::class.java)
-            stopService(stopIntent)
-            android.util.Log.d("MainActivity", "سرویس قبلی متوقف شد")
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "stop error: ${e.message}")
-        }
+            stopService(Intent(this, EdaForegroundService::class.java))
+        } catch (e: Exception) {}
 
-        // ═══ بعد سرویس جدید رو start کن ═══
+        // بعد سرویس جدید
         val intent = Intent(this, EdaForegroundService::class.java).apply {
             action = "ACTION_BASLAT"
         }
@@ -151,22 +146,20 @@ class MainActivity : AppCompatActivity() {
         } else {
             startService(intent)
         }
-        // ═══ تنظیم sonMod قبل از start ═══
-        Settings.sonMod = "AKTIF"
 
+        Settings.sonMod = "AKTIF"
         Toast.makeText(this, "✅ Eda başlatıldı", Toast.LENGTH_SHORT).show()
 
-        // ═══ صبر کن و دوباره status رو بخون ═══
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
             durumGuncelle()
         }, 500)
     }
 
     private fun servisiDurdur() {
-        val intent = Intent(this, EdaForegroundService::class.java)
-        stopService(intent)
+        stopService(Intent(this, EdaForegroundService::class.java))
         Settings.sonMod = "KAPALI"
         Toast.makeText(this, "⏹ Eda durduruldu", Toast.LENGTH_SHORT).show()
+
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
             durumGuncelle()
         }, 500)

@@ -23,7 +23,6 @@ class BootReceiver : BroadcastReceiver() {
         ContextCompat.startForegroundService(context, servisIntent)
         
         // ═══ Battery Notifier (bağımsız pil servisi) ═══
-        val pilIntent = Intent(context, com.deniz.eda.service.BatteryNotifierService::class.java)
         ContextCompat.startForegroundService(context, pilIntent)
     }
 }

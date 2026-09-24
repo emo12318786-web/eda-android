@@ -198,15 +198,46 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         if (speechRecognizer != null) baslatDinleme()
     }
 
-    // --- PIL BILDIRIMI (her N dakikada bir, mod ne olursa olsun) ---
+    // --- PIL BILDIRIMI (هر N دقیقه، فقط اگه mod == AKTIF یا UYKU) ---
+    private var sonPilUyariSeviyesi: Int = -1
+
     private fun pilBildirimBaslat() {
         pilJob?.cancel()
         pilJob = serviceScope.launch {
             while (isActive) {
                 delay(Settings.pilBildirimAraligiDk.toLong() * 60_000L)
+
+                // ═══ اگه KAPALI بود → هیچی نگه ═══
+                if (Settings.sonMod == "KAPALI") {
+                    android.util.Log.d("EdaService", "Pil bildirimi skip — KAPALI")
+                    continue
+                }
+
                 val bilgi = BatteryUtils.pilBilgisiAl(this@EdaForegroundService)
                 if (bilgi != null) {
-                    konus("Pil yüzde ${bilgi.yuzde} ${Settings.kullaniciAdi}.")
+                    val yuzde = bilgi.yuzde
+
+                    // ═══ هشدار بحرانی (< 15%) ═══
+                    if (Settings.pilKritikUyariAktif && yuzde < Settings.pilKritikEsik) {
+                        val seviye = (yuzde / 5) * 5
+                        if (seviye != sonPilUyariSeviyesi) {
+                            sonPilUyariSeviyesi = seviye
+                            konus("Acil! Pil yüzde $yuzde. Hemen şarja tak!")
+                            continue
+                        }
+                    }
+                    // ═══ هشدار کم (۱۵-۳۰٪) هر ۵٪ ═══
+                    else if (Settings.pilDusukUyariAktif && yuzde < Settings.pilDusukEsik && yuzde >= Settings.pilKritikEsik) {
+                        val seviye = (yuzde / 5) * 5
+                        if (seviye != sonPilUyariSeviyesi) {
+                            sonPilUyariSeviyesi = seviye
+                            konus("Dikkat! Pil yüzde $yuzde. Şarj etmen iyi olur")
+                            continue
+                        }
+                    }
+
+                    // ═══ عادی (بالای ۳۰٪) ═══
+                    konus("Pil yüzde $yuzde ${Settings.kullaniciAdi}.")
                 }
             }
         }
@@ -237,7 +268,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         if (speechRecognizer == null) return // cihazda konusma tanima yok
         
         // ═══ خواب عمیق: تو حالت خواب عمیق، میکروفون روشن نمی‌شه ═══
-        if (mod == Mod.UYKU && Settings.derinUyku) {
+        if (mod == Mod.UYKU) {
             android.util.Log.d("EdaService", "خواب عمیق — dinleme başlatılmadı")
             bildirimGuncelle("💤 Derin uyku — Widget ile uyandır")
             return
