@@ -23,6 +23,5 @@ class BootReceiver : BroadcastReceiver() {
         ContextCompat.startForegroundService(context, servisIntent)
         
         // ═══ Battery Notifier (bağımsız pil servisi) ═══
-        ContextCompat.startForegroundService(context, pilIntent)
     }
 }
