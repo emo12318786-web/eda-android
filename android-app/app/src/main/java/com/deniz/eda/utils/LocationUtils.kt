@@ -153,15 +153,61 @@ object LocationUtils {
     /**
      * Adres bilgisi (şehir, mahalle, cadde) al.
      */
+    /**
+     * Adres bilgisi — اول Google Geocoder، اگه نشد Nominatim
+     */
     private suspend fun adresBilgisi(context: Context, lat: Double, lon: Double): Address? =
         withContext(Dispatchers.IO) {
+            // ═══ ۱. Google Geocoder ═══
             try {
                 val geocoder = Geocoder(context, Locale("tr", "TR"))
                 @Suppress("DEPRECATION")
-                geocoder.getFromLocation(lat, lon, 1)?.firstOrNull()
+                val sonuc = geocoder.getFromLocation(lat, lon, 1)?.firstOrNull()
+                if (sonuc != null) {
+                    android.util.Log.d("LocationUtils", "✅ Geocoder Google")
+                    return@withContext sonuc
+                }
             } catch (e: Exception) {
-                null
+                android.util.Log.w("LocationUtils", "Geocoder Google hatasi: ${e.message}")
             }
+
+            // ═══ ۲. Nominatim (OpenStreetMap) — Iran'da calisir ═══
+            try {
+                val url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lon&accept-language=tr&zoom=18"
+                val client = okhttp3.OkHttpClient.Builder()
+                    .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                    .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                    .build()
+                val istek = okhttp3.Request.Builder()
+                    .url(url)
+                    .header("User-Agent", "EdaApp/1.0")
+                    .build()
+                client.newCall(istek).execute().use { yanit ->
+                    if (!yanit.isSuccessful) return@withContext null
+                    val govde = yanit.body?.string() ?: return@withContext null
+                    val json = org.json.JSONObject(govde)
+                    val addr = json.optJSONObject("address") ?: return@withContext null
+
+                    // ساخت Address مصنوعی
+                    val a = Address(Locale("tr", "TR"))
+                    a.latitude = lat
+                    a.longitude = lon
+                    addr.optString("city").takeIf { it.isNotBlank() }?.let { a.locality = it }
+                    addr.optString("town").takeIf { it.isNotBlank() }?.let { a.locality = it }
+                    addr.optString("state").takeIf { it.isNotBlank() }?.let { if (a.locality == null) a.locality = it }
+                    addr.optString("suburb").takeIf { it.isNotBlank() }?.let { a.subLocality = it }
+                    addr.optString("neighbourhood").takeIf { it.isNotBlank() }?.let { if (a.subLocality == null) a.subLocality = it }
+                    addr.optString("road").takeIf { it.isNotBlank() }?.let { a.thoroughfare = it }
+                    a.setAddressLine(0, json.optString("display_name", ""))
+
+                    android.util.Log.d("LocationUtils", "✅ Nominatim: ${a.locality} / ${a.subLocality}")
+                    return@withContext a
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("LocationUtils", "Nominatim hatasi: ${e.message}")
+            }
+
+            null
         }
 
     /**
