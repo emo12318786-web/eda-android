@@ -115,6 +115,13 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_info" />
         </receiver>
+
+        <!-- STT Test Activity (geçici, test için) -->
+        <activity
+            android:name=".test.SttTestActivity"
+            android:exported="true"
+            android:label="STT Test" />
+
     </application>
 
 </manifest>
