@@ -122,6 +122,13 @@
             android:exported="true"
             android:label="STT Test" />
 
+
+        <!-- SER Test Activity (geçici) -->
+        <activity
+            android:name=".test.SerTestActivity"
+            android:exported="true"
+            android:label="SER Test" />
+
     </application>
 
 </manifest>
