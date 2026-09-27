@@ -225,8 +225,11 @@ object LocationUtils {
         adres.subLocality?.let { if (it.isNotBlank()) parcalar.add(it) }
         adres.thoroughfare?.let { if (it.isNotBlank()) parcalar.add(it) }
 
-        return if (parcalar.isNotEmpty()) {
-            "Şu an ${parcalar.joinToString(", ")} bölgesindesin $hitap."
+        // ═══ تبدیل حروف فارسی به لاتین (برای TTS) ═══
+        val parcalarLatin = parcalar.map { PersianToLatin.convert(it) }
+
+        return if (parcalarLatin.isNotEmpty()) {
+            "Şu an ${parcalarLatin.joinToString(", ")} bölgesindesin $hitap."
         } else {
             val adresSatiri = adres.getAddressLine(0)
             if (!adresSatiri.isNullOrBlank()) {
