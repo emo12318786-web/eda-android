@@ -168,12 +168,14 @@ object CommandProcessor {
                 }
             }
 
+            // ═══ Uyku Mode (قبل از Health — چون fuzzy match) ═══
+            (v(metin, "uyku") && v(metin, "modu", "mod", "moduna")) ||
+            v(metin, "uygu") ||
+            v(metin, "uykuya geç", "uyku moduna geç") -> KomutSonucu.UykuyaDon
+
             // ─── خواب (فقط اطلاعات خواب) ───
             // نکته: کلمه "uyku" تنها، نمی‌تونه اینجا باشه چون تعارض با "uyku modu" داره
-            (
-                v(metin, "uykum", "uyudum", "uyku süresi", "kaç saat uyudum", "dün gece") ||
-                (v(metin, "uyku") && !v(metin, "modu", "mod"))
-            ) -> {
+            v(metin, "uykum", "uyudum", "uyku süresi", "kaç saat uyudum", "dün gece uyudum") -> {
                 val hm = healthManager
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
@@ -330,7 +332,6 @@ object CommandProcessor {
             v(metin, "dolar", "altın", "altin", "دلار", "طلا", "سکه", "sekke", "euro", "یورو", "تتر", "usdt", "bitcoin", "بیت", "ethereum", "اتریوم", "fiyat", "قیمت") ->
                 KomutSonucu.Cevap(CurrencyUtils.fiyatlariGetir(metin, hitap))
 
-            v(metin, "uyku", "uygu", "uyu") -> KomutSonucu.UykuyaDon
 
             v(metin, "kapat", "kapa", "kapt") -> KomutSonucu.KapatOnayIste
 
