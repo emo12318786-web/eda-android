@@ -8,11 +8,19 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.deniz.eda.health.HealthConnectManager
 import kotlinx.coroutines.*
+import java.util.Calendar
 
 /**
- * سرویس پس‌زمینه برای پایش علائم حیاتی
- * هر ۳۰ دقیقه ضربان قلب و خواب رو چک می‌کنه
- * اگه مشکل جدی بود، به Eda اطلاع می‌ده
+ * سرویس پس‌زمینه "دکتر خودکار"
+ * 
+ * کارها:
+ * ۱. چک ضربان قلب هر ۱۵ دقیقه
+ * ۲. هشدار خودکار ضربان غیرعادی (خطرناک)
+ * ۳. گزارش صبحگاهی (۷-۱۰ صبح)
+ * ۴. یادآوری شب (۲۲ شب)
+ * ۵. سؤال‌های روزانه (صبح، ظهر، عصر)
+ * ۶. گزارش هفتگی (شنبه‌ها)
+ * ۷. حتی تو حالت خواب کار می‌کنه
  */
 class HealthMonitorService : Service() {
 
@@ -20,21 +28,40 @@ class HealthMonitorService : Service() {
         private const val TAG = "EDA-HealthMonitor"
         private const val NOTIF_ID = 1001
         private const val CHANNEL_ID = "eda_health_channel"
-        private const val CHECK_INTERVAL_MS = 30 * 60 * 1000L // 30 دقیقه
+        
+        // چک هر ۱۵ دقیقه
+        private const val CHECK_INTERVAL_MS = 15 * 60 * 1000L
+        
+        // محدوده‌های خطرناک ضربان
+        private const val HR_DANGER_HIGH = 140
+        private const val HR_DANGER_LOW = 40
+        private const val HR_WARNING_HIGH = 120
+        private const val HR_WARNING_LOW = 50
     }
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private lateinit var healthManager: HealthConnectManager
+    
+    // وضعیت ردیابی (برای اینکه هر چیز یک بار باشه)
+    private var lastMorningReport: Int = -1        // روز سال
+    private var lastNightReminder: Int = -1        // روز سال
+    private var lastWeeklyReport: Int = -1         // هفته سال
+    private var lastQuestionAsk: Int = -1          // ساعت
+    
+    // آخرین ضربان برای تشخیص الگو
+    private var lastHR: Int? = null
+    private var highHRCount: Int = 0
+    private var lowHRCount: Int = 0
 
     override fun onCreate() {
         super.onCreate()
         healthManager = HealthConnectManager(this)
         createNotificationChannel()
-        android.util.Log.i(TAG, "HealthMonitorService oluşturuldu")
+        android.util.Log.i(TAG, "🩺 HealthMonitorService oluşturuldu")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val notification = buildNotification("Sağlık verileri izleniyor...")
+        val notification = buildNotification("🩺 Sağlık izleniyor...")
         startForeground(NOTIF_ID, notification)
 
         serviceScope.launch {
@@ -51,32 +78,196 @@ class HealthMonitorService : Service() {
         return START_STICKY
     }
 
+    // ══════════════════════════════════════════════════════
+    //  منطق اصلی "دکتر خودکار"
+    // ══════════════════════════════════════════════════════
     private suspend fun monitorHealth() {
-        val hr = healthManager.getLatestHeartRate(30)
-        val sleep = healthManager.getLastNightSleepHours()
+        val calendar = Calendar.getInstance()
+        val saat = calendar.get(Calendar.HOUR_OF_DAY)
+        val gun = calendar.get(Calendar.DAY_OF_YEAR)
+        val hafta = calendar.get(Calendar.WEEK_OF_YEAR)
 
-        android.util.Log.d(TAG, "HR: $hr, Sleep: $sleep")
+        // ۱. چک ضربان قلب (همیشه)
+        val hr = healthManager.getLatestHeartRate(20)
+        checkHeartRate(hr)
 
-        // ═══ هشدارهای خودکار ═══
-        if (hr != null) {
-            when {
-                hr > 120 -> {
-                    // ضربان خیلی بالا
-                    android.util.Log.w(TAG, "⚠️ Yüksek nabız: $hr")
-                    notifyAlert("⚠️ Yüksek nabız: $hr atış!")
-                }
-                hr < 45 -> {
-                    // ضربان خیلی پایین
-                    android.util.Log.w(TAG, "⚠️ Düşük nabız: $hr")
-                    notifyAlert("⚠️ Düşük nabız: $hr atış!")
-                }
-            }
+        // ۲. گزارش صبحگاهی (۷-۱۰ صبح، یک بار در روز)
+        if (saat in 7..10 && lastMorningReport != gun) {
+            lastMorningReport = gun
+            sendMorningReport()
         }
 
-        // ارسال به CommandProcessor برای تصمیم‌گیری
-        // (اینجا می‌تونیم به Eda اطلاع بدیم که خودش TTS کنه)
+        // ۳. یادآوری شب (۲۲ شب، یک بار در روز)
+        if (saat == 22 && lastNightReminder != gun) {
+            lastNightReminder = gun
+            sendNightReminder()
+        }
+
+        // ۴. سؤال‌های روزانه (۹ صبح، ۱۴ ظهر، ۱۹ عصر)
+        if (saat in listOf(9, 14, 19) && lastQuestionAsk != saat) {
+            lastQuestionAsk = saat
+            askDailyQuestion(saat)
+        }
+
+        // ۵. گزارش هفتگی (شنبه‌ها ساعت ۱۰)
+        if (calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY && 
+            saat == 10 && lastWeeklyReport != hafta) {
+            lastWeeklyReport = hafta
+            sendWeeklyReport()
+        }
     }
 
+    // ─────────────────────────────────────
+    //  ۱. چک ضربان و هشدار
+    // ─────────────────────────────────────
+    private suspend fun checkHeartRate(hr: Int?) {
+        if (hr == null) return
+        
+        lastHR = hr
+        android.util.Log.d(TAG, "HR: $hr")
+
+        when {
+            // خطرناک بالا
+            hr >= HR_DANGER_HIGH -> {
+                highHRCount++
+                if (highHRCount >= 2) {
+                    konusVeNotify("⚠️ denizçim! Nabzın çok yüksek: $hr! İyi misin?")
+                    highHRCount = 0
+                }
+            }
+            
+            // خطرناک پایین
+            hr <= HR_DANGER_LOW -> {
+                lowHRCount++
+                if (lowHRCount >= 2) {
+                    konusVeNotify("⚠️ denizçim! Nabzın çok düşük: $hr! Doktora görünmen gerekebilir.")
+                    lowHRCount = 0
+                }
+            }
+            
+            // هشدار بالا (نه خطرناک)
+            hr >= HR_WARNING_HIGH -> {
+                konus("denizçim, nabzın $hr. Biraz yüksek, sakinleş.")
+            }
+            
+            // هشدار پایین
+            hr <= HR_WARNING_LOW -> {
+                konus("denizçim, nabzın $hr. Biraz düşük.")
+            }
+            
+            // عادی — ریست
+            else -> {
+                highHRCount = 0
+                lowHRCount = 0
+            }
+        }
+    }
+
+    // ─────────────────────────────────────
+    //  ۲. گزارش صبحگاهی
+    // ─────────────────────────────────────
+    private suspend fun sendMorningReport() {
+        val sleep = healthManager.getLastNightSleepHours()
+        val hr = healthManager.getLatestHeartRate(60)
+        
+        val mesaj = buildString {
+            append("Günaydın denizçim! ")
+            if (sleep != null) {
+                append("Dün gece %.1f saat uyumuşsun. ".format(sleep))
+            }
+            if (hr != null) {
+                append("Nabzın şu an $hr. ")
+            }
+            
+            // توصیه
+            if (sleep != null && sleep < 6) {
+                append("Biraz az uyumuşsun, bugün dikkatli ol.")
+            } else if (sleep != null && sleep > 8) {
+                append("İyi uyumuşsun, harika!")
+            } else {
+                append("Bugün nasılsın?")
+            }
+        }
+        
+        android.util.Log.i(TAG, "🌅 Morning: $mesaj")
+        konus(mesaj)
+    }
+
+    // ─────────────────────────────────────
+    //  ۳. یادآوری شب
+    // ─────────────────────────────────────
+    private suspend fun sendNightReminder() {
+        val hr = healthManager.getLatestHeartRate(60)
+        val mesaj = if (hr != null && hr > 90) {
+            "denizçim, saat ۲۲. Nabzın $hr, hâlâ yüksek. Biraz sakinleş ve yat."
+        } else {
+            "denizçim, saat ۲۲. Yatma vakti geldi, iyi geceler."
+        }
+        
+        android.util.Log.i(TAG, "🌙 Night: $mesaj")
+        konus(mesaj)
+    }
+
+    // ─────────────────────────────────────
+    //  ۴. سؤال‌های روزانه
+    // ─────────────────────────────────────
+    private suspend fun askDailyQuestion(saat: Int) {
+        val mesaj = when (saat) {
+            9 -> "Günaydın denizçim! Kahvaltı yaptın mı? Su içtin mi?"
+            14 -> "denizçim, öğlen oldu. Yemek yedin mi? Biraz mola ver."
+            19 -> "denizçim, akşam oldu. Bugün nasılsın? İlaç içtin mi?"
+            else -> return
+        }
+        
+        android.util.Log.i(TAG, "❓ Soru ($saat): $mesaj")
+        konus(mesaj)
+    }
+
+    // ─────────────────────────────────────
+    //  ۵. گزارش هفتگی
+    // ─────────────────────────────────────
+    private suspend fun sendWeeklyReport() {
+        val hr = healthManager.getLatestHeartRate(60)
+        val sleep = healthManager.getLastNightSleepHours()
+        
+        val mesaj = buildString {
+            append("denizçim, haftalık rapor: ")
+            if (hr != null) append("Nabzın $hr. ")
+            if (sleep != null) append("Son uykun %.1f saat. ".format(sleep))
+            append("Bu hafta sağlığına dikkat et, seni seviyorum. 💙")
+        }
+        
+        android.util.Log.i(TAG, "📊 Weekly: $mesaj")
+        konus(mesaj)
+    }
+
+    // ─────────────────────────────────────
+    //  TTS از طریق EdaForegroundService
+    // ─────────────────────────────────────
+    private fun konus(mesaj: String) {
+        try {
+            val intent = Intent(this, EdaForegroundService::class.java).apply {
+                action = "ACTION_SPEAK"
+                putExtra("text", mesaj)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "konus hatası: ${e.message}")
+        }
+    }
+
+    private fun konusVeNotify(mesaj: String) {
+        konus(mesaj)
+        notifyAlert(mesaj)
+    }
+
+    // ─────────────────────────────────────
+    //  Notifications
+    // ─────────────────────────────────────
     private fun notifyAlert(mesaj: String) {
         val notification = buildNotification(mesaj, priority = NotificationCompat.PRIORITY_HIGH)
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -91,12 +282,13 @@ class HealthMonitorService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Eda Sağlık")
+            .setContentTitle("🩺 Eda Sağlık")
             .setContentText(mesaj)
             .setSmallIcon(android.R.drawable.ic_menu_info_details)
             .setContentIntent(pendingIntent)
             .setPriority(priority)
             .setOngoing(true)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(mesaj))
             .build()
     }
 
@@ -119,6 +311,6 @@ class HealthMonitorService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         serviceScope.cancel()
-        android.util.Log.i(TAG, "HealthMonitorService yok edildi")
+        android.util.Log.i(TAG, "🩺 HealthMonitorService yok edildi")
     }
 }

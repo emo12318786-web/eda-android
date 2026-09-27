@@ -167,6 +167,15 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 konus("Uyku moduna geçiyorum denizçim.") { }
             }
             
+            "ACTION_SPEAK" -> {
+                // 🔊 از HealthMonitor بیاد — TTS خودکار
+                val text = intent.getStringExtra("text") ?: ""
+                if (text.isNotBlank()) {
+                    android.util.Log.i("EDA-Health", "Auto-speak: $text")
+                    konus(text) { }
+                }
+            }
+
             "ACTION_STOP" -> {
                 // ❌ کامل ببند
                 android.util.Log.d("EdaService", "Durduruldu")
