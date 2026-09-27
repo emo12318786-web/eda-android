@@ -84,21 +84,30 @@ class GoogleFitManager(private val context: Context) {
                 GoogleSignIn.getLastSignedInAccount(context)!!
             ).readData(request).await()
 
-            val dataPoints = response.dataPoints
-            if (dataPoints.isEmpty()) {
-                Log.d(TAG, "HR verisi yok")
-                return null
-            }
-
-            val lastPoint = dataPoints.last()
-            for (field in lastPoint.dataType.fields) {
-                if (field.name == Field.FIELD_BPM.name) {
-                    val bpm = lastPoint.getValue(field).asFloat().toInt()
-                    Log.i(TAG, "✅ HR: $bpm")
-                    return bpm
+            var latestBpm: Int? = null
+            var latestTime: Long = 0
+            
+            for (dataSet in response.dataSets) {
+                for (dataPoint in dataSet.dataPoints) {
+                    for (field in dataPoint.dataType.fields) {
+                        if (field.name == Field.FIELD_BPM.name) {
+                            val bpm = dataPoint.getValue(field).asFloat().toInt()
+                            val time = dataPoint.getTimestamp(TimeUnit.MILLISECONDS)
+                            if (time > latestTime) {
+                                latestTime = time
+                                latestBpm = bpm
+                            }
+                        }
+                    }
                 }
             }
-            null
+            
+            if (latestBpm != null) {
+                Log.i(TAG, "✅ HR: $latestBpm")
+            } else {
+                Log.d(TAG, "HR verisi yok")
+            }
+            latestBpm
         } catch (e: Exception) {
             Log.e(TAG, "HR hatası: ${e.message}")
             null
@@ -126,11 +135,13 @@ class GoogleFitManager(private val context: Context) {
             ).readData(request).await()
 
             var totalSleepMs = 0L
-            for (dataPoint in response.dataPoints) {
-                for (field in dataPoint.dataType.fields) {
-                    if (field.name == Field.FIELD_DURATION.name) {
-                        val duration = dataPoint.getValue(field).asInt().toLong()
-                        totalSleepMs += duration
+            for (dataSet in response.dataSets) {
+                for (dataPoint in dataSet.dataPoints) {
+                    for (field in dataPoint.dataType.fields) {
+                        if (field.name == Field.FIELD_DURATION.name) {
+                            val duration = dataPoint.getValue(field).asInt().toLong()
+                            totalSleepMs += duration
+                        }
                     }
                 }
             }
