@@ -38,6 +38,17 @@ object CommandProcessor {
 
     // ═══ Health Connect Manager (Zepp Life → Google Fit) ═══
     private var healthManager: HealthConnectManager? = null
+    
+    // Cache — HealthMonitorService به‌روز می‌کنه
+    private var cachedHeartRate: Int? = null
+    private var cachedSleepHours: Double? = null
+    private var cachedSteps: Long? = null
+    
+    fun updateCache(hr: Int?, sleep: Double?, steps: Long?) {
+        cachedHeartRate = hr
+        cachedSleepHours = sleep
+        cachedSteps = steps
+    }
 
     fun initHealth(context: Context) {
         if (healthManager == null) {
@@ -154,7 +165,7 @@ object CommandProcessor {
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
-                    val hr = kotlinx.coroutines.runBlocking { hm.getLatestHeartRate(60) }
+                    val hr = cachedHeartRate
                     if (hr != null) {
                         val durum = when {
                             hr < 60 -> "biraz düşük"
@@ -180,7 +191,7 @@ object CommandProcessor {
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
-                    val sleep = kotlinx.coroutines.runBlocking { hm.getLastNightSleepHours() }
+                    val sleep = cachedSleepHours
                     if (sleep != null) {
                         val durum = when {
                             sleep < 5 -> "çok az, dinlenmen lazım"
@@ -201,7 +212,7 @@ object CommandProcessor {
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
-                    val steps = kotlinx.coroutines.runBlocking { hm.getTodaySteps() }
+                    val steps = cachedSteps ?: 0L
                     val durum = when {
                         steps < 2000 -> "biraz az, biraz yürüyüş yap"
                         steps < 5000 -> "iyi gidiyorsun"
@@ -218,8 +229,8 @@ object CommandProcessor {
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
-                    val hr = kotlinx.coroutines.runBlocking { hm.getLatestHeartRate(60) }
-                    val sleep = kotlinx.coroutines.runBlocking { hm.getLastNightSleepHours() }
+                    val hr = cachedHeartRate
+                    val sleep = cachedSleepHours
                     if (hr != null && sleep != null) {
                         val stres = when {
                             hr > 95 && sleep < 5 -> "yüksek"

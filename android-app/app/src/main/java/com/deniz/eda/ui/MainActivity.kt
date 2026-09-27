@@ -54,6 +54,19 @@ class MainActivity : AppCompatActivity() {
         healthManager = HealthConnectManager(this)
         CommandProcessor.initHealth(this)
         
+        // ═══ یه بار cache رو پر کن (اولین بار) ═══
+        lifecycleScope.launch {
+            try {
+                val hr = healthManager.getLatestHeartRate(1440)
+                val sleep = healthManager.getLastNightSleepHours()
+                val steps = healthManager.getTodaySteps()
+                CommandProcessor.updateCache(hr, sleep, steps)
+                android.util.Log.i("EDA-Health", "Initial cache: HR=$hr, Sleep=$sleep, Steps=$steps")
+            } catch (e: Exception) {
+                android.util.Log.e("EDA-Health", "Initial cache error: ${e.message}")
+            }
+        }
+        
         try {
             android.util.Log.i("EDA-Health", "🔔 درخواست مجوز Health Connect")
             healthPermissionLauncher.launch(healthManager.requiredPermissions)

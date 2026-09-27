@@ -82,6 +82,17 @@ class HealthMonitorService : Service() {
     //  منطق اصلی "دکتر خودکار"
     // ══════════════════════════════════════════════════════
     private suspend fun monitorHealth() {
+        // ═══ آپدیت cache برای CommandProcessor ═══
+        try {
+            val hr = healthManager.getLatestHeartRate(1440)
+            val sleep = healthManager.getLastNightSleepHours()
+            val steps = healthManager.getTodaySteps()
+            com.deniz.eda.core.CommandProcessor.updateCache(hr, sleep, steps)
+            android.util.Log.d(TAG, "Cache updated: HR=$hr, Sleep=$sleep, Steps=$steps")
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Cache update error: ${e.message}")
+        }
+        
         val calendar = Calendar.getInstance()
         val saat = calendar.get(Calendar.HOUR_OF_DAY)
         val gun = calendar.get(Calendar.DAY_OF_YEAR)
