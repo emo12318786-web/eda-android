@@ -181,7 +181,7 @@ class SttTestActivity : AppCompatActivity() {
                 } else {
                     list.forEachIndexed { i, t ->
                         val c = conf?.getOrNull(i) ?: -1f
-                        log("   [$i] \"$t\"  (conf=${"%.2f".format(c)})")
+                        log("   [$i] \"$t\"  (conf=" + com.deniz.eda.utils.DigitUtils.formatFloat(c.toDouble(), 2) + ")")
                     }
                 }
                 setStatus("tamam: ${list?.firstOrNull() ?: "boş"}")

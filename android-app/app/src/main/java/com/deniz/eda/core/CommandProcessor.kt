@@ -24,6 +24,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlinx.coroutines.runBlocking
+import com.deniz.eda.utils.DigitUtils
 
 sealed class KomutSonucu {
     data class Cevap(val metin: String) : KomutSonucu()
@@ -199,7 +200,7 @@ object CommandProcessor {
                             sleep < 9 -> "iyi"
                             else -> "çok iyi"
                         }
-                        KomutSonucu.Cevap("Dün gece ${"%.1f".format(sleep)} saat uyumuşsun, $durum $hitap.")
+                        KomutSonucu.Cevap("Dün gece ${DigitUtils.formatFloat(sleep)} saat uyumuşsun, $durum $hitap.")
                     } else {
                         KomutSonucu.Cevap("Uyku verisi bulamadım $hitap. Bileklik takılı mıydı?")
                     }
@@ -238,7 +239,7 @@ object CommandProcessor {
                             hr < 75 && sleep > 7 -> "düşük"
                             else -> "normal"
                         }
-                        KomutSonucu.Cevap("Nabzın $hr, uykun ${"%.1f".format(sleep)} saat. " +
+                        KomutSonucu.Cevap("Nabzın $hr, uykun ${DigitUtils.formatFloat(sleep)} saat. " +
                                 "Stres seviyesi $stres görünüyor $hitap.")
                     } else {
                         KomutSonucu.Cevap("Stres hesabı için yeterli veri yok $hitap.")
@@ -257,7 +258,7 @@ object CommandProcessor {
                     var dakika = saatEslesme.groupValues[2].takeIf { it.isNotBlank() }?.toInt() ?: 0
                     if ("buçuk" in metin || "bucuk" in metin) dakika = 30
                     ReminderStore.ekle(context, metin, saat, dakika)
-                    KomutSonucu.Cevap("Saat %02d:%02d için hatırlatma kurdum $hitap.".format(saat, dakika))
+                    KomutSonucu.Cevap("Saat " + DigitUtils.formatInt(saat) + ":" + DigitUtils.formatInt(dakika) + " için hatırlatma kurdum $hitap.")
                 } else {
                     KomutSonucu.Cevap("Kaçta hatırlatmamı istersin $hitap? \"saat 8 hatırlat\" gibi söyleyebilirsin.")
                 }
@@ -315,7 +316,7 @@ object CommandProcessor {
                     if (mesafe < 1) {
                         KomutSonucu.Cevap("Sadece ${(mesafe * 1000).toInt()} metre kaldı $hitap! Çok yakınsın.")
                     } else {
-                        KomutSonucu.Cevap("Yaklaşık ${"%.1f".format(mesafe)} kilometre kaldı $hitap.")
+                        KomutSonucu.Cevap("Yaklaşık ${DigitUtils.formatFloat(mesafe)} kilometre kaldı $hitap.")
                     }
                 }
             }

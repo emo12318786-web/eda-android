@@ -9,6 +9,7 @@ import androidx.core.app.NotificationCompat
 import com.deniz.eda.health.HealthConnectManager
 import kotlinx.coroutines.*
 import java.util.Calendar
+import com.deniz.eda.utils.DigitUtils
 
 /**
  * سرویس پس‌زمینه "دکتر خودکار"
@@ -184,7 +185,7 @@ class HealthMonitorService : Service() {
         val mesaj = buildString {
             append("Günaydın denizçim! ")
             if (sleep != null) {
-                append("Dün gece %.1f saat uyumuşsun. ".format(sleep))
+                append("Dün gece " + DigitUtils.formatFloat(sleep) + " saat uyumuşsun. ")
             }
             if (hr != null) {
                 append("Nabzın şu an $hr. ")
@@ -210,9 +211,9 @@ class HealthMonitorService : Service() {
     private suspend fun sendNightReminder() {
         val hr = healthManager.getLatestHeartRate(60)
         val mesaj = if (hr != null && hr > 90) {
-            "denizçim, saat ۲۲. Nabzın $hr, hâlâ yüksek. Biraz sakinleş ve yat."
+            "denizçim, saat 22. Nabzın $hr, hâlâ yüksek. Biraz sakinleş ve yat."
         } else {
-            "denizçim, saat ۲۲. Yatma vakti geldi, iyi geceler."
+            "denizçim, saat 22. Yatma vakti geldi, iyi geceler."
         }
         
         android.util.Log.i(TAG, "🌙 Night: $mesaj")
@@ -244,7 +245,7 @@ class HealthMonitorService : Service() {
         val mesaj = buildString {
             append("denizçim, haftalık rapor: ")
             if (hr != null) append("Nabzın $hr. ")
-            if (sleep != null) append("Son uykun %.1f saat. ".format(sleep))
+            if (sleep != null) append("Son uykun " + DigitUtils.formatFloat(sleep) + " saat. ")
             append("Bu hafta sağlığına dikkat et, seni seviyorum. 💙")
         }
         

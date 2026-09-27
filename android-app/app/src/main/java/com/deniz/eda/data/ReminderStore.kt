@@ -70,7 +70,7 @@ object ReminderStore {
         val bekleyenler = bekleyenler(context)
         if (bekleyenler.isEmpty()) return "Bekleyen hatırlatman yok denizçim."
         val parcalar = bekleyenler.take(5).map {
-            "Saat %02d:%02d - %s".format(it.saat, it.dakika, it.metin)
+            "Saat " + com.deniz.eda.utils.DigitUtils.formatInt(it.saat) + ":" + com.deniz.eda.utils.DigitUtils.formatInt(it.dakika) + " - " + it.metin
         }
         return "Hatırlatmaların: " + parcalar.joinToString(". ")
     }

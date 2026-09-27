@@ -94,7 +94,7 @@ class PanelServer(
                 })
                 put("ai", Settings.aiSaglayici)
                 put("gemma", Settings.gemmaModel ?: "gemma2:2b")
-                put("saat", SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()))
+                put("saat", DigitUtils.formatTime("HH:mm"))
                 put("tarih", SimpleDateFormat("dd MMM yyyy", Locale("tr", "TR")).format(Date()))
             }
 

@@ -34,7 +34,7 @@ object EdaLog {
     ) {
         try {
             val f = dosya(context, sleep)
-            val zaman = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+            val zaman = DigitUtils.formatTime("HH:mm:ss")
             val satir = "[$zaman] $kullanici → $eda ($kaynak)\n"
 
             // اضافه کردن به فایل
@@ -59,7 +59,7 @@ object EdaLog {
     fun basit(context: Context, mesaj: String, sleep: Boolean = false) {
         try {
             val f = dosya(context, sleep)
-            val zaman = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+            val zaman = DigitUtils.formatTime("HH:mm:ss")
             f.appendText("[$zaman] $mesaj\n")
         } catch (e: Exception) {
             android.util.Log.e("EdaLog", "basit hatasi: ${e.message}")

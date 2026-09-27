@@ -61,7 +61,7 @@ object CurrencyUtils {
         if (s.isNullOrBlank()) return "?"
         val temiz = s.replace(",", "").replace("،", "").trim()
         val sayi = temiz.toLongOrNull()
-        return if (sayi != null) "%,d".format(sayi) else s
+        return if (sayi != null) DigitUtils.formatCurrency(sayi.toLong()) else s
     }
 
     private fun dolarCevap(json: JSONObject, hitap: String): String {

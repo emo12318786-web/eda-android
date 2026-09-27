@@ -35,7 +35,7 @@ object ExtraCommands {
             val gosterim = if (sonuc == sonuc.toLong().toDouble()) {
                 sonuc.toLong().toString()
             } else {
-                "%.4f".format(sonuc).trimEnd('0').trimEnd('.')
+                DigitUtils.formatFloat(sonuc, 4).trimEnd('0').trimEnd('.')
             }
             "Sonuç: $gosterim $hitap."
         } catch (e: Exception) {
@@ -349,7 +349,7 @@ object ExtraCommands {
         if (LocationUtils.izinVarMi(context)) {
             val konum = LocationUtils.sonBilinenKonum(context)
             if (konum != null) {
-                sb.append("✅ Konum: ${"%.4f".format(konum.enlem)}, ${"%.4f".format(konum.boylam)}\n")
+                sb.append("✅ Konum: " + DigitUtils.formatFloat(konum.enlem, 4) + ", " + DigitUtils.formatFloat(konum.boylam, 4) + "\n")
             } else {
                 sb.append("⚠️ Konum: izin var ama konum henüz alınmadı\n")
             }

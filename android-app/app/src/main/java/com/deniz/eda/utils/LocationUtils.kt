@@ -158,22 +158,12 @@ object LocationUtils {
      */
     private suspend fun adresBilgisi(context: Context, lat: Double, lon: Double): Address? =
         withContext(Dispatchers.IO) {
-            // ═══ ۱. Google Geocoder ═══
-            try {
-                val geocoder = Geocoder(context, Locale("tr", "TR"))
-                @Suppress("DEPRECATION")
-                val sonuc = geocoder.getFromLocation(lat, lon, 1)?.firstOrNull()
-                if (sonuc != null) {
-                    android.util.Log.d("LocationUtils", "✅ Geocoder Google")
-                    return@withContext sonuc
-                }
-            } catch (e: Exception) {
-                android.util.Log.w("LocationUtils", "Geocoder Google hatasi: ${e.message}")
-            }
+            // ═══ Google Geocoder — غیرفعال (ایران داده‌ی خوب نمی‌ده) ═══
+            // از Nominatim با accept-language=tr استفاده می‌کنیم
 
             // ═══ ۲. Nominatim (OpenStreetMap) — Iran'da calisir ═══
             try {
-                val url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lon&accept-language=tr&zoom=18"
+                val url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lon&accept-language=tr&zoom=18&addressdetails=1"
                 val client = okhttp3.OkHttpClient.Builder()
                     .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
                     .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
@@ -200,7 +190,7 @@ object LocationUtils {
                     addr.optString("road").takeIf { it.isNotBlank() }?.let { a.thoroughfare = it }
                     a.setAddressLine(0, json.optString("display_name", ""))
 
-                    android.util.Log.d("LocationUtils", "✅ Nominatim: ${a.locality} / ${a.subLocality}")
+                    android.util.Log.d("LocationUtils", "✅ Nominatim: city=${a.locality}, suburb=${a.subLocality}, road=${a.thoroughfare}")
                     return@withContext a
                 }
             } catch (e: Exception) {
@@ -225,7 +215,7 @@ object LocationUtils {
         val adres = adresBilgisi(context, lokasyon.latitude, lokasyon.longitude)
 
         if (adres == null) {
-            return "Konumun enlem ${"%.4f".format(lokasyon.latitude)}, boylam ${"%.4f".format(lokasyon.longitude)} $hitap."
+            return "Konumun enlem ${DigitUtils.formatFloat(lokasyon.latitude, 4)}, boylam ${DigitUtils.formatFloat(lokasyon.longitude, 4)} $hitap."
         }
 
         // ═══ Şehir + Mahalle + Cadde ═══
@@ -242,7 +232,7 @@ object LocationUtils {
             if (!adresSatiri.isNullOrBlank()) {
                 "Şu an $adresSatiri civarındasın $hitap."
             } else {
-                "Konumun enlem ${"%.4f".format(lokasyon.latitude)}, boylam ${"%.4f".format(lokasyon.longitude)} $hitap."
+                "Konumun enlem ${DigitUtils.formatFloat(lokasyon.latitude, 4)}, boylam ${DigitUtils.formatFloat(lokasyon.longitude, 4)} $hitap."
             }
         }
     }
