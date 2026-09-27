@@ -48,32 +48,15 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Settings.init(this)
-
-        // ═══ Health Connect init ═══
+        // ═══ Health Connect — مستقیم درخواست ═══
         healthManager = HealthConnectManager(this)
-        android.util.Log.i("EDA-Health", "isAvailable = ${healthManager.isAvailable()}")
-        
-        // مستقیم تلاش کن — بدون توجه به isAvailable
         try {
-            lifecycleScope.launch {
-                val granted = healthManager.getGrantedPermissions()
-                android.util.Log.i("EDA-Health", "Granted: $granted")
-                android.util.Log.i("EDA-Health", "Required: ${healthManager.requiredPermissions}")
-                
-                if (!granted.containsAll(healthManager.requiredPermissions)) {
-                    android.util.Log.i("EDA-Health", "🔔 درخواست مجوز Health Connect")
-                    try {
-                        healthPermissionLauncher.launch(healthManager.requiredPermissions)
-                    } catch (e: Exception) {
-                        android.util.Log.e("EDA-Health", "خطا در launch: ${e.message}")
-                    }
-                } else {
-                    android.util.Log.i("EDA-Health", "✅ همه مجوزها موجوده")
-                }
-            }
+            android.util.Log.i("EDA-Health", "🔔 درخواست مستقیم مجوز")
+            healthPermissionLauncher.launch(healthManager.requiredPermissions)
         } catch (e: Exception) {
             android.util.Log.e("EDA-Health", "خطا: ${e.message}")
         }
+
 
         // POST_NOTIFICATIONS (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
