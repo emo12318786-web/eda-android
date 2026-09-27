@@ -22,3 +22,5 @@ local.properties
 KOTLIN_EOF
 PYEOF
 *.bak
+*.bak
+*.bak2

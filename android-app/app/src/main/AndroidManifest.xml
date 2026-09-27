@@ -10,6 +10,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Health Monitor (کنترل در خواب) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Telefon acilinca otomatik baslasin -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -27,6 +29,13 @@
     <uses-permission android:name="android.permission.SEND_SMS" />
     <!-- Guvenlik modu: hareket algilama -->
     <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
+
+
+    <!-- Health Connect (Zepp Life via Google Fit) -->
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
 
     <application
         android:allowBackup="true"
@@ -76,6 +85,13 @@
             android:name=".service.EdaForegroundService"
             android:exported="false"
             android:foregroundServiceType="microphone" />
+
+        <!-- Health Monitor Service (پایش پس‌زمینه) -->
+        <service
+            android:name=".service.HealthMonitorService"
+            android:foregroundServiceType="health"
+            android:exported="false" />
+
 
         <receiver
             android:name=".receiver.BootReceiver"

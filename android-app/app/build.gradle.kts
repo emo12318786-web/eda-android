@@ -75,4 +75,7 @@ dependencies {
     
     // ═══ Coil (تصویر) ═══
     implementation("io.coil-kt:coil-compose:2.6.0")
+
+    // ═══ Health Connect (Zepp Life → Google Fit) ═══
+    implementation("androidx.health.connect:connect-client:1.1.0-alpha10")
 }

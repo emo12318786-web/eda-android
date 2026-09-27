@@ -6,6 +6,7 @@ import com.deniz.eda.data.DiaryStore
 import com.deniz.eda.data.LearningStore
 import com.deniz.eda.data.MemoryStore
 import com.deniz.eda.data.ReminderStore
+import com.deniz.eda.health.HealthConnectManager
 import com.deniz.eda.utils.BatteryUtils
 import com.deniz.eda.utils.CurrencyUtils
 import com.deniz.eda.utils.ExtraCommands
@@ -22,6 +23,7 @@ import kotlin.math.asin
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
+import kotlinx.coroutines.runBlocking
 
 sealed class KomutSonucu {
     data class Cevap(val metin: String) : KomutSonucu()
@@ -33,6 +35,15 @@ sealed class KomutSonucu {
 }
 
 object CommandProcessor {
+
+    // ═══ Health Connect Manager (Zepp Life → Google Fit) ═══
+    private var healthManager: HealthConnectManager? = null
+
+    fun initHealth(context: Context) {
+        if (healthManager == null) {
+            healthManager = HealthConnectManager(context.applicationContext)
+        }
+    }
 
     // Ev koordinatlari (kullanici kendi koordinatlarini buraya yazabilir)
     private const val EV_LAT = 38.052686
@@ -133,6 +144,89 @@ object CommandProcessor {
             v(metin, "araba", "arabe") && v(metin, "modu", "mod") -> {
                 Settings.arabaModuAktif = true
                 KomutSonucu.ArabaModuDegisti(true)
+            }
+
+            // ═══ HEALTH COMMANDS (Health Connect) ═══
+
+            // ─── ضربان قلب ───
+            v(metin, "nabız", "nabiz", "kalp", "kalbim", "kalp atışı") -> {
+                val hm = healthManager
+                if (hm == null) {
+                    KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
+                } else {
+                    val hr = kotlinx.coroutines.runBlocking { hm.getLatestHeartRate(60) }
+                    if (hr != null) {
+                        val durum = when {
+                            hr < 60 -> "biraz düşük"
+                            hr in 60..100 -> "normal"
+                            else -> "biraz yüksek"
+                        }
+                        KomutSonucu.Cevap("Nabzın $hr atış, $durum görünüyor $hitap.")
+                    } else {
+                        KomutSonucu.Cevap("Nabız verisi bulamadım $hitap. Bileklik bağlı mı?")
+                    }
+                }
+            }
+
+            // ─── خواب ───
+            v(metin, "uyku", "uyudum", "uykum", "uyku süresi") -> {
+                val hm = healthManager
+                if (hm == null) {
+                    KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
+                } else {
+                    val sleep = kotlinx.coroutines.runBlocking { hm.getLastNightSleepHours() }
+                    if (sleep != null) {
+                        val durum = when {
+                            sleep < 5 -> "çok az, dinlenmen lazım"
+                            sleep < 7 -> "yeterli değil"
+                            sleep < 9 -> "iyi"
+                            else -> "çok iyi"
+                        }
+                        KomutSonucu.Cevap("Dün gece ${"%.1f".format(sleep)} saat uyumuşsun, $durum $hitap.")
+                    } else {
+                        KomutSonucu.Cevap("Uyku verisi bulamadım $hitap.")
+                    }
+                }
+            }
+
+            // ─── قدم ───
+            v(metin, "adım", "adim", "adımlarım", "adimlarim", "kaç adım") -> {
+                val hm = healthManager
+                if (hm == null) {
+                    KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
+                } else {
+                    val steps = kotlinx.coroutines.runBlocking { hm.getTodaySteps() }
+                    val durum = when {
+                        steps < 2000 -> "biraz az, biraz yürüyüş yap"
+                        steps < 5000 -> "iyi gidiyorsun"
+                        steps < 10000 -> "harika"
+                        else -> "muhteşem"
+                    }
+                    KomutSonucu.Cevap("Bugün $steps adım atmışsın, $durum $hitap.")
+                }
+            }
+
+            // ─── استرس (تخمینی از HR + خواب) ───
+            v(metin, "stres", "stresli", "gergin", "rahat mıyım") -> {
+                val hm = healthManager
+                if (hm == null) {
+                    KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
+                } else {
+                    val hr = kotlinx.coroutines.runBlocking { hm.getLatestHeartRate(60) }
+                    val sleep = kotlinx.coroutines.runBlocking { hm.getLastNightSleepHours() }
+                    if (hr != null && sleep != null) {
+                        val stres = when {
+                            hr > 95 && sleep < 5 -> "yüksek"
+                            hr > 85 || sleep < 6 -> "orta"
+                            hr < 75 && sleep > 7 -> "düşük"
+                            else -> "normal"
+                        }
+                        KomutSonucu.Cevap("Nabzın $hr, uykun ${"%.1f".format(sleep)} saat. " +
+                                "Stres seviyesi $stres görünüyor $hitap.")
+                    } else {
+                        KomutSonucu.Cevap("Stres hesabı için yeterli veri yok $hitap.")
+                    }
+                }
             }
 
             v(metin, "hatırlatma", "hatirlatma", "hatırlatmaları") && v(metin, "temizle", "sil", "temis") -> {

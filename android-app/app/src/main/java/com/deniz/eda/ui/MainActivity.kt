@@ -8,10 +8,14 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.health.connect.client.PermissionController
+import androidx.lifecycle.lifecycleScope
 import com.deniz.eda.R
 import com.deniz.eda.core.Settings
+import com.deniz.eda.health.HealthConnectManager
 import com.deniz.eda.panel.PanelActivity
 import com.deniz.eda.service.EdaForegroundService
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -30,10 +34,36 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // ═══ Health Connect ═══
+    private lateinit var healthManager: HealthConnectManager
+
+    private val healthPermissionLauncher = registerForActivityResult(
+        PermissionController.createRequestPermissionResultContract()
+    ) { grantedPermissions ->
+        android.util.Log.i("EDA-Health",
+            "Health permissions granted: $grantedPermissions")
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Settings.init(this)
+
+        // ═══ Health Connect init ═══
+        healthManager = HealthConnectManager(this)
+        if (healthManager.isAvailable()) {
+            lifecycleScope.launch {
+                val granted = healthManager.getGrantedPermissions()
+                if (!granted.containsAll(healthManager.requiredPermissions)) {
+                    android.util.Log.i("EDA-Health", "درخواست مجوز Health Connect")
+                    healthPermissionLauncher.launch(healthManager.requiredPermissions)
+                } else {
+                    android.util.Log.i("EDA-Health", "✅ همه مجوزها موجوده")
+                }
+            }
+        } else {
+            android.util.Log.w("EDA-Health", "Health Connect در دسترس نیست")
+        }
 
         // POST_NOTIFICATIONS (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

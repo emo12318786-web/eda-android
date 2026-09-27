@@ -70,6 +70,10 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         super.onCreate()
         Settings.init(this)
 
+        // ═══ Health Connect init ═══
+        CommandProcessor.initHealth(this)
+        android.util.Log.i("EDA-Health", "Health Connect init edildi")
+
         // ═══ تنظیم sonMod که MainActivity هم ببینه ═══
         if (Settings.sonMod == "KAPALI") {
             Settings.sonMod = "AKTIF"
@@ -127,6 +131,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 Settings.derinUyku = false
                 bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
                 baslatDinleme()
+                healthMonitorBaslat()
             }
             
             "ACTION_AKTIF" -> {
@@ -141,6 +146,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 }
                 bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
                 android.util.Log.d("EdaService", "AKTIF moda geçildi")
+                healthMonitorBaslat()
                 konus("Aktif modda çalışıyorum denizçim.") { baslatDinleme() }
             }
             
@@ -164,6 +170,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             "ACTION_STOP" -> {
                 // ❌ کامل ببند
                 android.util.Log.d("EdaService", "Durduruldu")
+                healthMonitorDurdur()
                 stopSelf()
             }
             
@@ -187,6 +194,31 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         }
         
         return START_STICKY
+    }
+
+    // ═══ Health Monitor helper metotları ═══
+    private fun healthMonitorBaslat() {
+        try {
+            val intent = Intent(this, HealthMonitorService::class.java)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
+            android.util.Log.i("EDA-Health", "HealthMonitorService başlatıldı")
+        } catch (e: Exception) {
+            android.util.Log.e("EDA-Health", "HealthMonitorService başlatma hatası: ${e.message}")
+        }
+    }
+
+    private fun healthMonitorDurdur() {
+        try {
+            val intent = Intent(this, HealthMonitorService::class.java)
+            stopService(intent)
+            android.util.Log.i("EDA-Health", "HealthMonitorService durduruldu")
+        } catch (e: Exception) {
+            android.util.Log.e("EDA-Health", "HealthMonitorService durdurma hatası: ${e.message}")
+        }
     }
 
     override fun onInit(status: Int) {
