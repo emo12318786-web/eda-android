@@ -168,8 +168,12 @@ object CommandProcessor {
                 }
             }
 
-            // ─── خواب ───
-            v(metin, "uyku", "uyudum", "uykum", "uyku süresi") -> {
+            // ─── خواب (فقط اطلاعات خواب) ───
+            // نکته: کلمه "uyku" تنها، نمی‌تونه اینجا باشه چون تعارض با "uyku modu" داره
+            (
+                v(metin, "uykum", "uyudum", "uyku süresi", "kaç saat uyudum", "dün gece") ||
+                (v(metin, "uyku") && !v(metin, "modu", "mod"))
+            ) -> {
                 val hm = healthManager
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
@@ -184,7 +188,7 @@ object CommandProcessor {
                         }
                         KomutSonucu.Cevap("Dün gece ${"%.1f".format(sleep)} saat uyumuşsun, $durum $hitap.")
                     } else {
-                        KomutSonucu.Cevap("Uyku verisi bulamadım $hitap.")
+                        KomutSonucu.Cevap("Uyku verisi bulamadım $hitap. Bileklik takılı mıydı?")
                     }
                 }
             }
