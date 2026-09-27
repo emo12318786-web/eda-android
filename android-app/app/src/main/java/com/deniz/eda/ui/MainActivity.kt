@@ -51,18 +51,28 @@ class MainActivity : AppCompatActivity() {
 
         // ═══ Health Connect init ═══
         healthManager = HealthConnectManager(this)
-        if (healthManager.isAvailable()) {
+        android.util.Log.i("EDA-Health", "isAvailable = ${healthManager.isAvailable()}")
+        
+        // مستقیم تلاش کن — بدون توجه به isAvailable
+        try {
             lifecycleScope.launch {
                 val granted = healthManager.getGrantedPermissions()
+                android.util.Log.i("EDA-Health", "Granted: $granted")
+                android.util.Log.i("EDA-Health", "Required: ${healthManager.requiredPermissions}")
+                
                 if (!granted.containsAll(healthManager.requiredPermissions)) {
-                    android.util.Log.i("EDA-Health", "درخواست مجوز Health Connect")
-                    healthPermissionLauncher.launch(healthManager.requiredPermissions)
+                    android.util.Log.i("EDA-Health", "🔔 درخواست مجوز Health Connect")
+                    try {
+                        healthPermissionLauncher.launch(healthManager.requiredPermissions)
+                    } catch (e: Exception) {
+                        android.util.Log.e("EDA-Health", "خطا در launch: ${e.message}")
+                    }
                 } else {
                     android.util.Log.i("EDA-Health", "✅ همه مجوزها موجوده")
                 }
             }
-        } else {
-            android.util.Log.w("EDA-Health", "Health Connect در دسترس نیست")
+        } catch (e: Exception) {
+            android.util.Log.e("EDA-Health", "خطا: ${e.message}")
         }
 
         // POST_NOTIFICATIONS (Android 13+)
