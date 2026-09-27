@@ -6,7 +6,7 @@ import com.deniz.eda.data.DiaryStore
 import com.deniz.eda.data.LearningStore
 import com.deniz.eda.data.MemoryStore
 import com.deniz.eda.data.ReminderStore
-import com.deniz.eda.health.GoogleFitManager
+import com.deniz.eda.health.HealthConnectManager
 import com.deniz.eda.utils.BatteryUtils
 import com.deniz.eda.utils.CurrencyUtils
 import com.deniz.eda.utils.ExtraCommands
@@ -37,11 +37,11 @@ sealed class KomutSonucu {
 object CommandProcessor {
 
     // ═══ Health Connect Manager (Zepp Life → Google Fit) ═══
-    private var googleFitManager: GoogleFitManager? = null
+    private var healthManager: HealthConnectManager? = null
 
     fun initHealth(context: Context) {
-        if (googleFitManager == null) {
-            googleFitManager = GoogleFitManager(context.applicationContext)
+        if (healthManager == null) {
+            healthManager = HealthConnectManager(context.applicationContext)
         }
     }
 
@@ -150,7 +150,7 @@ object CommandProcessor {
 
             // ─── ضربان قلب ───
             v(metin, "nabız", "nabiz", "kalp", "kalbim", "kalp atışı") -> {
-                val hm = googleFitManager
+                val hm = healthManager
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
@@ -176,7 +176,7 @@ object CommandProcessor {
             // ─── خواب (فقط اطلاعات خواب) ───
             // نکته: کلمه "uyku" تنها، نمی‌تونه اینجا باشه چون تعارض با "uyku modu" داره
             v(metin, "uykum", "uyudum", "uyku süresi", "kaç saat uyudum", "dün gece uyudum") -> {
-                val hm = googleFitManager
+                val hm = healthManager
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
@@ -197,7 +197,7 @@ object CommandProcessor {
 
             // ─── قدم ───
             v(metin, "adım", "adim", "adımlarım", "adimlarim", "kaç adım") -> {
-                val hm = googleFitManager
+                val hm = healthManager
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
@@ -214,7 +214,7 @@ object CommandProcessor {
 
             // ─── استرس (تخمینی از HR + خواب) ───
             v(metin, "stres", "stresli", "gergin", "rahat mıyım") -> {
-                val hm = googleFitManager
+                val hm = healthManager
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {

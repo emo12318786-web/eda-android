@@ -76,13 +76,9 @@ dependencies {
     // ═══ Coil (تصویر) ═══
     implementation("io.coil-kt:coil-compose:2.6.0")
 
-    // ═══ Health Connect (Zepp Life → Google Fit) ═══
-    // Health Connect حذف شد — از Google Fit API استفاده می‌کنیم
 
-    // ═══ Google Fit API (به جای Health Connect) ═══
-    implementation("com.google.android.gms:play-services-fitness:21.2.0")
-    implementation("com.google.android.gms:play-services-auth:21.2.0")
 
-    // ═══ Google Fit Tasks await ═══
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
+
+    // ═══ Health Connect ═══
+    implementation("androidx.health.connect:connect-client:1.1.0-alpha10")
 }
