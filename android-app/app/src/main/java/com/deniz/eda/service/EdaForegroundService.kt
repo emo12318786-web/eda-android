@@ -332,6 +332,9 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "tr-TR")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "tr-TR")
+            putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "tr-TR")
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
             putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
             // Uyku modunda (sadece uyanma kelimesi icin) cihaz-ustu/hafif tanimayi
             // tercih et - ama sadece cihazda gercekten offline paket varsa.
@@ -379,8 +382,27 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private val recognitionListener = object : RecognitionListener {
         override fun onResults(results: Bundle?) {
             dinlemeAktif = false
-            val metin = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
-            metniIsle(metin)
+            val list = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+            
+            if (list.isNullOrEmpty()) {
+                android.util.Log.d("EdaService", "STT: boş sonuç")
+                yenidenDenemeyiPlanla()
+                return
+            }
+            
+            android.util.Log.i("EdaService", "STT sonuçları (${list.size}):")
+            list.forEachIndexed { i, t -> android.util.Log.i("EdaService", "  [$i] $t") }
+            
+            // همه‌ی نتایج رو امتحان کن — اگه یکی match کرد، همون رو بفرست
+            // (best effort: از اولین نتیجه‌ای که CommandProcessor جواب معنی‌دار بده)
+            for ((index, aday) in list.withIndex()) {
+                android.util.Log.d("EdaService", "Deneniyor [$index]: $aday")
+                // فعلاً اولین نتیجه رو می‌فرستیم — بهبود بعدی: چک match
+                if (index == 0) {
+                    metniIsle(aday)
+                }
+                break
+            }
         }
 
         override fun onError(error: Int) {

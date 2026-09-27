@@ -144,6 +144,41 @@
             android:exported="true"
             android:label="SER Test" />
 
+
+        <!-- ═══ Health Connect Activities (ضروری برای دیده شدن در لیست) ═══ -->
+        
+        <!-- Permission Rationale Activity -->
+        <activity
+            android:name=".health.HealthConnectPermissionActivity"
+            android:exported="true"
+            android:label="Eda Sağlık İzni">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+        </activity>
+        
+        <!-- View Permission Usage Activity -->
+        <activity
+            android:name=".health.ViewPermissionUsageActivity"
+            android:exported="true"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity>
+        
+        <!-- Health Connect Settings Activity -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:targetActivity=".health.ViewPermissionUsageActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+        </activity-alias>
+
     </application>
 
 </manifest>
