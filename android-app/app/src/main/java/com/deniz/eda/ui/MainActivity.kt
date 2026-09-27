@@ -13,6 +13,7 @@ import com.deniz.eda.R
 import com.deniz.eda.core.CommandProcessor
 import com.deniz.eda.core.Settings
 import com.deniz.eda.health.HealthConnectManager
+import androidx.health.connect.client.PermissionController
 import com.deniz.eda.panel.PanelActivity
 import com.deniz.eda.service.EdaForegroundService
 import kotlinx.coroutines.launch
@@ -34,8 +35,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ═══ Google Fit ═══
+    // ═══ Health Connect ═══
     private lateinit var healthManager: HealthConnectManager
+
+    private val healthPermissionLauncher = registerForActivityResult(
+        PermissionController.createRequestPermissionResultContract()
+    ) { granted ->
+        android.util.Log.i("EDA-Health", "✅ مجوزها: $granted")
+    }
 
 
 
