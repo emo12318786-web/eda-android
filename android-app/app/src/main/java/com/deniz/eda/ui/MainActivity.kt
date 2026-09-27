@@ -8,11 +8,12 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.lifecycleScope
 import com.deniz.eda.R
+import com.deniz.eda.core.CommandProcessor
 import com.deniz.eda.core.Settings
-import com.deniz.eda.health.HealthConnectManager
+import com.deniz.eda.health.GoogleFitManager
+import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.deniz.eda.panel.PanelActivity
 import com.deniz.eda.service.EdaForegroundService
 import kotlinx.coroutines.launch
@@ -34,27 +35,37 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ═══ Health Connect ═══
-    private lateinit var healthManager: HealthConnectManager
+    // ═══ Google Fit ═══
+    private lateinit var googleFitManager: GoogleFitManager
 
-    private val healthPermissionLauncher = registerForActivityResult(
-        PermissionController.createRequestPermissionResultContract()
-    ) { grantedPermissions ->
-        android.util.Log.i("EDA-Health",
-            "Health permissions granted: $grantedPermissions")
+    private val fitnessSignInLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            android.util.Log.i("EDA-Health", "✅ Google Fit bağlantısı başarılı")
+        } else {
+            android.util.Log.w("EDA-Health", "❌ Google Fit bağlantısı iptal edildi")
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Settings.init(this)
-        // ═══ Health Connect — مستقیم درخواست ═══
-        healthManager = HealthConnectManager(this)
+        // ═══ Google Fit — درخواست دسترسی ═══
+        googleFitManager = GoogleFitManager(this)
+        CommandProcessor.initHealth(this)
+        
         try {
-            android.util.Log.i("EDA-Health", "🔔 درخواست مستقیم مجوز")
-            healthPermissionLauncher.launch(healthManager.requiredPermissions)
+            if (!googleFitManager.isAuthorized()) {
+                android.util.Log.i("EDA-Health", "🔔 Google Fit izni isteniyor")
+                val signInIntent = googleFitManager.getSignInClient().signInIntent
+                fitnessSignInLauncher.launch(signInIntent)
+            } else {
+                android.util.Log.i("EDA-Health", "✅ Google Fit izni mevcut")
+            }
         } catch (e: Exception) {
-            android.util.Log.e("EDA-Health", "خطا: ${e.message}")
+            android.util.Log.e("EDA-Health", "Google Fit hatası: ${e.message}")
         }
 
 

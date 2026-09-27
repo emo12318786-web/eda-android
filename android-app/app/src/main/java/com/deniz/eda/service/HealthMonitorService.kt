@@ -6,7 +6,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import com.deniz.eda.health.HealthConnectManager
+import com.deniz.eda.health.GoogleFitManager
 import kotlinx.coroutines.*
 import java.util.Calendar
 
@@ -40,7 +40,7 @@ class HealthMonitorService : Service() {
     }
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private lateinit var healthManager: HealthConnectManager
+    private lateinit var googleFitManager: GoogleFitManager
     
     // وضعیت ردیابی (برای اینکه هر چیز یک بار باشه)
     private var lastMorningReport: Int = -1        // روز سال
@@ -55,7 +55,7 @@ class HealthMonitorService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        healthManager = HealthConnectManager(this)
+        googleFitManager = GoogleFitManager(this)
         createNotificationChannel()
         android.util.Log.i(TAG, "🩺 HealthMonitorService oluşturuldu")
     }
@@ -88,7 +88,7 @@ class HealthMonitorService : Service() {
         val hafta = calendar.get(Calendar.WEEK_OF_YEAR)
 
         // ۱. چک ضربان قلب (همیشه)
-        val hr = healthManager.getLatestHeartRate(20)
+        val hr = googleFitManager.getLatestHeartRate(20)
         checkHeartRate(hr)
 
         // ۲. گزارش صبحگاهی (۷-۱۰ صبح، یک بار در روز)
@@ -167,8 +167,8 @@ class HealthMonitorService : Service() {
     //  ۲. گزارش صبحگاهی
     // ─────────────────────────────────────
     private suspend fun sendMorningReport() {
-        val sleep = healthManager.getLastNightSleepHours()
-        val hr = healthManager.getLatestHeartRate(60)
+        val sleep = googleFitManager.getLastNightSleepHours()
+        val hr = googleFitManager.getLatestHeartRate(60)
         
         val mesaj = buildString {
             append("Günaydın denizçim! ")
@@ -197,7 +197,7 @@ class HealthMonitorService : Service() {
     //  ۳. یادآوری شب
     // ─────────────────────────────────────
     private suspend fun sendNightReminder() {
-        val hr = healthManager.getLatestHeartRate(60)
+        val hr = googleFitManager.getLatestHeartRate(60)
         val mesaj = if (hr != null && hr > 90) {
             "denizçim, saat ۲۲. Nabzın $hr, hâlâ yüksek. Biraz sakinleş ve yat."
         } else {
@@ -227,8 +227,8 @@ class HealthMonitorService : Service() {
     //  ۵. گزارش هفتگی
     // ─────────────────────────────────────
     private suspend fun sendWeeklyReport() {
-        val hr = healthManager.getLatestHeartRate(60)
-        val sleep = healthManager.getLastNightSleepHours()
+        val hr = googleFitManager.getLatestHeartRate(60)
+        val sleep = googleFitManager.getLastNightSleepHours()
         
         val mesaj = buildString {
             append("denizçim, haftalık rapor: ")

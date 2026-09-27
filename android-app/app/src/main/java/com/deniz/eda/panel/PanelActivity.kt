@@ -1,59 +1,69 @@
 package com.deniz.eda.panel
 
-import android.annotation.SuppressLint
 import android.os.Bundle
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.deniz.eda.R
-import com.deniz.eda.core.Settings
 
 /**
- * Kontrol Paneli — WebView icinde localhost:8080'i acar.
- * PanelServer arka planda calisir.
+ * Kontrol Paneli — WebView içinde localhost:PORT'u açar.
+ * Auto-refresh: her 5 saniyede bir sayfayı yenile
  */
 class PanelActivity : AppCompatActivity() {
 
-    private var server: PanelServer? = null
+    companion object {
+        private const val TAG = "EDA-Panel"
+        private const val AUTO_REFRESH_MS = 5000L
+    }
+
     private lateinit var webView: WebView
 
-    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ═══ Settings init (mühim!) ═══
-        Settings.init(applicationContext)
-
         // WebView
         webView = WebView(this).apply {
+            webViewClient = WebViewClient()
+            
+            // ═══ Cache kapat ═══
+            settings.cacheMode = WebSettings.LOAD_NO_CACHE
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
-            webViewClient = WebViewClient()
+            
+            // ═══ Auto-refresh (JS injection) ═══
+            webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    super.onPageFinished(view, url)
+                    // هر 5 saniyede bir sayfayı yenile
+                    view?.evaluateJavascript(
+                        """
+                        if (!window._edaAutoRefresh) {
+                            window._edaAutoRefresh = setInterval(function() {
+                                location.reload();
+                            }, $AUTO_REFRESH_MS);
+                        }
+                        """.trimIndent(),
+                        null
+                    )
+                }
+            }
         }
+
         setContentView(webView)
 
-        // Server baslat
-        try {
-            server = PanelServer(applicationContext, PanelServer.PORT)
-            server?.start(NanoHttpServer.SOCKET_READ_TIMEOUT, false)
-            Toast.makeText(this, "Panel başlatıldı: 8080", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, "Sunucu başlatılamadı: ${e.message}", Toast.LENGTH_LONG).show()
-        }
-
-        // WebView'e yükle
+        // ═══ WebView'e yükle ═══
         webView.loadUrl("http://127.0.0.1:${PanelServer.PORT}/")
     }
 
-    override fun onDestroy() {
-        server?.stop()
-        webView.destroy()
-        super.onDestroy()
+    override fun onResume() {
+        super.onResume()
+        // Sayfaya geri döndüğünde yenile
+        webView.reload()
     }
-}
 
-// NanoHTTPD'nin SOCKET_READ_TIMEOUT sabiti
-private object NanoHttpServer {
-    const val SOCKET_READ_TIMEOUT = 5000
+    override fun onDestroy() {
+        super.onDestroy()
+        webView.destroy()
+    }
 }
