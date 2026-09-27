@@ -13,6 +13,7 @@ import com.deniz.eda.R
 import com.deniz.eda.core.CommandProcessor
 import com.deniz.eda.core.Settings
 import com.deniz.eda.health.GoogleFitManager
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.deniz.eda.panel.PanelActivity
 import com.deniz.eda.service.EdaForegroundService
@@ -42,9 +43,15 @@ class MainActivity : AppCompatActivity() {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
-            android.util.Log.i("EDA-Health", "✅ Google Fit bağlantısı başarılı")
+            try {
+                val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                    .getResult(com.google.android.gms.common.api.ApiException::class.java)
+                android.util.Log.i("EDA-Health", "✅ Google Fit bağlantısı başarılı: ${account.email}")
+            } catch (e: Exception) {
+                android.util.Log.e("EDA-Health", "❌ Google Fit hesap hatası: ${e.message}")
+            }
         } else {
-            android.util.Log.w("EDA-Health", "❌ Google Fit bağlantısı iptal edildi")
+            android.util.Log.w("EDA-Health", "❌ Google Fit bağlantısı iptal edildi (code=${result.resultCode})")
         }
     }
 

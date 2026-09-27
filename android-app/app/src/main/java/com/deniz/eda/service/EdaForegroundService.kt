@@ -12,6 +12,7 @@ import android.speech.tts.UtteranceProgressListener
 import androidx.core.app.ServiceCompat
 import android.content.pm.ServiceInfo
 import com.deniz.eda.core.CommandProcessor
+import com.deniz.eda.panel.PanelServer
 import com.deniz.eda.core.KomutSonucu
 import com.deniz.eda.core.ReminderChecker
 import com.deniz.eda.core.SecurityMode
@@ -49,6 +50,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     enum class Mod { UYKU, AKTIF }
 
     private lateinit var tts: TextToSpeech
+    private var panelServer: PanelServer? = null
     private var speechRecognizer: SpeechRecognizer? = null
     private var mod = Mod.UYKU
     private var kapatOnayBekleniyor = false
@@ -69,6 +71,15 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     override fun onCreate() {
         super.onCreate()
         Settings.init(this)
+
+        // ═══ Panel Server (kontrol paneli web sunucusu) ═══
+        try {
+            panelServer = PanelServer(this)
+            panelServer?.start(10000, false)
+            android.util.Log.i("EDA-Panel", "✅ PanelServer 8080 portunda başlatıldı")
+        } catch (e: Exception) {
+            android.util.Log.e("EDA-Panel", "PanelServer başlatma hatası: ${e.message}")
+        }
 
         // ═══ Health Connect init ═══
         CommandProcessor.initHealth(this)
@@ -504,6 +515,10 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     }
 
     override fun onDestroy() {
+        try {
+            panelServer?.stop()
+            android.util.Log.i("EDA-Panel", "PanelServer durduruldu")
+        } catch (e: Exception) {}
         sonMod = "KAPALI"; Settings.sonMod = "KAPALI"
         pilJob?.cancel()
         hatirlatmaJob?.cancel()
