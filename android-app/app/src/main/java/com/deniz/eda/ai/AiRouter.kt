@@ -14,24 +14,24 @@ object AiRouter {
         val needsKey: Boolean = true
     )
 
-    private const val OLLAMA_URL = "http://localhost:11434/v1/"
+    private const val OLLAMA_URL = "http://192.168.1.3:11434/v1/"
 
     private fun saglayicilar(): List<Saglayici> {
         val tum = listOf(
-        // ═══ ۱. Pollinations (رایگان، بدون API Key) ═══
-        Saglayici(
-            ad = "Pollinations",
-            baseUrl = "https://text.pollinations.ai/openai/",
-            model = "openai-fast",  // GPT-OSS 20B (OVH)
-            apiKey = { "no-key" },
-            needsKey = false
-        ),
-        // ═══ ۲. Ollama Gemma2 (شبکه محلی) ═══
+        // ═══ ۱. Ollama Gemma2 (آفلاین، سریع) ═══
         Saglayici(
             ad = "Ollama-Gemma2",
             baseUrl = OLLAMA_URL,
             model = Settings.gemmaModel,
             apiKey = { "ollama-local" },
+            needsKey = false
+        ),
+        // ═══ ۲. Pollinations (رایگان، آنلاین) ═══
+        Saglayici(
+            ad = "Pollinations",
+            baseUrl = "https://text.pollinations.ai/openai/",
+            model = "openai-fast",
+            apiKey = { "no-key" },
             needsKey = false
         ),
         // ═══ ۳. Groq ═══
