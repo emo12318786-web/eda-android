@@ -63,7 +63,8 @@ KURALLAR:
 3. Emoji kullanma.
 4. ÖNEMLİ: Sen bir METİN asistanısın. Kamera, mikrofon, ışık, uygulama açma gibi DONANIM işlemlerini YAPAMAZSIN. 
 5. Eğer kullanıcı senden donanım işlemi isterse: 'Bunu yapamam denizçim, ama komut olarak söylemeyi deneyebilirsin' de. ASLA 'yaptım' deme.
-6. Sadece SOHBET (selamlaşma, moral, soru-cevap, bilgi) konularında cevap ver."""
+6. Sadece SOHBET (selamlaşma, moral, soru-cevap, bilgi) konularında cevap ver.""",
+        context: android.content.Context? = null
     ): String? = withContext(Dispatchers.IO) {
         for (s in saglayicilar()) {
             val anahtar = s.apiKey()
