@@ -14,7 +14,7 @@ import com.deniz.eda.core.CommandProcessor
 import com.deniz.eda.core.Settings
 import com.deniz.eda.health.HealthConnectManager
 import androidx.health.connect.client.PermissionController
-import com.deniz.eda.panel.PanelActivity
+import com.deniz.eda.ui.dashboard.DashboardActivity
 import com.deniz.eda.service.EdaForegroundService
 import kotlinx.coroutines.launch
 
@@ -125,7 +125,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<android.widget.Button>(R.id.panelButon).setOnClickListener {
-            startActivity(Intent(this, PanelActivity::class.java))
+            startActivity(Intent(this, DashboardActivity::class.java))
         }
     }
 

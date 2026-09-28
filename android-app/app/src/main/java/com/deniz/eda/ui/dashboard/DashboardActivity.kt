@@ -1,24 +1,29 @@
 package com.deniz.eda.ui.dashboard
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.deniz.eda.service.EdaForegroundService
 
 /**
- * Dashboard ekrani — eda.py'deki dashboard() fonksiyonunun grafik karsiligi.
- * Pil, AI, saat, tarih, mod ve DB istatistiklerini gosterir.
+ * Dashboard — مدرن، Native (بدون WebView)
  */
 class DashboardActivity : ComponentActivity() {
 
@@ -26,236 +31,390 @@ class DashboardActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         viewModel.yenile()
 
         setContent {
             MaterialTheme(
                 colorScheme = darkColorScheme(
-                    primary = Color(0xFF9C27B0),
-                    background = Color(0xFF0F0F1E),
-                    surface = Color(0xFF1A1A3E)
+                    primary = Color(0xFFBB86FC),
+                    background = Color(0xFF0A0E21),
+                    surface = Color(0xFF1A1F3A)
                 )
             ) {
-                DashboardScreen(viewModel)
+                DashboardScreen(
+                    viewModel = viewModel,
+                    onAction = { action -> sendAction(action) }
+                )
             }
         }
+    }
+
+    private fun sendAction(action: String) {
+        val intent = Intent(this, EdaForegroundService::class.java).apply {
+            this.action = action
+        }
+        startService(intent)
+        // بعد ۵۰۰ms یه بار دیگه refresh کن
+        viewModel.yenile()
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(viewModel: DashboardViewModel) {
+fun DashboardScreen(
+    viewModel: DashboardViewModel,
+    onAction: (String) -> Unit
+) {
     val state by viewModel.state.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "E · D · A  V4  PRO",
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFE1BEE7)
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🎙 ", fontSize = 24.sp)
+                        Text(
+                            "E · D · A",
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFBB86FC),
+                            fontSize = 22.sp
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "V5",
+                            fontWeight = FontWeight.Light,
+                            color = Color(0xFF7E57C2),
+                            fontSize = 16.sp
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF1A1A3E)
+                    containerColor = Color(0xFF141836)
                 )
             )
         },
-        containerColor = Color(0xFF0F0F1E)
+        containerColor = Color(0xFF0A0E21)
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
 
-            // ─── کارت ۱: خوش‌آمد ───
-            StatCard(
-                baslik = "👋 Merhaba",
-                deger = state.kullaniciAdi,
-                renk = Color(0xFF9C27B0)
-            )
-
-            // ─── کارت ۲: ساعت و تاریخ ───
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    StatCard(
-                        baslik = "⏰ Saat",
-                        deger = state.saat,
-                        renk = Color(0xFF03A9F4)
+            // ═══ Header کارت گرادیانتی ═══
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            listOf(Color(0xFF7E57C2), Color(0xFF2196F3), Color(0xFF00BCD4))
+                        ),
+                        shape = RoundedCornerShape(20.dp)
                     )
-                }
-                Box(modifier = Modifier.weight(1f)) {
-                    StatCard(
-                        baslik = "📅 Tarih",
-                        deger = state.tarih.split(",").firstOrNull() ?: state.tarih,
-                        renk = Color(0xFF03A9F4)
+                    .padding(20.dp)
+            ) {
+                Column {
+                    Text(
+                        "🌅 Merhaba, ${state.kullaniciAdi}",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "🕐 ${state.saat}  •  📅 ${state.tarih}",
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 13.sp
                     )
                 }
             }
 
-            // ─── کارت ۳: پیل ───
-            StatCard(
-                baslik = "🔋 Batarya",
-                deger = "${state.pilYuzde}%  ${state.pilDurum}",
-                renk = when {
-                    state.pilYuzde > 50 -> Color(0xFF4CAF50)
-                    state.pilYuzde > 20 -> Color(0xFFFF9800)
-                    else -> Color(0xFFF44336)
-                }
-            )
-
-            // ─── کارت ۴: AI Chain ───
-            StatCard(
-                baslik = "🤖 AI Zinciri",
-                deger = state.aiSaglayici,
-                renk = Color(0xFF00BCD4)
-            )
-
-            // ─── کارت ۵: وضعیت ───
+            // ═══ ۴ دکمه اصلی ═══
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    StatCard(
-                        baslik = "🎯 Mod",
-                        deger = state.mod,
-                        renk = if (state.arabaAktif) Color(0xFFFF9800) else Color(0xFF4CAF50)
-                    )
-                }
-                Box(modifier = Modifier.weight(1f)) {
-                    StatCard(
-                        baslik = "🛡️ Güvenlik",
-                        deger = if (state.guvenlikAktif) "AKTİF" else "PASİF",
-                        renk = if (state.guvenlikAktif) Color(0xFF4CAF50) else Color(0xFF757575)
-                    )
-                }
+                ActionButton(
+                    emoji = "🟢",
+                    label = "Aktif",
+                    color = Color(0xFF4CAF50),
+                    modifier = Modifier.weight(1f),
+                    onClick = { onAction("ACTION_AKTIF") }
+                )
+                ActionButton(
+                    emoji = "💤",
+                    label = "Uyku",
+                    color = Color(0xFF2196F3),
+                    modifier = Modifier.weight(1f),
+                    onClick = { onAction("ACTION_UYKU") }
+                )
             }
 
-            // ─── کارت ۶: یادگیری ───
-            StatCard(
-                baslik = "📚 Öğrenme",
-                deger = if (state.ogrenmeAktif) "AKTİF" else "PASİF",
-                renk = if (state.ogrenmeAktif) Color(0xFF4CAF50) else Color(0xFF757575)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                ActionButton(
+                    emoji = "❌",
+                    label = "Durdur",
+                    color = Color(0xFFF44336),
+                    modifier = Modifier.weight(1f),
+                    onClick = { onAction("ACTION_STOP") }
+                )
+                ActionButton(
+                    emoji = "📜",
+                    label = "Log",
+                    color = Color(0xFFFF9800),
+                    modifier = Modifier.weight(1f),
+                    onClick = { viewModel.yenile() }
+                )
+            }
 
-            // ─── خط جداکننده ───
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 8.dp),
-                color = Color(0xFF2A2A4E)
-            )
+            // ═══ بخش: وضعیت سریع ═══
+            SectionTitle("⚡ Durum")
 
-            // ─── عنوان: دیتابیس ───
-            Text(
-                "💾 Veritabanı",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFE1BEE7),
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
-
-            // ─── کارت‌های DB ───
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    StatCard(
-                        baslik = "🧠 Hafıza",
-                        deger = "${state.hafizaSayi} kayıt",
-                        renk = Color(0xFF9C27B0)
-                    )
-                }
-                Box(modifier = Modifier.weight(1f)) {
-                    StatCard(
-                        baslik = "📖 Günlük",
-                        deger = "${state.gunlukSayi} kayıt",
-                        renk = Color(0xFF9C27B0)
-                    )
-                }
+                InfoCard(
+                    emoji = "🔋",
+                    title = "Batarya",
+                    value = "${state.pilYuzde}%",
+                    subtitle = state.pilDurum,
+                    color = when {
+                        state.pilYuzde > 50 -> Color(0xFF4CAF50)
+                        state.pilYuzde > 20 -> Color(0xFFFF9800)
+                        else -> Color(0xFFF44336)
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+                InfoCard(
+                    emoji = "🧠",
+                    title = "AI",
+                    value = state.aiSaglayici.split(" → ").firstOrNull() ?: "?",
+                    subtitle = "zincir: ${state.aiSaglayici.count { it == '→' } + 1}",
+                    color = Color(0xFF00BCD4),
+                    modifier = Modifier.weight(1f)
+                )
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    StatCard(
-                        baslik = "⏰ Hatırlatma",
-                        deger = "${state.hatirlatmaSayi} bekliyor",
-                        renk = Color(0xFF9C27B0)
-                    )
-                }
-                Box(modifier = Modifier.weight(1f)) {
-                    StatCard(
-                        baslik = "📋 Log",
-                        deger = "${state.logSayi} kayıt",
-                        renk = Color(0xFF9C27B0)
-                    )
+                InfoCard(
+                    emoji = "🎯",
+                    title = "Mod",
+                    value = state.mod,
+                    subtitle = if (state.guvenlikAktif) "güvenlik aktif" else "normal",
+                    color = if (state.arabaAktif) Color(0xFFFF9800) else Color(0xFF4CAF50),
+                    modifier = Modifier.weight(1f)
+                )
+                InfoCard(
+                    emoji = "📚",
+                    title = "Öğrenme",
+                    value = if (state.ogrenmeAktif) "Açık" else "Kapalı",
+                    subtitle = "AI learning",
+                    color = if (state.ogrenmeAktif) Color(0xFF4CAF50) else Color(0xFF757575),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // ═══ بخش: آمار DB ═══
+            SectionTitle("💾 Veritabanı")
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                InfoCard(
+                    emoji = "🧠",
+                    title = "Hafıza",
+                    value = "${state.hafizaSayi}",
+                    subtitle = "kayıt",
+                    color = Color(0xFF9C27B0),
+                    modifier = Modifier.weight(1f)
+                )
+                InfoCard(
+                    emoji = "📖",
+                    title = "Günlük",
+                    value = "${state.gunlukSayi}",
+                    subtitle = "kayıt",
+                    color = Color(0xFF9C27B0),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                InfoCard(
+                    emoji = "⏰",
+                    title = "Hatırlatma",
+                    value = "${state.hatirlatmaSayi}",
+                    subtitle = "bekliyor",
+                    color = Color(0xFF9C27B0),
+                    modifier = Modifier.weight(1f)
+                )
+                InfoCard(
+                    emoji = "📋",
+                    title = "Log",
+                    value = "${state.logSayi}",
+                    subtitle = "kayıt",
+                    color = Color(0xFF9C27B0),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // ═══ بخش: لاگ‌های اخیر ═══
+            SectionTitle("📜 Son Aktiviteler")
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF141836)),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    if (state.sonLoglar.isEmpty()) {
+                        Text(
+                            "Henüz log yok",
+                            color = Color(0xFF757575),
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    } else {
+                        state.sonLoglar.take(15).forEach { log ->
+                            Text(
+                                log,
+                                color = Color(0xFFB0BEC5),
+                                fontSize = 11.sp,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 3.dp)
+                            )
+                        }
+                    }
                 }
             }
 
-            // ─── دکمه رفرش ───
+            // ═══ دکمه Yenile ═══
             Button(
                 onClick = { viewModel.yenile() },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp)
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF7E57C2)
+                ),
+                shape = RoundedCornerShape(14.dp)
             ) {
-                Text("🔄 Yenile")
+                Text("🔄  Yenile", fontSize = 15.sp, fontWeight = FontWeight.Bold)
             }
 
-            // ─── پایین ───
+            // ═══ Footer ═══
             Text(
-                "🎙️ Söyle: Eda ➜ Uyandır",
+                "🎙️ Söyle: \"Eda\" ➜ Uyandır",
                 fontSize = 12.sp,
                 color = Color(0xFF757575),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    .padding(top = 8.dp),
+                textAlign = TextAlign.Center
             )
+
+            Spacer(Modifier.height(20.dp))
+        }
+    }
+}
+
+// ═══════════════════════════════════════
+//  Composable های کمکی
+// ═══════════════════════════════════════
+
+@Composable
+fun SectionTitle(text: String) {
+    Text(
+        text,
+        fontSize = 15.sp,
+        fontWeight = FontWeight.Bold,
+        color = Color(0xFFBB86FC),
+        modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
+    )
+}
+
+@Composable
+fun ActionButton(
+    emoji: String,
+    label: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(64.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = color.copy(alpha = 0.15f)),
+        shape = RoundedCornerShape(14.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.5f))
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(emoji, fontSize = 20.sp)
+            Text(label, color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
-fun StatCard(
-    baslik: String,
-    deger: String,
-    renk: Color
+fun InfoCard(
+    emoji: String,
+    title: String,
+    value: String,
+    subtitle: String,
+    color: Color,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1A1A3E)
-        )
+        modifier = modifier.height(90.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF141836)),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+                .fillMaxSize()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(emoji, fontSize = 16.sp)
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    title,
+                    color = Color(0xFFB0BEC5),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
             Text(
-                baslik,
-                fontSize = 12.sp,
-                color = Color(0xFF9E9E9E)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                deger,
-                fontSize = 16.sp,
+                value,
+                color = color,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
-                color = renk
+                maxLines = 1
+            )
+            Text(
+                subtitle,
+                color = Color(0xFF757575),
+                fontSize = 10.sp,
+                maxLines = 1
             )
         }
     }

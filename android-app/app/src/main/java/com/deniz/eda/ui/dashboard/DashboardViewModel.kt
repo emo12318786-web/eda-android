@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.deniz.eda.core.Settings
 import com.deniz.eda.data.db.EdaDatabase
 import com.deniz.eda.utils.BatteryUtils
+import com.deniz.eda.utils.EdaLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,7 +39,8 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         val logSayi: Int = 0,
         val saat: String = "",
         val tarih: String = "",
-        val kullaniciAdi: String = ""
+        val kullaniciAdi: String = "",
+        val sonLoglar: List<String> = emptyList()
     )
 
     private val _state = MutableStateFlow(DashboardState())
@@ -104,7 +106,8 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                 logSayi = logSayi,
                 saat = saat,
                 tarih = tarih,
-                kullaniciAdi = Settings.kullaniciAdi
+                kullaniciAdi = Settings.kullaniciAdi,
+                sonLoglar = EdaLog.oku(ctx).takeLast(15).reversed()
             )
         }
     }
