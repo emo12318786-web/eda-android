@@ -110,21 +110,6 @@ object CommandProcessor {
         // ═══ ۱۹ بخش محبت‌آمیز (بدون AI) ═══
         AffectionResponses.bul(metin, hitap)?.let { return KomutSonucu.Cevap(it) }
 
-        // ═══ Mikrofon Kapat (Dinlemeyi Durdur) ═══
-        v(metin, "mikrofon", "mikrofonu", "dinlemeyi", "dinleme") && v(metin, "kapat", "kapa", "durdur", "sustur") -> {
-            KomutSonucu.UykuyaDon
-        }
-
-        // ═══ Öğrenme Modu Aç/Kapat ═══
-        v(metin, "öğrenme modu", "ogrenme modu") && v(metin, "aç", "ac", "aktif", "başlat") -> {
-            Settings.ogrenmeAktif = true
-            KomutSonucu.Cevap("Öğrenme modu aktif edildi denizçim. Şimdi bana bir şey öğretebilirsin.")
-        }
-        v(metin, "öğrenme modu", "ogrenme modu") && v(metin, "kapat", "kapa", "durdur", "kapa") -> {
-            Settings.ogrenmeAktif = false
-            KomutSonucu.Cevap("Öğrenme modu kapatıldı denizçim.")
-        }
-
         // ═══ Öğret Komutu ═══
         if (metin.startsWith("öğret ") && " komutu " in metin) {
             val parcalar = metin.removePrefix("öğret ").split(" komutu ", limit = 2)
