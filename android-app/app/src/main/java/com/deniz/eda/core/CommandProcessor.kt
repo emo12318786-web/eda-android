@@ -111,9 +111,8 @@ object CommandProcessor {
         AffectionResponses.bul(metin, hitap)?.let { return KomutSonucu.Cevap(it) }
 
         // ═══ Geçici Uyku: "X dakika dinlen/uyu/bekle/kapat" ═══
-        if (Regex("(\\d+)\\s*(dakika|saniye|saat)").containsMatchIn(metin) &&
-            v(metin, "mikrofon", "mikrofonu", "dinlen", "dinle", "uyu", "bekle", "kapat", "sustur", "ara ver")
-        ) {
+        (v(metin, "mikrofon", "mikrofonu", "dinlen", "dinle", "uyu", "bekle", "kapat", "sustur", "ara ver") && 
+            Regex("(\\d+)\\s*(dakika|saniye|saat)").containsMatchIn(metin)) -> {
             val match = Regex("(\\d+)\\s*(dakika|saniye|saat)").find(metin)
             if (match != null) {
                 val sayi = match.groupValues[1].toIntOrNull() ?: 0
@@ -124,18 +123,22 @@ object CommandProcessor {
                     "saat" -> sayi * 3_600_000L
                     else -> 0L
                 }
-                if (ms in 1000L..86_400_000L) {  // بین ۱ ثانیه و ۲۴ ساعت
+                if (ms in 1000L..86_400_000L) {
                     val birimTr = when (birim) {
                         "saniye" -> "saniye"
                         "dakika" -> "dakika"
                         "saat" -> "saat"
                         else -> "dakika"
                     }
-                    return KomutSonucu.GeciciUyku(
+                    KomutSonucu.GeciciUyku(
                         ms,
                         "Tamam $hitap, $sayi $birimTr dinleniyorum. Sonra geri döneceğim."
                     )
+                } else {
+                    KomutSonucu.Cevap("Süre çok kısa veya çok uzun $hitap.")
                 }
+            } else {
+                KomutSonucu.Cevap("Süreyi anlayamadım $hitap.")
             }
         }
 
