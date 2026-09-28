@@ -110,19 +110,6 @@ object CommandProcessor {
         // ═══ ۱۹ بخش محبت‌آمیز (بدون AI) ═══
         AffectionResponses.bul(metin, hitap)?.let { return KomutSonucu.Cevap(it) }
 
-        // ═══ Geçici Uyku ═══
-        (v(metin, "mikrofon", "mikrofonu", "dinlen", "uyu", "bekle") && (v(metin, "dakika") || v(metin, "saniye") || v(metin, "saat"))) -> {
-            val sayilar = Regex("\\d+").findAll(metin).map { it.value.toIntOrNull() ?: 0 }.toList()
-            val sayi = sayilar.firstOrNull() ?: 0
-            val birim = if (v(metin, "saat")) "saat" else if (v(metin, "saniye")) "saniye" else "dakika"
-            val ms = if (birim == "saat") sayi * 3600000L else if (birim == "saniye") sayi * 1000L else sayi * 60000L
-            if (ms in 1000L..86400000L) {
-                KomutSonucu.GeciciUyku(ms, "Tamam $hitap, $sayi $birim dinleniyorum.")
-            } else {
-                KomutSonucu.Cevap("Süre hatalı $hitap.")
-            }
-        }
-
         // ═══ Mikrofon Kapat (Dinlemeyi Durdur) ═══
         v(metin, "mikrofon", "mikrofonu", "dinlemeyi", "dinleme") && v(metin, "kapat", "kapa", "durdur", "sustur") -> {
             KomutSonucu.UykuyaDon
