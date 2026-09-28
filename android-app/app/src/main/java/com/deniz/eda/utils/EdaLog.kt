@@ -90,4 +90,68 @@ object EdaLog {
             android.util.Log.e("EdaLog", "temizleme hatasi: ${e.message}")
         }
     }
+
+    /**
+     * لاگ‌ها رو تو یه فایل txt با timestamp ذخیره می‌کنه
+     * و مسیر فایل رو برمی‌گردونه (برای share).
+     */
+    fun export(context: Context, sleep: Boolean = false): File? {
+        return try {
+            val tumLoglar = oku(context, sleep)
+            if (tumLoglar.isEmpty()) return null
+
+            val zaman = DigitUtils.formatTime("yyyy-MM-dd_HH-mm-ss")
+            val dosyaAdi = if (sleep) "eda_sleep_log_$zaman.txt" else "eda_log_$zaman.txt"
+            val outDir = File(context.cacheDir, "exports")
+            if (!outDir.exists()) outDir.mkdirs()
+            val outFile = File(outDir, dosyaAdi)
+
+            val baslik = "═══ Eda Log Raporu ═══\n" +
+                    "Tarih: ${DigitUtils.formatTime("yyyy-MM-dd HH:mm:ss")}\n" +
+                    "Satır sayısı: ${tumLoglar.size}\n" +
+                    "═══════════════════════════════════\n\n"
+
+            outFile.writeText(baslik + tumLoglar.joinToString("\n"))
+
+            android.util.Log.i("EdaLog", "Export: ${outFile.absolutePath}")
+            outFile
+        } catch (e: Exception) {
+            android.util.Log.e("EdaLog", "export hatasi: ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * لاگ‌ها رو share می‌کنه (WhatsApp, Telegram, Email, ...)
+     */
+    fun share(context: Context, sleep: Boolean = false) {
+        try {
+            val dosya = export(context, sleep)
+            if (dosya == null || !dosya.exists()) {
+                android.widget.Toast.makeText(context, "Log boş — paylaşılacak bir şey yok.", android.widget.Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                dosya
+            )
+
+            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                putExtra(android.content.Intent.EXTRA_SUBJECT, "Eda Log Raporu")
+                putExtra(android.content.Intent.EXTRA_TEXT, "Eda log kayıtları ekte.")
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            val chooser = android.content.Intent.createChooser(intent, "Log nasıl paylaşılsın?")
+            chooser.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(chooser)
+        } catch (e: Exception) {
+            android.util.Log.e("EdaLog", "share hatasi: ${e.message}")
+            android.widget.Toast.makeText(context, "Paylaşma hatası: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
 }

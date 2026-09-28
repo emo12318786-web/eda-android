@@ -33,6 +33,7 @@ sealed class KomutSonucu {
     object Kapat : KomutSonucu()
     data class GuvenlikModuDegisti(val aktif: Boolean) : KomutSonucu()
     data class ArabaModuDegisti(val aktif: Boolean) : KomutSonucu()
+    data class GeciciUyku(val sureMs: Long, val mesaj: String) : KomutSonucu()
 }
 
 object CommandProcessor {
@@ -109,13 +110,58 @@ object CommandProcessor {
         // ═══ ۱۹ بخش محبت‌آمیز (بدون AI) ═══
         AffectionResponses.bul(metin, hitap)?.let { return KomutSonucu.Cevap(it) }
 
+        // ═══ Geçici Uyku: "X dakika dinlen/uyu/bekle/kapat" ═══
+        if (Regex("(\\d+)\\s*(dakika|saniye|saat)").containsMatchIn(metin) &&
+            v(metin, "mikrofon", "mikrofonu", "dinlen", "dinle", "uyu", "bekle", "kapat", "sustur", "ara ver")
+        ) {
+            val match = Regex("(\\d+)\\s*(dakika|saniye|saat)").find(metin)
+            if (match != null) {
+                val sayi = match.groupValues[1].toIntOrNull() ?: 0
+                val birim = match.groupValues[2]
+                val ms = when (birim) {
+                    "saniye" -> sayi * 1000L
+                    "dakika" -> sayi * 60_000L
+                    "saat" -> sayi * 3_600_000L
+                    else -> 0L
+                }
+                if (ms in 1000L..86_400_000L) {  // بین ۱ ثانیه و ۲۴ ساعت
+                    val birimTr = when (birim) {
+                        "saniye" -> "saniye"
+                        "dakika" -> "dakika"
+                        "saat" -> "saat"
+                        else -> "dakika"
+                    }
+                    return KomutSonucu.GeciciUyku(
+                        ms,
+                        "Tamam $hitap, $sayi $birimTr dinleniyorum. Sonra geri döneceğim."
+                    )
+                }
+            }
+        }
+
+        // ═══ Mikrofon Kapat (Dinlemeyi Durdur) ═══
+        v(metin, "mikrofon", "mikrofonu", "dinlemeyi", "dinleme") && v(metin, "kapat", "kapa", "durdur", "sustur") -> {
+            KomutSonucu.UykuyaDon
+        }
+
+        // ═══ Öğrenme Modu Aç/Kapat ═══
+        v(metin, "öğrenme modu", "ogrenme modu") && v(metin, "aç", "ac", "aktif", "başlat") -> {
+            Settings.ogrenmeAktif = true
+            KomutSonucu.Cevap("Öğrenme modu aktif edildi denizçim. Şimdi bana bir şey öğretebilirsin.")
+        }
+        v(metin, "öğrenme modu", "ogrenme modu") && v(metin, "kapat", "kapa", "durdur", "kapa") -> {
+            Settings.ogrenmeAktif = false
+            KomutSonucu.Cevap("Öğrenme modu kapatıldı denizçim.")
+        }
+
+        // ═══ Öğret Komutu ═══
         if (metin.startsWith("öğret ") && " komutu " in metin) {
             val parcalar = metin.removePrefix("öğret ").split(" komutu ", limit = 2)
             if (parcalar.size == 2) {
                 val kelime = parcalar[0].trim()
                 val komut = parcalar[1].trim()
                 if (kelime.isNotBlank() && komut.isNotBlank()) {
-                    LearningStore.ogren(context, kelime, komut)
+                    LearningStore.ogren(context, kelime, komut, zorla = true)
                     return KomutSonucu.Cevap("Öğrendim $hitap: \"$kelime\" dediğinde \"$komut\" yapacağım.")
                 }
             }
@@ -493,9 +539,9 @@ object CommandProcessor {
                 KomutSonucu.Cevap(ExtraCommands.sistemTest(context, hitap))
             
             else -> {
-                val aiCevap = AiRouter.sor(metinHam)
+                val aiCevap = AiRouter.sor(metinHam, context = context)
                 if (aiCevap != null) KomutSonucu.Cevap(aiCevap)
-                else KomutSonucu.Cevap("Anlayamadım $hitap, ya da şu an internetim yok.")
+                else KomutSonucu.Cevap("Şu an cevap veremiyorum $hitap, ama dinliyorum.")
             }
         }
     }

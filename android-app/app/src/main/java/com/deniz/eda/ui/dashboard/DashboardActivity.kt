@@ -43,7 +43,8 @@ class DashboardActivity : ComponentActivity() {
             ) {
                 DashboardScreen(
                     viewModel = viewModel,
-                    onAction = { action -> sendAction(action) }
+                    onAction = { action -> sendAction(action) },
+                    onShareLog = { com.deniz.eda.utils.EdaLog.share(this) }
                 )
             }
         }
@@ -63,7 +64,8 @@ class DashboardActivity : ComponentActivity() {
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
-    onAction: (String) -> Unit
+    onAction: (String) -> Unit,
+    onShareLog: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -303,18 +305,35 @@ fun DashboardScreen(
                 }
             }
 
-            // ═══ دکمه Yenile ═══
-            Button(
-                onClick = { viewModel.yenile() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF7E57C2)
-                ),
-                shape = RoundedCornerShape(14.dp)
+            // ═══ دکمه‌های عملیات ═══
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text("🔄  Yenile", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Button(
+                    onClick = { viewModel.yenile() },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF7E57C2)
+                    ),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text("🔄  Yenile", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                }
+                Button(
+                    onClick = { onShareLog() },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF2196F3)
+                    ),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text("📤  Paylaş", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                }
             }
 
             // ═══ Footer ═══

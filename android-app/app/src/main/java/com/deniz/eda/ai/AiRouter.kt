@@ -56,17 +56,29 @@ object AiRouter {
 
     suspend fun sor(
         kullaniciSorusu: String,
-        sistemMesaji: String = "Sen Eda'sın. Kullanıcıya 'denizçim' diye hitap et. Maksimum 1 cümle cevap ver. Emoji kullanma."
+        sistemMesaji: String = """Sen Eda'sın, denizçim'in sesli asistanısın. 
+KURALLAR:
+1. Kullanıcıya 'denizçim' diye hitap et.
+2. Maksimum 1 cümle cevap ver.
+3. Emoji kullanma.
+4. ÖNEMLİ: Sen bir METİN asistanısın. Kamera, mikrofon, ışık, uygulama açma gibi DONANIM işlemlerini YAPAMAZSIN. 
+5. Eğer kullanıcı senden donanım işlemi isterse: 'Bunu yapamam denizçim, ama komut olarak söylemeyi deneyebilirsin' de. ASLA 'yaptım' deme.
+6. Sadece SOHBET (selamlaşma, moral, soru-cevap, bilgi) konularında cevap ver."""
     ): String? = withContext(Dispatchers.IO) {
         for (s in saglayicilar()) {
             val anahtar = s.apiKey()
             if (s.needsKey && anahtar.isBlank()) continue
             try {
                 val api = OpenAiCompatibleApi.olustur(s.baseUrl)
+                // ═══ ابزارها رو به prompt اضافه کن ═══
+                val sistemTam = if (context != null) {
+                    sistemMesaji + "\n\n" + com.deniz.eda.utils.SystemTools.listTools()
+                } else sistemMesaji
+
                 val istek = ChatCompletionRequest(
                     model = s.model,
                     messages = listOf(
-                        ChatMessage("system", sistemMesaji),
+                        ChatMessage("system", sistemTam),
                         ChatMessage("user", kullaniciSorusu)
                     ),
                     temperature = 0.3,
@@ -77,6 +89,39 @@ object AiRouter {
                     val cevap = yanit.body()?.choices?.firstOrNull()?.message?.content?.trim()
                     if (!cevap.isNullOrBlank()) {
                         android.util.Log.d("AiRouter", "✅ ${s.ad}: $cevap")
+                        
+                        // ═══ چک کن اگه <TOOL> داشت ═══
+                        if (context != null && cevap.contains("<TOOL>")) {
+                            val match = Regex("<TOOL>(.+?)</TOOL>").find(cevap)
+                            val toolName = match?.groupValues?.getOrNull(1)
+                            if (toolName != null) {
+                                android.util.Log.i("AiRouter", "🔧 Tool: $toolName")
+                                val toolResult = com.deniz.eda.utils.SystemTools.runTool(toolName.trim(), context)
+                                android.util.Log.i("AiRouter", "🔧 Sonuç: $toolResult")
+                                
+                                // نتیجه رو به LLM برگردون برای جواب نهایی
+                                val istekFinal = ChatCompletionRequest(
+                                    model = s.model,
+                                    messages = listOf(
+                                        ChatMessage("system", sistemMesaji),
+                                        ChatMessage("user", "Soru: $kullaniciSorusu\nTool sonucu: $toolResult\nKısa Türkçe cevap ver, denizçim diye hitap et.")
+                                    ),
+                                    temperature = 0.3,
+                                    max_tokens = 100
+                                )
+                                val yanitFinal = api.sohbetTamamla("Bearer $anahtar", istekFinal)
+                                if (yanitFinal.isSuccessful) {
+                                    val cevapFinal = yanitFinal.body()?.choices?.firstOrNull()?.message?.content?.trim()
+                                    if (!cevapFinal.isNullOrBlank()) {
+                                        android.util.Log.d("AiRouter", "✅ Final: $cevapFinal")
+                                        return@withContext cevapFinal
+                                    }
+                                }
+                                // اگه LLM جواب نداد، خودمون نتیجه رو بگیم
+                                return@withContext "Sonuç: $toolResult"
+                            }
+                        }
+                        
                         return@withContext cevap
                     }
                 } else {

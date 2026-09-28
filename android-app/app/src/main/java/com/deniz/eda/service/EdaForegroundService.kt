@@ -504,6 +504,32 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                         else "Güvenlik modu kapatıldı ${Settings.kullaniciAdi}."
                     ) { baslatDinleme() }
                 }
+                is KomutSonucu.GeciciUyku -> {
+                    val sureMs = sonuc.sureMs
+                    val sureDakika = sureMs / 60000.0
+                    android.util.Log.i("EdaService", "⏱ Geçici uyku: ${sureMs}ms")
+                    mod = Mod.UYKU
+                    sonMod = "UYKU"; Settings.sonMod = "UYKU"
+                    dinlemeAktif = false
+                    try {
+                        speechRecognizer?.stopListening()
+                        speechRecognizer?.cancel()
+                    } catch (e: Exception) {}
+                    bildirimGuncelle("💤 Geçici uyku — ${"%.1f".format(sureDakika)} dk")
+                    konus(sonuc.mesaj) {
+                        // بعد از مدت مشخص، خودکار بیدار شو
+                        serviceScope.launch {
+                            kotlinx.coroutines.delay(sureMs)
+                            android.util.Log.i("EdaService", "⏰ Geçici uyku bitti, geri dönüyorum")
+                            mod = Mod.AKTIF
+                            sonMod = "AKTIF"; Settings.sonMod = "AKTIF"
+                            bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
+                            konus("Geri döndüm denizçim, dinliyorum.") {
+                                baslatDinleme()
+                            }
+                        }
+                    }
+                }
                 is KomutSonucu.ArabaModuDegisti -> {
                     konus(
                         if (sonuc.aktif) "Araba modu açıldı ${Settings.kullaniciAdi}."

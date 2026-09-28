@@ -21,8 +21,9 @@ object LearningStore {
             JSONObject().apply { put("eslesmeler", JSONObject()); put("istatistikler", JSONObject()) }
         )
 
-    fun ogren(context: Context, kullaniciMetni: String, edaKomutu: String) {
-        if (!Settings.ogrenmeAktif) return
+    fun ogren(context: Context, kullaniciMetni: String, edaKomutu: String, zorla: Boolean = false) {
+        // Eğer zorla=true, öğrenme modu kapalı olsa bile öğren
+        if (!zorla && !Settings.ogrenmeAktif) return
         val metinKucuk = kullaniciMetni.lowercase()
         if (KOMUT_KARA_LISTE.any { it in metinKucuk }) return
         if (kullaniciMetni.trim() == edaKomutu.trim()) return
