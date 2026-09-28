@@ -110,35 +110,16 @@ object CommandProcessor {
         // ═══ ۱۹ بخش محبت‌آمیز (بدون AI) ═══
         AffectionResponses.bul(metin, hitap)?.let { return KomutSonucu.Cevap(it) }
 
-        // ═══ Geçici Uyku: "X dakika dinlen/uyu/bekle/kapat" ═══
-        (v(metin, "mikrofon", "mikrofonu", "dinlen", "dinle", "uyu", "bekle", "kapat", "sustur", "ara ver") && 
-            Regex("(\\d+)\\s*(dakika|saniye|saat)").containsMatchIn(metin)) -> {
-            val match = Regex("(\\d+)\\s*(dakika|saniye|saat)").find(metin)
-            if (match != null) {
-                val sayi = match.groupValues[1].toIntOrNull() ?: 0
-                val birim = match.groupValues[2]
-                val ms = when (birim) {
-                    "saniye" -> sayi * 1000L
-                    "dakika" -> sayi * 60_000L
-                    "saat" -> sayi * 3_600_000L
-                    else -> 0L
-                }
-                if (ms in 1000L..86_400_000L) {
-                    val birimTr = when (birim) {
-                        "saniye" -> "saniye"
-                        "dakika" -> "dakika"
-                        "saat" -> "saat"
-                        else -> "dakika"
-                    }
-                    KomutSonucu.GeciciUyku(
-                        ms,
-                        "Tamam $hitap, $sayi $birimTr dinleniyorum. Sonra geri döneceğim."
-                    )
-                } else {
-                    KomutSonucu.Cevap("Süre çok kısa veya çok uzun $hitap.")
-                }
+        // ═══ Geçici Uyku ═══
+        (v(metin, "mikrofon", "mikrofonu", "dinlen", "uyu", "bekle") && (v(metin, "dakika") || v(metin, "saniye") || v(metin, "saat"))) -> {
+            val sayilar = Regex("\\d+").findAll(metin).map { it.value.toIntOrNull() ?: 0 }.toList()
+            val sayi = sayilar.firstOrNull() ?: 0
+            val birim = if (v(metin, "saat")) "saat" else if (v(metin, "saniye")) "saniye" else "dakika"
+            val ms = if (birim == "saat") sayi * 3600000L else if (birim == "saniye") sayi * 1000L else sayi * 60000L
+            if (ms in 1000L..86400000L) {
+                KomutSonucu.GeciciUyku(ms, "Tamam $hitap, $sayi $birim dinleniyorum.")
             } else {
-                KomutSonucu.Cevap("Süreyi anlayamadım $hitap.")
+                KomutSonucu.Cevap("Süre hatalı $hitap.")
             }
         }
 
