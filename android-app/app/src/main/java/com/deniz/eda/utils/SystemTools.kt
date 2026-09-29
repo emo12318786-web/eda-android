@@ -78,7 +78,7 @@ Sen: Merhaba denizçim, iyiyim sen nasılsın?
     }
 
     private suspend fun checkInternetText(context: Context): String {
-        return if (checkInternet(context)) "internet: var" else "internet: yok"
+        return if (checkInternet(context)) "Internet baglantisi var" else "Internet baglantisi yok"
     }
 
     private suspend fun checkOllamaText(): String = withContext(Dispatchers.IO) {
@@ -90,14 +90,14 @@ Sen: Merhaba denizçim, iyiyim sen nasılsın?
             val url = "http://192.168.1.3:11434/v1/models"
             val req = Request.Builder().url(url).build()
             client.newCall(req).execute().use { resp ->
-                if (resp.isSuccessful) "ollama: çalışıyor" else "ollama: hata ${resp.code}"
+                if (resp.isSuccessful) "Ollama calisiyor" else "Ollama hata kodu ${resp.code}"
             }
-        } catch (e: Exception) { "ollama: kapalı (${e.message})" }
+        } catch (e: Exception) { "Ollama kapali" }
     }
 
     private fun checkGroqText(): String {
-        return if (Settings.groqApiKey.isBlank()) "groq: API key yok"
-        else "groq: API key var (uzunluk ${Settings.groqApiKey.length})"
+        return if (Settings.groqApiKey.isBlank()) "Groq anahtari yok"
+        else "Groq anahtari var"
     }
 
     private suspend fun checkPollinationsText(): String = withContext(Dispatchers.IO) {
@@ -108,9 +108,9 @@ Sen: Merhaba denizçim, iyiyim sen nasılsın?
                 .build()
             val req = Request.Builder().url("https://text.pollinations.ai/").build()
             client.newCall(req).execute().use { resp ->
-                if (resp.isSuccessful) "pollinations: çalışıyor" else "pollinations: hata ${resp.code}"
+                if (resp.isSuccessful) "Pollinations calisiyor" else "Pollinations hata kodu ${resp.code}"
             }
-        } catch (e: Exception) { "pollinations: hata (${e.message})" }
+        } catch (e: Exception) { "Pollinations hata" }
     }
 
     private fun getBatteryText(context: Context): String {
@@ -119,21 +119,21 @@ Sen: Merhaba denizçim, iyiyim sen nasılsın?
             val level = bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
             val status = bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_STATUS)
             val durum = when (status) {
-                android.os.BatteryManager.BATTERY_STATUS_CHARGING -> "şarjda"
+                android.os.BatteryManager.BATTERY_STATUS_CHARGING -> "sarj oluyor"
                 android.os.BatteryManager.BATTERY_STATUS_FULL -> "dolu"
-                android.os.BatteryManager.BATTERY_STATUS_DISCHARGING -> "deşarjda"
-                else -> "?"
+                android.os.BatteryManager.BATTERY_STATUS_DISCHARGING -> "pilde"
+                else -> ""
             }
-            "pil: %$level ($durum)"
-        } catch (e: Exception) { "pil: bilgi alınamadı" }
+            "Pil yuzde $level $durum"
+        } catch (e: Exception) { "Pil bilgisi alinamadi" }
     }
 
     private fun getAIText(): String {
-        return "ai: ${Settings.aiSaglayici} (gemma model: ${Settings.gemmaModel})"
+        return "Yapay zeka ${Settings.aiSaglayici}, model ${Settings.gemmaModel}"
     }
 
     private fun getModeText(): String {
-        return "mod: ${Settings.sonMod}"
+        return "Mod ${Settings.sonMod}"
     }
 
     suspend fun fullCheck(context: Context): String {

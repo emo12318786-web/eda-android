@@ -27,10 +27,10 @@ object BatteryUtils {
         val sarjOluyorMu = statusCode == BatteryManager.BATTERY_STATUS_CHARGING ||
                 statusCode == BatteryManager.BATTERY_STATUS_FULL
         val durum = when (statusCode) {
-            BatteryManager.BATTERY_STATUS_CHARGING -> "CHARGING"
-            BatteryManager.BATTERY_STATUS_FULL -> "FULL"
-            BatteryManager.BATTERY_STATUS_DISCHARGING -> "DISCHARGING"
-            BatteryManager.BATTERY_STATUS_NOT_CHARGING -> "NOT_CHARGING"
+            BatteryManager.BATTERY_STATUS_CHARGING -> "sarj oluyor"
+            BatteryManager.BATTERY_STATUS_FULL -> "dolu"
+            BatteryManager.BATTERY_STATUS_DISCHARGING -> "pilde"
+            BatteryManager.BATTERY_STATUS_NOT_CHARGING -> "sarj olmuyor"
             else -> "UNKNOWN"
         }
         return PilBilgisi(yuzde, sarjOluyorMu, durum)

@@ -162,7 +162,7 @@ object CommandProcessor {
         val kok = kokBul(sonSoru) ?: return KomutSonucu.Cevap("Ne kontrol edeyim $hitap?")
 
         val yeniCevap = when (kok) {
-            "internet" -> if (SystemTools.checkInternet(context)) "Internet baglantisi var" else "Internet baglantisi yok"
+            "internet" -> if (SystemTools.checkInternet(context)) "internet: var" else "internet: yok"
             "ollama" -> SystemTools.runTool("CHECK_OLLAMA", context)
             "groq" -> SystemTools.runTool("CHECK_GROQ", context)
             "pollinations" -> SystemTools.runTool("CHECK_POLLINATIONS", context)

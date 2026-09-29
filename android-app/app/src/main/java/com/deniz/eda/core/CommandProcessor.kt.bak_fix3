@@ -108,23 +108,23 @@ object CommandProcessor {
 
     private fun otomatikOgren(context: Context, metin: String) {
         val m = metin.lowercase().trim()
-        val yasakli = setOf(
-            "ne", "kim", "nerede", "nasıl", "nasil", "neden", "niçin", "nicin",
-            "mi", "mı", "mu", "mü", "misin", "misiniz", "mısın", "musun",
-            "var", "yok", "değil", "degil"
-        )
-        val adKaliplari = listOf("benim adım", "benim adim", "adım", "adim", "ismim", "benim ismim")
+        // "benim adım X" / "adım X" / "ismim X"
+        val adKaliplari = listOf("benim adım", "benim adim", "adım", "adim", "ismim", "benim ismim", "adim")
         for (kalip in adKaliplari) {
             if (m.startsWith("$kalip ")) {
                 val ad = m.removePrefix("$kalip ").trim()
-                if (ad.isBlank()) return
-                if (ad in yasakli) return
-                if (ad.length !in 2..30) return
-                if (ad.contains(" ")) return
-                if (ad.endsWith("mi") || ad.endsWith("mı") || ad.endsWith("mu") || ad.endsWith("mü")) return
-                Settings.kullaniciAdi = ad
-                android.util.Log.d("CommandProcessor", "Ad ogrenildi: $ad")
+                if (ad.isNotBlank() && ad.length in 2..30 && !ad.contains(" ")) {
+                    Settings.kullaniciAdi = ad
+                    android.util.Log.d("CommandProcessor", "Ad ogrenildi: $ad")
+                }
                 return
+            }
+        }
+        // "ben X'im" / "ben X yim"
+        if (m.startsWith("ben ") && (m.endsWith("yim") || m.endsWith("im") || m.endsWith("ım"))) {
+            val isim = m.removePrefix("ben ").removeSuffix("yim").removeSuffix("im").removeSuffix("ım").trim()
+            if (isim.isNotBlank() && isim.length in 2..20 && !isim.contains(" ")) {
+                Settings.kullaniciAdi = isim
             }
         }
     }
@@ -162,7 +162,7 @@ object CommandProcessor {
         val kok = kokBul(sonSoru) ?: return KomutSonucu.Cevap("Ne kontrol edeyim $hitap?")
 
         val yeniCevap = when (kok) {
-            "internet" -> if (SystemTools.checkInternet(context)) "Internet baglantisi var" else "Internet baglantisi yok"
+            "internet" -> if (SystemTools.checkInternet(context)) "internet: var" else "internet: yok"
             "ollama" -> SystemTools.runTool("CHECK_OLLAMA", context)
             "groq" -> SystemTools.runTool("CHECK_GROQ", context)
             "pollinations" -> SystemTools.runTool("CHECK_POLLINATIONS", context)

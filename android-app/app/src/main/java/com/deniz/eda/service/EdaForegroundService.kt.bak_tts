@@ -546,16 +546,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     }
 
     // --- TTS ---
-    // TTS için metni temizle — ğ harfini TTS yanlış okuyor
-    private fun ttsTemizle(metin: String): String {
-        return metin
-            .replace("ğ", "g")
-            .replace("Ğ", "G")
-    }
-
     private fun konus(metin: String, tamamlaninca: (() -> Unit)? = null) {
         val id = "eda_${System.currentTimeMillis()}"
-        val temizMetin = ttsTemizle(metin)
         tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) {}
             override fun onDone(utteranceId: String?) {
@@ -567,7 +559,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             }
         })
         val params = Bundle()
-        tts.speak(temizMetin, TextToSpeech.QUEUE_FLUSH, params, id)
+        tts.speak(metin, TextToSpeech.QUEUE_FLUSH, params, id)
     }
 
     override fun onDestroy() {

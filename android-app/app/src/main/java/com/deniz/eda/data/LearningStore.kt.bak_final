@@ -32,11 +32,11 @@ object LearningStore {
         val ogrenme = yukle(context)
         val eslesmeler = ogrenme.getJSONObject("eslesmeler")
         var yeniOgrenildi = false
-        // کل کلمه کلیدی را ذخیره کن (نه فقط کلمه اول)
-        val kelimeTemiz = metinKucuk.trim()
-        if (kelimeTemiz.length in 3..50 && eslesmeler.optString(kelimeTemiz) != edaKomutu) {
-            eslesmeler.put(kelimeTemiz, edaKomutu)
-            yeniOgrenildi = true
+        for (kelime in metinKucuk.split(Regex("\\s+"))) {
+            if (kelime.length > 2 && eslesmeler.optString(kelime) != edaKomutu) {
+                eslesmeler.put(kelime, edaKomutu)
+                yeniOgrenildi = true
+            }
         }
         if (yeniOgrenildi) {
             val ist = ogrenme.getJSONObject("istatistikler")
