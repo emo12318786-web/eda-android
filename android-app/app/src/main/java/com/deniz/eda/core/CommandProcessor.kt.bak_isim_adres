@@ -250,23 +250,6 @@ object CommandProcessor {
             }
         }
 
-        // ═══ Benim adım / ismim — AffectionResponses'tan ONCE ═══
-        if (v(metin, "benim adım ne", "benim adim ne", "benim ismim ne",
-              "adım ne", "adim ne", "ismim ne", "adım nedir", "adim nedir")) {
-            return KomutSonucu.Cevap("Senin adın ${Settings.kullaniciAdi}.")
-        }
-        for (onEk in listOf("benim adım ", "benim adim ", "benim ismim ", "adım ", "adim ")) {
-            if (metin.startsWith(onEk)) {
-                val ad = metin.removePrefix(onEk).trim()
-                if (ad.isNotBlank() && ad.length in 2..30 && !ad.contains(" ") &&
-                    !ad.endsWith("ne") && !ad.endsWith("mi") && !ad.endsWith("mı") &&
-                    !ad.endsWith("musun") && !ad.endsWith("mısın")) {
-                    Settings.kullaniciAdi = ad
-                    return KomutSonucu.Cevap("Memnun oldum $ad! Artık sana böyle hitap edeceğim.")
-                }
-            }
-        }
-
         // ═══ 19 بخش محبت‌آمیز (بدون AI) ═══
         AffectionResponses.bul(metin, hitap)?.let { return KomutSonucu.Cevap(it) }
 

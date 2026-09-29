@@ -163,7 +163,7 @@ object LocationUtils {
 
             // ═══ ۲. Nominatim (OpenStreetMap) — Iran'da calisir ═══
             try {
-                val url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lon&accept-language=en&zoom=18&addressdetails=1"
+                val url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lon&accept-language=tr&zoom=18&addressdetails=1"
                 val client = okhttp3.OkHttpClient.Builder()
                     .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
                     .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS)

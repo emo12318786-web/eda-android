@@ -6,6 +6,83 @@ package com.deniz.eda.utils
  */
 object PersianToLatin {
 
+    /**
+     * دیکشنری اسم‌های معروف (که حروف صدادارشون مشخصه)
+     * اینا دقیق تبدیل می‌شن، نه حرف‌به‌حرف
+     */
+    private val dictionary = mapOf(
+        // اسم‌های محله‌های تبریز
+        "فجر" to "Fecr",
+        "لاله غربی" to "Lale Garbi",
+        "لاله شرقی" to "Lale Şerqi",
+        "مسکنی" to "Meskeni",
+        "ولیعصر" to "Veliasr",
+        "منظریه" to "Manzariye",
+        "باغمیشه" to "Bağmişe",
+        "ائل‌گلی" to "El Gölü",
+        "زعفرانیه" to "Zaferaniye",
+        "ابوریحان" to "Ebureyhan",
+        "امیرکبیر" to "Emir Kebir",
+        "راه‌آهن" to "Rah Ahan",
+        "یوسف‌آباد" to "Yusifabad",
+        "قره‌آغاج" to "Qaraağac",
+        "خسروشاه" to "Xosroşah",
+        "شهرک" to "Şehrek",
+        "نصف‌راه" to "Nesferah",
+        "سردرود" to "Serdroud",
+        "باسمنج" to "Basmenj",
+        "خواجه" to "Hace",
+        "سپاهان" to "Sepahan",
+        "پاسداران" to "Pasdaran",
+        "گلگشت" to "Golgasht",
+        "میدان" to "Meydan",
+        "خیابان" to "Hiaban",
+        "کوچه" to "Kuce",
+        "بلوار" to "Bulvar",
+        "مجتمع" to "Muctema",
+        "مسکونی" to "Meskeni",
+        "صدف" to "Sadaf",
+        "آبرسان" to "Abersan",
+        "دانشگاه" to "Danişgah",
+        "شهرستان" to "Şehristan",
+        "بخش" to "Bahş",
+        "مرکزی" to "Merkezi",
+        
+        // شهرها
+        "تبریز" to "Tebriz",
+        "تهران" to "Tahran",
+        "اصفهان" to "İsfahan",
+        "مشهد" to "Meşhed",
+        "شیراز" to "Şiraz",
+        "اهواز" to "Ahvaz",
+        "قم" to "Qom",
+        "کرج" to "Kerec",
+        "رشت" to "Reşt",
+        "یزد" to "Yezd",
+        "کرمان" to "Kerman",
+        "ارومیه" to "Urmiye",
+        "اردبیل" to "Erdebil",
+        "زنجان" to "Zencan",
+        "همدان" to "Hemedan",
+        "گرگان" to "Gürgan",
+        "ساری" to "Sari",
+        "بابل" to "Babol",
+        "آمل" to "Amol",
+        "بوشهر" to "Buşehr",
+        "بندرعباس" to "Bender Abbas",
+        "زاهدان" to "Zahedan",
+        
+        // کشورها
+        "ایران" to "İran",
+        "ترکیه" to "Türkiye",
+        "آذربایجان" to "Azerbaycan",
+        "عراق" to "Irak",
+        "افغانستان" to "Afganistan",
+    )
+
+    /**
+     * نقشه حروف (برای بقیه کلمات)
+     */
     private val charMap = mapOf(
         'ا' to "a", 'آ' to "a", 'أ' to "a", 'إ' to "e", 'ء' to "",
         'ب' to "b", 'پ' to "p",
@@ -33,15 +110,34 @@ object PersianToLatin {
 
     /**
      * هر حرف فارسی/عربی رو به معادل لاتین تبدیل می‌کنه
+     * اول دیکشنری رو چک می‌کنه، اگه نبود حرف‌به‌حرف
      */
     fun convert(input: String): String {
+        val trimmed = input.trim()
+        if (trimmed.isEmpty()) return ""
+
+        // ۱. اول دیکشنری رو چک کن (کل عبارت)
+        dictionary[trimmed]?.let { return it }
+
+        // ۲. بعد هر کلمه رو جدا چک کن
+        val words = trimmed.split(" ")
+        val convertedWords = words.map { word ->
+            dictionary[word] ?: charToLatin(word)
+        }
+        return convertedWords.joinToString(" ")
+    }
+
+    /**
+     * تبدیل حرف‌به‌حرف
+     */
+    private fun charToLatin(input: String): String {
         val sb = StringBuilder()
         for (ch in input) {
             val mapped = charMap[ch]
             if (mapped != null) {
                 sb.append(mapped)
             } else {
-                sb.append(ch)  // حروف لاتین/نقطه/کاما بدون تغییر
+                sb.append(ch)
             }
         }
         return sb.toString()

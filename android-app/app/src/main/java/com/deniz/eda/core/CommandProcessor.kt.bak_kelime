@@ -122,8 +122,6 @@ object CommandProcessor {
                 if (ad.length !in 2..30) return
                 if (ad.contains(" ")) return
                 if (ad.endsWith("mi") || ad.endsWith("mı") || ad.endsWith("mu") || ad.endsWith("mü")) return
-                if (ad.contains("misin") || ad.contains("mısın") || ad.contains("musun") ||
-                    ad.contains("ne") || ad.contains("kim") || ad.contains("nerede")) return
                 Settings.kullaniciAdi = ad
                 android.util.Log.d("CommandProcessor", "Ad ogrenildi: $ad")
                 return
@@ -164,7 +162,7 @@ object CommandProcessor {
         val kok = kokBul(sonSoru) ?: return KomutSonucu.Cevap("Ne kontrol edeyim $hitap?")
 
         val yeniCevap = when (kok) {
-            "internet" -> if (SystemTools.checkInternet(context)) "Internet var" else "Internet yok"
+            "internet" -> if (SystemTools.checkInternet(context)) "Internet baglantisi var" else "Internet baglantisi yok"
             "ollama" -> SystemTools.runTool("CHECK_OLLAMA", context)
             "groq" -> SystemTools.runTool("CHECK_GROQ", context)
             "pollinations" -> SystemTools.runTool("CHECK_POLLINATIONS", context)
@@ -230,42 +228,6 @@ object CommandProcessor {
         }
 
         LearningStore.bul(context, metin)?.let { ogrenilen -> metin = ogrenilen }
-
-        // ═══ Benim adım / ismim — AffectionResponses'tan ONCE ═══
-        // "benim adım ne" → soru
-        if (v(metin, "benim adım ne", "benim adim ne", "benim ismim ne",
-              "adım ne", "adim ne", "ismim ne", "adım nedir", "adim nedir")) {
-            return KomutSonucu.Cevap("Senin adın ${Settings.kullaniciAdi}.")
-        }
-        // "benim adım X" → kaydet
-        for (onEk in listOf("benim adım ", "benim adim ", "benim ismim ", "adım ", "adim ")) {
-            if (metin.startsWith(onEk)) {
-                val ad = metin.removePrefix(onEk).trim()
-                if (ad.isNotBlank() && ad.length in 2..30 && !ad.contains(" ") &&
-                    !ad.endsWith("ne") && !ad.endsWith("mi") && !ad.endsWith("mı") &&
-                    !ad.endsWith("musun") && !ad.endsWith("mısın")) {
-                    Settings.kullaniciAdi = ad
-                    return KomutSonucu.Cevap("Memnun oldum $ad! Artık sana böyle hitap edeceğim.")
-                }
-            }
-        }
-
-        // ═══ Benim adım / ismim — AffectionResponses'tan ONCE ═══
-        if (v(metin, "benim adım ne", "benim adim ne", "benim ismim ne",
-              "adım ne", "adim ne", "ismim ne", "adım nedir", "adim nedir")) {
-            return KomutSonucu.Cevap("Senin adın ${Settings.kullaniciAdi}.")
-        }
-        for (onEk in listOf("benim adım ", "benim adim ", "benim ismim ", "adım ", "adim ")) {
-            if (metin.startsWith(onEk)) {
-                val ad = metin.removePrefix(onEk).trim()
-                if (ad.isNotBlank() && ad.length in 2..30 && !ad.contains(" ") &&
-                    !ad.endsWith("ne") && !ad.endsWith("mi") && !ad.endsWith("mı") &&
-                    !ad.endsWith("musun") && !ad.endsWith("mısın")) {
-                    Settings.kullaniciAdi = ad
-                    return KomutSonucu.Cevap("Memnun oldum $ad! Artık sana böyle hitap edeceğim.")
-                }
-            }
-        }
 
         // ═══ 19 بخش محبت‌آمیز (بدون AI) ═══
         AffectionResponses.bul(metin, hitap)?.let { return KomutSonucu.Cevap(it) }
