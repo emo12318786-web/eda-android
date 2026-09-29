@@ -548,14 +548,9 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     // --- TTS ---
     // TTS için metni temizle — ğ harfini TTS yanlış okuyor
     private fun ttsTemizle(metin: String): String {
-        // Google TTS ترکی خودش ğ را درست می‌خواند
-        // پس تغییر نده
         return metin
-    }
-
-    // تست: متن را در لاگ چاپ کن
-    private fun ttsTest(metin: String) {
-        android.util.Log.i("EDA-TTS", "TTS metin: $metin")
+            .replace("ğ", "g")
+            .replace("Ğ", "G")
     }
 
     private fun konus(metin: String, tamamlaninca: (() -> Unit)? = null) {
@@ -572,7 +567,6 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             }
         })
         val params = Bundle()
-        android.util.Log.i("EDA-TTS", "TTS metin: $temizMetin")
         tts.speak(temizMetin, TextToSpeech.QUEUE_FLUSH, params, id)
     }
 

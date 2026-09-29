@@ -548,9 +548,9 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     // --- TTS ---
     // TTS için metni temizle — ğ harfini TTS yanlış okuyor
     private fun ttsTemizle(metin: String): String {
-        // Google TTS ترکی خودش ğ را درست می‌خواند
-        // پس تغییر نده
         return metin
+            .replace("ğ", "g")
+            .replace("Ğ", "G")
     }
 
     // تست: متن را در لاگ چاپ کن
