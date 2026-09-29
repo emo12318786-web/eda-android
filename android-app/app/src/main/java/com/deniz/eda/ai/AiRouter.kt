@@ -1,5 +1,6 @@
 package com.deniz.eda.ai
 
+import android.content.Context
 import com.deniz.eda.utils.OllamaLocator
 import com.deniz.eda.core.Settings
 import kotlinx.coroutines.Dispatchers
