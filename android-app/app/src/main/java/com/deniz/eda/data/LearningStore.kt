@@ -64,4 +64,28 @@ object LearningStore {
         }
         return null
     }
+
+    /**
+     * Öğrenilen tüm kelime → komut eşleşmelerini döndürür.
+     * "ne öğrendin" komutu için kullanılır.
+     */
+    fun tumOgrendikleri(context: Context): List<Pair<String, String>> {
+        return try {
+            val ogrenme = yukle(context)
+            val eslesmeler = ogrenme.getJSONObject("eslesmeler")
+            val liste = mutableListOf<Pair<String, String>>()
+            val anahtarlar = eslesmeler.keys()
+            while (anahtarlar.hasNext()) {
+                val kelime = anahtarlar.next()
+                val komut = eslesmeler.optString(kelime)
+                if (kelime.isNotBlank() && komut.isNotBlank() && kelime != komut) {
+                    liste.add(kelime to komut)
+                }
+            }
+            liste
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
 }

@@ -40,4 +40,35 @@ object MemoryStore {
         for (i in baslangic until dizi.length()) sonuc.put(dizi.get(i))
         return sonuc
     }
+
+    /** Hafızayı tamamen temizle */
+    fun clear(context: Context) {
+        JsonFileStore.yazDizi(context, DOSYA, JSONArray())
+    }
+
+    /** Son eklenen kaydı kategoriye göre getir */
+    fun sonKategori(context: Context, kategori: String): String? {
+        val dizi = JsonFileStore.okuDizi(context, DOSYA)
+        for (i in dizi.length() - 1 downTo 0) {
+            val obj = dizi.optJSONObject(i) ?: continue
+            if (obj.optString("kategori") == kategori) {
+                return obj.optString("metin")
+            }
+        }
+        return null
+    }
+
+    /** Kategorili tüm kayıtlar */
+    fun kategoriListesi(context: Context, kategori: String): List<String> {
+        val dizi = JsonFileStore.okuDizi(context, DOSYA)
+        val liste = mutableListOf<String>()
+        for (i in 0 until dizi.length()) {
+            val obj = dizi.optJSONObject(i) ?: continue
+            if (obj.optString("kategori") == kategori) {
+                liste.add(obj.optString("metin"))
+            }
+        }
+        return liste
+    }
+
 }

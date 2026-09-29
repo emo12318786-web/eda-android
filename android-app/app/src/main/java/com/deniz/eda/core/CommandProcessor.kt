@@ -101,13 +101,127 @@ object CommandProcessor {
         else -> "$dakika geçiyor"
     }
 
+
+    // ═══ یادگیری خودکار از جملات ═══
+    private val kelimeSayaci = mutableMapOf<String, Int>()
+
+    private fun otomatikOgren(context: Context, metin: String) {
+        val m = metin.lowercase().trim()
+        // "benim adım X" / "adım X" / "ismim X"
+        val adKaliplari = listOf("benim adım", "benim adim", "adım", "adim", "ismim", "benim ismim", "adim")
+        for (kalip in adKaliplari) {
+            if (m.startsWith("$kalip ")) {
+                val ad = m.removePrefix("$kalip ").trim()
+                if (ad.isNotBlank() && ad.length in 2..30 && !ad.contains(" ")) {
+                    Settings.kullaniciAdi = ad
+                    android.util.Log.d("CommandProcessor", "Ad ogrenildi: $ad")
+                }
+                return
+            }
+        }
+        // "ben X'im" / "ben X yim"
+        if (m.startsWith("ben ") && (m.endsWith("yim") || m.endsWith("im") || m.endsWith("ım"))) {
+            val isim = m.removePrefix("ben ").removeSuffix("yim").removeSuffix("im").removeSuffix("ım").trim()
+            if (isim.isNotBlank() && isim.length in 2..20 && !isim.contains(" ")) {
+                Settings.kullaniciAdi = isim
+            }
+        }
+    }
+
+    private fun tekrarKontrol(context: Context, metin: String) {
+        val m = metin.lowercase()
+        m.split(Regex("\\s+")).forEach { kelime ->
+            val temiz = kelime.trim().replace(Regex("[^a-zçğıöşü]"), "")
+            if (temiz.length in 4..20) {
+                val sayi = (kelimeSayaci[temiz] ?: 0) + 1
+                kelimeSayaci[temiz] = sayi
+                if (sayi == 3) {
+                    MemoryStore.ekle(context, temiz, "kelime")
+                    android.util.Log.d("CommandProcessor", "Kelime ogrenildi: $temiz")
+                }
+            }
+        }
+    }
+
+    private fun kokBul(metin: String): String? {
+        val m = metin.lowercase().trim()
+        val kaliplar = listOf(
+            "internet", "ollama", "groq", "pollinations", "pil", "batarya",
+            "hava", "saat", "tarih", "sistem", "mod", "ai", "gemma"
+        )
+        for (k in kaliplar) {
+            if (k in m) return k
+        }
+        return null
+    }
+
+    private suspend fun yenidenKontrol(context: Context, hitap: String): KomutSonucu {
+        val sonSoru = MemoryStore.sonKategori(context, "son_soru") ?: return KomutSonucu.Cevap("Ne kontrol edeyim $hitap?")
+        val eskiCevap = MemoryStore.sonKategori(context, "son_cevap") ?: ""
+        val kok = kokBul(sonSoru) ?: return KomutSonucu.Cevap("Ne kontrol edeyim $hitap?")
+
+        val yeniCevap = when (kok) {
+            "internet" -> if (SystemTools.checkInternet(context)) "internet: var" else "internet: yok"
+            "ollama" -> SystemTools.runTool("CHECK_OLLAMA", context)
+            "groq" -> SystemTools.runTool("CHECK_GROQ", context)
+            "pollinations" -> SystemTools.runTool("CHECK_POLLINATIONS", context)
+            "pil", "batarya" -> SystemTools.runTool("GET_BATTERY", context)
+            "mod" -> SystemTools.runTool("GET_MODE", context)
+            "ai", "gemma" -> SystemTools.runTool("GET_AI", context)
+            else -> SystemTools.runTool("FULL_CHECK", context)
+        }
+
+        MemoryStore.ekle(context, yeniCevap, "son_cevap")
+
+        return if (yeniCevap != eskiCevap && eskiCevap.isNotBlank()) {
+            KomutSonucu.Cevap("Önceki cevabım yanlıştı $hitap, özür dilerim. Şimdi tekrar kontrol ettim: $yeniCevap")
+        } else {
+            KomutSonucu.Cevap("Tekrar kontrol ettim $hitap: $yeniCevap")
+        }
+    }
+
     suspend fun isle(context: Context, metinHam: String): KomutSonucu {
         val hitap = Settings.kullaniciAdi
         var metin = metinHam.lowercase(Locale.getDefault()).trim()
 
+        // ═══ حافظه واقعی — ذخیره سؤال کاربر ═══
+        MemoryStore.ekle(context, metinHam, "sohbet")
+        MemoryStore.ekle(context, metinHam, "son_soru")
+
+        // ═══ یادگیری خودکار ═══
+        otomatikOgren(context, metinHam)
+        tekrarKontrol(context, metinHam)
+
+        // ═══ خود-تصحیح: دوباره بررسی کن ═══
+        if (v(metin, "tekrar kontrol", "yeniden kontrol", "tekrar bak", "yeniden bak", "daha kontrol", "tekrar dene", "yeniden dene")) {
+            return yenidenKontrol(context, hitap)
+        }
+
+        // ═══ حافظه: یادت باشه X ═══
+        for (onEk in listOf("yadet ", "yadında ", "hatırla ", "hatirla ", "unutma ", "not al ")) {
+            if (metin.startsWith(onEk)) {
+                val icerik = metin.removePrefix(onEk).trim()
+                if (icerik.isNotBlank()) {
+                    MemoryStore.ekle(context, icerik, "not")
+                    return KomutSonucu.Cevap("Tamam $hitap, unutmam.")
+                }
+            }
+        }
+
+        // ═══ حافظه: چه یادت هست؟ ═══
+        if (v(metin, "ne hatırlıyorsun", "ne hatirliyorsun", "hafızanda ne var", "hafizanda ne var", "neler biliyorsun", "neler hatırlıyorsun")) {
+            return KomutSonucu.Cevap(MemoryStore.goster(context))
+        }
+
+        // ═══ حافظه: پاک کن ═══
+        if (v(metin, "hafızayı sil", "hafizayi sil", "hafızayı temizle", "hafizayi temizle", "hafızayı sıfırla", "hafizayi sifirla", "hafızayı unut")) {
+            MemoryStore.clear(context)
+            return KomutSonucu.Cevap("Hafızam temizlendi $hitap.")
+        }
+
         LearningStore.bul(context, metin)?.let { ogrenilen -> metin = ogrenilen }
 
-        // ═══ ۱۹ بخش محبت‌آمیز (بدون AI) ═══
+        // ═══ 19 بخش محبت‌آمیز (بدون AI) ═══
         AffectionResponses.bul(metin, hitap)?.let { return KomutSonucu.Cevap(it) }
 
         // ═══ Öğret Komutu ═══
@@ -377,9 +491,9 @@ object CommandProcessor {
                         "konum, eve mesafe, mesaj gönderme, güvenlik modu, araba modu ve serbest sohbeti biliyorum $hitap."
             )
 
-            // ═══ ۹ دستور جدید (از eda.py Termux) ═══
+            // ═══ 9 دستور جدید (از eda.py Termux) ═══
             
-            // ۱. Hesapla — "2+3 kaç eder"
+            // 1. Hesapla — "2+3 kaç eder"
             (metin.contains("hesapla") || metin.contains("kaç eder") || metin.contains("kac eder")) -> {
                 val ifade = metin
                     .replace("hesapla", "")
@@ -390,11 +504,11 @@ object CommandProcessor {
                 KomutSonucu.Cevap("Hesaplayamadım $hitap, ifadeyi anlayamadım.")
             }
             
-            // ۲. Günün sözü
+            // 2. Günün sözü
             v(metin, "günün sözü", "gunun sozu", "bugünün sözü", "bugunun sozu") ->
                 KomutSonucu.Cevap(ExtraCommands.gununSozu(hitap))
             
-            // ۳. Müzik
+            // 3. Müzik
             v(metin, "müzik", "muzik") && v(metin, "aç", "ac", "başlat", "baslat", "çal", "cal") ->
                 KomutSonucu.Cevap(ExtraCommands.muzikBaslat(context, hitap))
             
@@ -407,36 +521,36 @@ object CommandProcessor {
             v(metin, "müzik", "muzik", "şarkı", "sarki") && v(metin, "önceki", "onceki") ->
                 KomutSonucu.Cevap(ExtraCommands.muzikOnceki(context, hitap))
             
-            // ۴. Telefonu kilitle
+            // 4. Telefonu kilitle
             v(metin, "telefonu kilitle", "ekranı kilitle", "ekrani kilitle") ->
                 KomutSonucu.Cevap(ExtraCommands.telefonuKilitle(context, hitap))
             
-            // ۵. Telefonu bul
+            // 5. Telefonu bul
             // ═══ Veda mesajı (خداحافظی) ═══
             v(metin, "kapat kendini", "kapan", "kapat şimdi") -> {
                 KomutSonucu.Cevap(ExtraCommands.vedaMesaji())
             }
             
-            // ═══ ۶. Telefonu bul durdur ═══
+            // ═══ 6. Telefonu bul durdur ═══
             v(metin, "sus", "sessiz ol", "sustur", "kes sesini") -> {
                 KomutSonucu.Cevap(ExtraCommands.telefonuBulDurdur(hitap))
             }
             v(metin, "telefonu bul", "telefonumu bul", "telefonu ara", "telefonumu ara") ->
                 KomutSonucu.Cevap(ExtraCommands.telefonuBul(context, hitap))
             
-            // ۶. Fotoğraf çek
+            // 6. Fotoğraf çek
             v(metin, "fotoğraf çek", "fotograf cek", "foto çek", "foto cek", "kamera aç", "kamera ac") ->
                 KomutSonucu.Cevap(ExtraCommands.fotografCek(context, hitap))
             
-            // ۷. Konum gönder
+            // 7. Konum gönder
             v(metin, "konumumu gönder", "konumumu gonder", "konum gönder", "konum gonder") ->
                 KomutSonucu.Cevap(ExtraCommands.konumGonder(context, hitap, Settings.guvenlikNumara))
             
-            // ۸. Ayarları aç
+            // 8. Ayarları aç
             v(metin, "ayarları aç", "ayarlari ac", "ayarları açsana", "ayarlari acsana") ->
                 KomutSonucu.Cevap(ExtraCommands.ayarlariAc(context, hitap))
             
-            // ۹. Ses motoru
+            // 9. Ses motoru
             v(metin, "ses motoru", "ses motorunu", "sesi değiştir", "sesi degistir") ->
                 KomutSonucu.Cevap(ExtraCommands.sesMotoruDegistir(context, hitap))
             
@@ -490,10 +604,68 @@ object CommandProcessor {
                 KomutSonucu.Cevap("Şu an Beyin 2 (Gemma 2.2) aktif $hitap.")
             }
             
-            // ═══ ۱۰. Sistem test ═══
+            // ═══ 10. Sistem test ═══
             v(metin, "sistem test", "sistem testi", "test sistem", "sistemi test et", "her şeyi kontrol et") ->
                 KomutSonucu.Cevap(ExtraCommands.sistemTest(context, hitap))
             
+            // ═══ Uyku Modu ═══
+            v(metin, "uyku modu", "uyku moduna", "uyu", "uyku", "uykuya geç", "uykuya gec") -> {
+                KomutSonucu.UykuyaDon
+            }
+
+            // ═══ Mikrofon Kapat ═══
+            v(metin, "mikrofon", "mikrofonu", "mikrofon kapat", "mikrofonu kapat") &&
+                v(metin, "kapat", "kapa", "durdur", "sus") -> {
+                KomutSonucu.UykuyaDon
+            }
+
+            // ═══ Öğrenme Modu Aç/Kapat ═══
+            v(metin, "öğrenme modu", "ogrenme modu", "öğrenme modunu", "ogrenme modunu") &&
+                v(metin, "aç", "ac", "aktif", "başlat", "baslat") -> {
+                Settings.ogrenmeAktif = true
+                KomutSonucu.Cevap("Öğrenme modu aktif edildi $hitap.")
+            }
+            v(metin, "öğrenme modu", "ogrenme modu", "öğrenme modunu", "ogrenme modunu") &&
+                v(metin, "kapat", "kapa", "durdur") -> {
+                Settings.ogrenmeAktif = false
+                KomutSonucu.Cevap("Öğrenme modu kapatıldı $hitap.")
+            }
+
+            // ═══ Ne Öğrendin? ═══
+            v(metin, "ne öğrendin", "ne ogrendin", "neler öğrendin", "neler ogrendin", "ne biliyorsun") -> {
+                val liste = LearningStore.tumOgrendikleri(context)
+                if (liste.isEmpty()) {
+                    KomutSonucu.Cevap("Henüz bir şey öğrenmedim $hitap.")
+                } else {
+                    val ilkOn = liste.take(10).joinToString(", ") { "\"${it.first}\" → \"${it.second}\"" }
+                    val ekstra = if (liste.size > 10) " ve ${liste.size - 10} tane daha" else ""
+                    KomutSonucu.Cevap("Öğrendiklerim $hitap: $ilkOn$ekstra.")
+                }
+            }
+
+            // ═══ Kullanıcı Adı Kaydet ═══
+            v(metin, "benim adım", "benim adim", "ismim", "benim ismim") -> {
+                val ad = metin
+                    .replace("benim adım", "")
+                    .replace("benim adim", "")
+                    .replace("ismim", "")
+                    .replace("benim", "")
+                    .trim()
+                if (ad.isBlank()) {
+                    KomutSonucu.Cevap("Adını söyler misin $hitap?")
+                } else if (ad.length > 30) {
+                    KomutSonucu.Cevap("Bu çok uzun bir isim $hitap, kısaltır mısın?")
+                } else {
+                    Settings.kullaniciAdi = ad
+                    KomutSonucu.Cevap("Memnun oldum $ad! Artık sana böyle hitap edeceğim.")
+                }
+            }
+
+            // ═══ Geçici Uyku (60 ثانیه) ═══
+            v(metin, "geçici uyku", "gecici uyku", "kısa uyku", "kisa uyku", "biraz uyu", "dinlen") -> {
+                KomutSonucu.GeciciUyku(60_000L, "Kısa bir mola veriyorum $hitap.")
+            }
+
             else -> {
                 val aiCevap = AiRouter.sor(metinHam, context = context)
                 if (aiCevap != null) KomutSonucu.Cevap(aiCevap)
