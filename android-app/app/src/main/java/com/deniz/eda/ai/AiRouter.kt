@@ -69,7 +69,8 @@ KURALLAR:
 6. Sadece SOHBET (selamlaşma, moral, soru-cevap, bilgi) konularında cevap ver.""",
         context: android.content.Context? = null
     ): String? = withContext(Dispatchers.IO) {
-        for (s in saglayicilar(context)) {
+        val ctx = context ?: return null
+        for (s in saglayicilar(ctx)) {
             val anahtar = s.apiKey()
             if (s.needsKey && anahtar.isBlank()) continue
             try {
