@@ -24,3 +24,5 @@ PYEOF
 *.bak
 *.bak
 *.bak2
+eda_test_*
+settings.json

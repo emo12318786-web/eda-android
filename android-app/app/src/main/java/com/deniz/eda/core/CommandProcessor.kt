@@ -709,7 +709,35 @@ object CommandProcessor {
                 }
             }
 
-            // ═══ Geçici Uyku (60 ثانیه) ═══
+                                    // ═══ استراحت موقت — هر عددی ═══
+            (v(metin, "dakika", "dakka", "dk", "saat") &&
+                v(metin, "dinlen", "dinle", "uyu", "bekle", "mola", "istirahat", "geçici", "gecici", "kısa", "kisa", "ara")) -> {
+                val sayiEslesme = Regex("(\\d+)").find(metin)
+                val dakika = if (sayiEslesme != null) {
+                    sayiEslesme.groupValues[1].toLongOrNull() ?: 1L
+                } else {
+                    when {
+                        metin.contains("bir") -> 1L
+                        metin.contains("iki") -> 2L
+                        metin.contains("üç") || metin.contains("uc") -> 3L
+                        metin.contains("dört") || metin.contains("dort") -> 4L
+                        metin.contains("beş") || metin.contains("bes") -> 5L
+                        metin.contains("altı") || metin.contains("alti") -> 6L
+                        metin.contains("yedi") -> 7L
+                        metin.contains("sekiz") -> 8L
+                        metin.contains("dokuz") -> 9L
+                        metin.contains("on") -> 10L
+                        metin.contains("yirmi") -> 20L
+                        metin.contains("otuz") -> 30L
+                        metin.contains("kırk") || metin.contains("kirk") -> 40L
+                        metin.contains("elli") -> 50L
+                        metin.contains("altmış") || metin.contains("altmis") -> 60L
+                        else -> 1L
+                    }
+                }
+                val sureMs = dakika * 60 * 1000
+                KomutSonucu.GeciciUyku(sureMs, "$dakika dakika dinleniyorum $hitap.")
+            }
             v(metin, "geçici uyku", "gecici uyku", "kısa uyku", "kisa uyku", "biraz uyu", "dinlen") -> {
                 KomutSonucu.GeciciUyku(60_000L, "Kısa bir mola veriyorum $hitap.")
             }
