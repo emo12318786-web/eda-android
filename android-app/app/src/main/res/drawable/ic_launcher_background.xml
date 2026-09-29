@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- گرادیانت سنگین بنفش-فیروزه‌ای -->
+    <!-- ═══ گرادیانت سنگین بنفش-فیروزه‌ای ═══ -->
     <path android:pathData="M0,0h108v108h-108z">
-        <aapt:attr xmlns:aapt="http://schemas.android.com/aapt" name="android:fillColor">
+        <aapt:attr name="android:fillColor">
             <gradient
                 android:type="linear"
                 android:startX="0"
@@ -15,21 +16,41 @@
                 android:endX="108"
                 android:endY="108">
                 <item android:offset="0.0" android:color="#FF1A0033" />
-                <item android:offset="0.3" android:color="#FF4A148C" />
-                <item android:offset="0.6" android:color="#FF7E57C2" />
-                <item android:offset="1.0" android:color="#FF00BCD4" />
+                <item android:offset="0.25" android:color="#FF4A148C" />
+                <item android:offset="0.5" android:color="#FF7E57C2" />
+                <item android:offset="0.75" android:color="#FF00BCD4" />
+                <item android:offset="1.0" android:color="#FF00695C" />
             </gradient>
         </aapt:attr>
     </path>
 
-    <!-- یه دایره‌ی محو تو گوشه (برای عمق) -->
+    <!-- ═══ دایره‌ی محو در گوشه بالا ═══ -->
     <path
-        android:pathData="M108,108m-40,0a40,40 0 1,0 80,0a40,40 0 1,0 -80,0"
-        android:fillAlpha="0.15"
+        android:pathData="M108,0m-50,0a50,50 0 1,0 100,0a50,50 0 1,0 -100,0"
+        android:fillAlpha="0.12"
         android:fillColor="#FF00FFFF" />
 
+    <!-- ═══ دایره‌ی محو در گوشه پایین ═══ -->
     <path
-        android:pathData="M0,0m-30,0a30,30 0 1,0 60,0a30,30 0 1,0 -60,0"
+        android:pathData="M0,108m-40,0a40,40 0 1,0 80,0a40,40 0 1,0 -80,0"
         android:fillAlpha="0.1"
+        android:fillColor="#FFFFFFFF" />
+
+    <!-- ═══ ذرات درخشان ═══ -->
+    <path
+        android:pathData="M30,20m-2,0a2,2 0 1,0 4,0a2,2 0 1,0 -4,0"
+        android:fillAlpha="0.4"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M80,90m-2,0a2,2 0 1,0 4,0a2,2 0 1,0 -4,0"
+        android:fillAlpha="0.4"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M90,15m-1.5,0a1.5,1.5 0 1,0 3,0a1.5,1.5 0 1,0 -3,0"
+        android:fillAlpha="0.3"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M15,90m-1.5,0a1.5,1.5 0 1,0 3,0a1.5,1.5 0 1,0 -3,0"
+        android:fillAlpha="0.3"
         android:fillColor="#FFFFFFFF" />
 </vector>

@@ -5,31 +5,39 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- سایه‌ی سنگین (drop shadow) -->
-    <group android:translateX="0.8" android:translateY="0.8">
+    <!-- ═══ سایه‌ی سنگین (drop shadow) ═══ -->
+    <group android:translateX="1.2" android:translateY="1.2">
+        <!-- E -->
         <path
-            android:pathData="M18,32 L18,76 L34,76 L34,60 L44,60 L44,76 L60,76 L60,32 L44,32 L44,48 L34,48 L34,32 Z"
-            android:fillColor="#80000000" />
+            android:pathData="M20,30 L20,78 L36,78 L36,62 L46,62 L46,78 L62,78 L62,30 L46,30 L46,46 L36,46 L36,30 Z"
+            android:fillColor="#B0000000" />
+        <!-- D -->
         <path
-            android:pathData="M64,32 L64,76 L86,76 L86,32 Z M76,42 L86,42 L86,66 L76,66 Z"
-            android:fillColor="#80000000" />
+            android:pathData="M66,30 L66,78 L88,78 L88,30 Z M78,40 L88,40 L88,68 L78,68 Z"
+            android:fillColor="#B0000000" />
+        <!-- A -->
         <path
-            android:pathData="M90,32 L90,76 L96,76 L96,60 L102,60 L102,32 Z"
-            android:fillColor="#80000000" />
+            android:pathData="M92,30 L92,78 L98,78 L98,62 L104,62 L104,30 Z M97,42 L104,42 L104,52 L97,52 Z"
+            android:fillColor="#B0000000" />
     </group>
 
-    <!-- حرف E (بنفش روشن) -->
+    <!-- ═══ حرف E — سفید درخشان ═══ -->
     <path
-        android:pathData="M18,32 L18,76 L34,76 L34,60 L44,60 L44,76 L60,76 L60,32 L44,32 L44,48 L34,48 L34,32 Z"
+        android:pathData="M20,30 L20,78 L36,78 L36,62 L46,62 L46,78 L62,78 L62,30 L46,30 L46,46 L36,46 L36,30 Z"
         android:fillColor="#FFFFFFFF" />
 
-    <!-- حرف D (فیروزه‌ای روشن) -->
+    <!-- ═══ حرف D — فیروزه‌ای ═══ -->
     <path
-        android:pathData="M64,32 L64,76 L86,76 L86,32 Z M76,42 L86,42 L86,66 L76,66 Z"
+        android:pathData="M66,30 L66,78 L88,78 L88,30 Z M78,40 L88,40 L88,68 L78,68 Z"
         android:fillColor="#FF80DEEA" />
 
-    <!-- حرف A (زرد طلایی روشن) -->
+    <!-- ═══ حرف A — طلایی ═══ -->
     <path
-        android:pathData="M90,32 L90,76 L96,76 L96,60 L102,60 L102,32 Z M95,42 L102,42 L102,50 L95,50 Z"
+        android:pathData="M92,30 L92,78 L98,78 L98,62 L104,62 L104,30 Z M97,42 L104,42 L104,52 L97,52 Z"
         android:fillColor="#FFFFD54F" />
+
+    <!-- ═══ خط تأکید زیر لوگو ═══ -->
+    <path
+        android:pathData="M20,84 L104,84 L104,88 L20,88 Z"
+        android:fillColor="#FFB39DDB" />
 </vector>
