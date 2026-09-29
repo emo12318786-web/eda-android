@@ -4,7 +4,6 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.deniz.eda.core.Settings
-import com.deniz.eda.utils.OllamaLocator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
@@ -50,7 +49,7 @@ Sen: Merhaba denizçim, iyiyim sen nasılsın?
         return try {
             when (name) {
                 "CHECK_INTERNET" -> checkInternetText(context)
-                "CHECK_OLLAMA" -> checkOllamaText(context)
+                "CHECK_OLLAMA" -> checkOllamaText()
                 "CHECK_GROQ" -> checkGroqText()
                 "CHECK_POLLINATIONS" -> checkPollinationsText()
                 "GET_BATTERY" -> getBatteryText(context)
@@ -82,16 +81,16 @@ Sen: Merhaba denizçim, iyiyim sen nasılsın?
         return if (checkInternet(context)) "Internet baglantisi var" else "Internet baglantisi yok"
     }
 
-    private suspend fun checkOllamaText(context: Context): String = withContext(Dispatchers.IO) {
+    private suspend fun checkOllamaText(): String = withContext(Dispatchers.IO) {
         try {
-            val baseUrl = OllamaLocator.bul(context)
             val client = OkHttpClient.Builder()
                 .connectTimeout(3, TimeUnit.SECONDS)
                 .readTimeout(3, TimeUnit.SECONDS)
                 .build()
-            val req = Request.Builder().url("$baseUrl/v1/models").build()
+            val url = "http://127.0.0.1:11434/v1/models"
+            val req = Request.Builder().url(url).build()
             client.newCall(req).execute().use { resp ->
-                if (resp.isSuccessful) "Ollama acik" else "Ollama hata ${resp.code}"
+                if (resp.isSuccessful) "Ollama calisiyor" else "Ollama hata kodu ${resp.code}"
             }
         } catch (e: Exception) { "Ollama kapali" }
     }
@@ -142,7 +141,7 @@ Sen: Merhaba denizçim, iyiyim sen nasılsın?
         sb.append("Sistem durumu:\n")
         sb.append("• ${checkInternetText(context)}\n")
         sb.append("• ${getBatteryText(context)}\n")
-        sb.append("• ${checkOllamaText(context)}\n")
+        sb.append("• ${checkOllamaText()}\n")
         sb.append("• ${checkGroqText()}\n")
         sb.append("• ${getAIText()}\n")
         sb.append("• ${getModeText()}\n")

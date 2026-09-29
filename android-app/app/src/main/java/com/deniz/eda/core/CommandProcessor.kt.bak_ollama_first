@@ -676,43 +676,32 @@ object CommandProcessor {
                 KomutSonucu.GeciciUyku(60_000L, "Kısa bir mola veriyorum $hitap.")
             }
 
-                        // ═══ Sistem Araclari — ONCE OLLAMA ═══
-            
-            // 1. Ollama — once kontrol et (cunku "baglanti" da olabilir)
-            (metin.contains("ollama") || metin.contains("kollama") || metin.contains("olama") ||
-             metin.contains("gemma") || metin.contains("beyin")) -> {
+            // ═══ Sistem Araclari (dogrudan, AI'siz) ═══
+            v(metin, "internet", "internetin", "internete", "baglanti", "bağlantı") && v(metin, "var", "yok", "var mi", "var mı", "kontrol", "erisim", "erişim", "iletisim", "iletişim", "nasil", "nasıl") -> {
+                val varMi = SystemTools.checkInternet(context)
+                KomutSonucu.Cevap(if (varMi) "Evet $hitap, internet baglantim var." else "Hayir $hitap, internet baglantim yok.")
+            }
+            v(metin, "internet", "internetin", "internete") -> {
+                val varMi = SystemTools.checkInternet(context)
+                KomutSonucu.Cevap(if (varMi) "Evet $hitap, internet baglantim var." else "Hayir $hitap, internet baglantim yok.")
+            }
+            v(metin, "ollama", "gemma") && v(metin, "calisiyor", "çalışıyor", "hazir", "hazır", "var mi", "var mı", "kontrol") -> {
                 KomutSonucu.Cevap(SystemTools.runTool("CHECK_OLLAMA", context))
             }
-            
-            // 2. Internet
-            (metin.contains("internet") || metin.contains("wifi") || metin.contains("online")) -> {
-                val varMi = SystemTools.checkInternet(context)
-                KomutSonucu.Cevap(if (varMi) "Internet var" else "Internet yok")
-            }
-            
-            // 3. Pil
-            (metin.contains("pil") || metin.contains("sarj") || metin.contains("şarj") ||
-             metin.contains("batarya")) -> {
-                KomutSonucu.Cevap(SystemTools.runTool("GET_BATTERY", context))
-            }
-            
-            // 4. Groq
-            metin.contains("groq") -> {
+            v(metin, "groq") && v(metin, "calisiyor", "çalışıyor", "hazir", "hazır", "var mi", "var mı") -> {
                 KomutSonucu.Cevap(SystemTools.runTool("CHECK_GROQ", context))
             }
-            
-            // 5. AI
-            (metin.contains("hangi ai") || metin.contains("hangi model") ||
-             metin.contains("ai ne") || metin.contains("model ne")) -> {
+            v(metin, "pil", "batarya", "sarj", "şarj") && v(metin, "nasil", "nasıl", "kac", "kaç", "durum", "var mi", "var mı", "seviye") -> {
+                KomutSonucu.Cevap(SystemTools.runTool("GET_BATTERY", context))
+            }
+            v(metin, "hangi ai", "hangi model", "hangi beyin", "ai ne", "model ne") -> {
                 KomutSonucu.Cevap(SystemTools.runTool("GET_AI", context))
             }
-            
-            // 6. Sistem test
-            (metin.contains("sistem test") || metin.contains("sistemi kontrol")) -> {
+            v(metin, "sistem test", "sistem testi", "her seyi kontrol", "her şeyi kontrol", "sistemi kontrol") -> {
                 KomutSonucu.Cevap(SystemTools.runTool("FULL_CHECK", context))
             }
 
-else -> {
+            else -> {
                 val aiCevap = AiRouter.sor(metinHam, context = context)
                 if (aiCevap != null) KomutSonucu.Cevap(aiCevap)
                 else KomutSonucu.Cevap("Şu an cevap veremiyorum $hitap, ama dinliyorum.")

@@ -17,13 +17,12 @@ object AiRouter {
 
     // OLLAMA_URL artik dinamik - OllamaLocator.bul(context) ile alinir
 
-    private suspend fun saglayicilar(context: Context): List<Saglayici> {
-        val ollamaUrl = OllamaLocator.bul(context)
+    private fun saglayicilar(): List<Saglayici> {
         val tum = listOf(
         // ═══ ۱. Ollama Gemma2 (آفلاین، سریع) ═══
         Saglayici(
             ad = "Ollama-Gemma2",
-            baseUrl = "$ollamaUrl/v1/",
+            baseUrl = OLLAMA_URL,
             model = Settings.gemmaModel,
             apiKey = { "ollama-local" },
             needsKey = false
@@ -68,7 +67,7 @@ KURALLAR:
 6. Sadece SOHBET (selamlaşma, moral, soru-cevap, bilgi) konularında cevap ver.""",
         context: android.content.Context? = null
     ): String? = withContext(Dispatchers.IO) {
-        for (s in saglayicilar(context)) {
+        for (s in saglayicilar()) {
             val anahtar = s.apiKey()
             if (s.needsKey && anahtar.isBlank()) continue
             try {

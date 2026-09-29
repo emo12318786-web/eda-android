@@ -1,0 +1,595 @@
+package com.deniz.eda.service
+
+import android.app.Service
+import android.content.Intent
+import android.os.Bundle
+import android.os.IBinder
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
+import androidx.core.app.ServiceCompat
+import android.content.pm.ServiceInfo
+import com.deniz.eda.core.CommandProcessor
+import com.deniz.eda.panel.PanelServer
+import com.deniz.eda.core.KomutSonucu
+import com.deniz.eda.core.ReminderChecker
+import com.deniz.eda.core.SecurityMode
+import com.deniz.eda.core.Settings
+import com.deniz.eda.core.WakeWordDetector
+import com.deniz.eda.data.db.EdaDatabase
+import com.deniz.eda.data.db.LogEntity
+import com.deniz.eda.utils.BatteryUtils
+import kotlinx.coroutines.*
+import java.util.Locale
+
+/**
+ * Orijinal Python surumundeki başlat() (uyku dongusu) + komut_dongusu() (aktif mod)
+ * ikilisinin tek bir Android Foreground Service icindeki karsiligidir.
+ *
+ * Mimari notu: Termux surumunde "dusuk pil tuketimi" icin manuel wake-lock
+ * acip/kapatma, RMS tabanli sessizlik filtresi ve Google/Whisper zincirini
+ * uyku modunda devre disi birakma gibi hileler gerekiyordu. Burada bunlarin
+ * cogu gerek kalmiyor cunku:
+ *  - Foreground Service + bildirim, Android'in kendi Doze/App-Standby
+ *    kurallarindan servisi zaten koruyor (manuel wake-lock hilesine gerek yok).
+ *  - Android SpeechRecognizer, sesi sisteme gondermeden once kendi VAD'i ile
+ *    sessizligi zaten eliyor (bizim yazdigimiz RMS filtresinin native karsiligi
+ *    isletim sistemi tarafindan hazir geliyor).
+ *  - EXTRA_PREFER_OFFLINE ile uyku modunda (sadece uyanma kelimesi icin) agir
+ *    online tanima yerine cihaz uzerindeki hafif modeli tercih ediyoruz.
+ */
+class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
+
+    companion object {
+        @Volatile
+        var sonMod: String = "KAPALI"
+    }
+
+    enum class Mod { UYKU, AKTIF }
+
+    private lateinit var tts: TextToSpeech
+    private var panelServer: PanelServer? = null
+    private var speechRecognizer: SpeechRecognizer? = null
+    private var mod = Mod.UYKU
+    private var kapatOnayBekleniyor = false
+
+    private val serviceScope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
+    private var pilJob: Job? = null
+    private var hatirlatmaJob: Job? = null
+    private var dinlemeAktif = false
+    private var ttsHazir = false
+
+    // FAZ 2: guvenlik modu - hareket algilanirsa TTS ile yuksek uyari verir.
+    private val securityMode by lazy {
+        SecurityMode(this) {
+            konus("Dikkat! Hareket algılandı, güvenlik modu tetiklendi!")
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        Settings.init(this)
+
+        // ═══ Panel Server (kontrol paneli web sunucusu) ═══
+        try {
+            panelServer = PanelServer(this)
+            panelServer?.start(10000, false)
+            android.util.Log.i("EDA-Panel", "✅ PanelServer 8080 portunda başlatıldı")
+        } catch (e: Exception) {
+            android.util.Log.e("EDA-Panel", "PanelServer başlatma hatası: ${e.message}")
+        }
+
+        // ═══ Health Connect init ═══
+        CommandProcessor.initHealth(this)
+        android.util.Log.i("EDA-Health", "Health Connect init edildi")
+
+        // ═══ تنظیم sonMod که MainActivity هم ببینه ═══
+        if (Settings.sonMod == "KAPALI") {
+            Settings.sonMod = "AKTIF"
+        }
+        NotificationHelper.channelOlustur(this)
+        tts = TextToSpeech(this, this)
+
+        // GUVENLIK ONLEMI: eski bir surumde STREAM_MUSIC gecici olarak
+        // susturuluyordu; bu susturma cihaz genelinde kalici olabildigi
+        // icin (uygulama yeniden baslasa bile), burada bir kez zorla
+        // geri aciyoruz ki TTS sessiz kalmasin.
+        try {
+            audioManager.adjustStreamVolume(
+                android.media.AudioManager.STREAM_MUSIC,
+                android.media.AudioManager.ADJUST_UNMUTE,
+                0
+            )
+        } catch (e: Exception) {
+        }
+
+        val bildirim = NotificationHelper.bildirimOlustur(this, getString(com.deniz.eda.R.string.notif_sleeping))
+        ServiceCompat.startForeground(
+            this, NotificationHelper.NOTIF_ID, bildirim,
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        )
+
+        val konusmaTanimaVarMi = SpeechRecognizer.isRecognitionAvailable(this)
+        android.util.Log.e("EdaService", "SpeechRecognizer bu cihazda mevcut mu: $konusmaTanimaVarMi")
+        if (!konusmaTanimaVarMi) {
+            // Cihazda hicbir konusma tanima servisi yok (orn. Google uygulamasi
+            // olmayan bir ROM) - sonsuz hata donguyu onlemek icin hic denemeyip
+            // bildirimi guncelliyoruz.
+            bildirimGuncelle("⚠️ Bu cihazda konuşma tanıma servisi bulunamadı.")
+        } else {
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
+                setRecognitionListener(recognitionListener)
+            }
+        }
+
+        pilBildirimBaslat()
+        hatirlatmaKontrolBaslat()
+
+        // Servis yeniden baslatildiysa (orn. telefon acilinca) daha once
+        // acik birakilmis guvenlik modunu geri yukle.
+        if (Settings.guvenlikModuAktif) securityMode.baslat()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // ═══ هندل کردن action های Widget ═══
+        when (intent?.action) {
+            "ACTION_BASLAT" -> {
+                // 🟢 Başlat — mod'u AKTIF yap و dinlemeye başla
+                mod = Mod.AKTIF
+                sonMod = "AKTIF"; Settings.sonMod = "AKTIF"
+                Settings.derinUyku = false
+                bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
+                baslatDinleme()
+                healthMonitorBaslat()
+            }
+            
+            "ACTION_AKTIF" -> {
+                // 🟢 Aktif moda geç
+                mod = Mod.AKTIF
+                sonMod = "AKTIF"; Settings.sonMod = "AKTIF"
+                Settings.derinUyku = false
+                if (speechRecognizer == null && SpeechRecognizer.isRecognitionAvailable(this)) {
+                    speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
+                        setRecognitionListener(recognitionListener)
+                    }
+                }
+                bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
+                android.util.Log.d("EdaService", "AKTIF moda geçildi")
+                healthMonitorBaslat()
+                konus("Aktif modda çalışıyorum denizçim.") { baslatDinleme() }
+            }
+            
+            "ACTION_UYKU" -> {
+                // 💤 Uyku (کنترل پنل)
+                mod = Mod.UYKU
+                sonMod = "UYKU"; Settings.sonMod = "UYKU"
+                Settings.derinUyku = true
+                dinlemeAktif = false
+                try {
+                    speechRecognizer?.stopListening()
+                    speechRecognizer?.cancel()
+                    speechRecognizer?.destroy()
+                } catch (e: Exception) {}
+                speechRecognizer = null
+                bildirimGuncelle("💤 Uyku — Mikrofon kapalı")
+                android.util.Log.d("EdaService", "UYKU moda geçildi")
+                konus("Uyku moduna geçiyorum denizçim.") { }
+            }
+            
+            "ACTION_SPEAK" -> {
+                // 🔊 از HealthMonitor بیاد — TTS خودکار
+                val text = intent.getStringExtra("text") ?: ""
+                if (text.isNotBlank()) {
+                    android.util.Log.i("EDA-Health", "Auto-speak: $text")
+                    konus(text) { }
+                }
+            }
+
+            "ACTION_STOP" -> {
+                // ❌ کامل ببند
+                android.util.Log.d("EdaService", "Durduruldu")
+                healthMonitorDurdur()
+                stopSelf()
+            }
+            
+            "ACTION_DERIN_UYKU" -> {
+                // 💤 Uyku — mod'u UYKU yap، میکروفون خاموش
+                mod = Mod.UYKU
+                sonMod = "UYKU"; Settings.sonMod = "UYKU"
+                Settings.derinUyku = true
+                dinlemeAktif = false
+                speechRecognizer?.stopListening()
+                bildirimGuncelle("💤 Derin uyku — Widget ile uyandır")
+                android.util.Log.d("EdaService", "Derin uyku moduna geçildi")
+            }
+            
+            else -> {
+                // معمولی — اگه اولین باره، uyku modunda başla
+                if (!Settings.derinUyku && speechRecognizer != null) {
+                    baslatDinleme()
+                }
+            }
+        }
+        
+        return START_STICKY
+    }
+
+    // ═══ Health Monitor helper metotları ═══
+    private fun healthMonitorBaslat() {
+        try {
+            val intent = Intent(this, HealthMonitorService::class.java)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
+            android.util.Log.i("EDA-Health", "HealthMonitorService başlatıldı")
+        } catch (e: Exception) {
+            android.util.Log.e("EDA-Health", "HealthMonitorService başlatma hatası: ${e.message}")
+        }
+    }
+
+    private fun healthMonitorDurdur() {
+        try {
+            val intent = Intent(this, HealthMonitorService::class.java)
+            stopService(intent)
+            android.util.Log.i("EDA-Health", "HealthMonitorService durduruldu")
+        } catch (e: Exception) {
+            android.util.Log.e("EDA-Health", "HealthMonitorService durdurma hatası: ${e.message}")
+        }
+    }
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            tts.language = Locale("tr", "TR")
+        }
+        ttsHazir = true
+        // TTS hazir olur olmaz dinlemeye basla (konusma tanima mevcutsa).
+        if (speechRecognizer != null) baslatDinleme()
+    }
+
+    // --- PIL BILDIRIMI (هر N دقیقه، فقط اگه mod == AKTIF یا UYKU) ---
+    private var sonPilUyariSeviyesi: Int = -1
+
+    private fun pilBildirimBaslat() {
+        pilJob?.cancel()
+        pilJob = serviceScope.launch {
+            while (isActive) {
+                delay(Settings.pilBildirimAraligiDk.toLong() * 60_000L)
+
+                // ═══ اگه KAPALI بود → هیچی نگه ═══
+                if (Settings.sonMod == "KAPALI") {
+                    android.util.Log.d("EdaService", "Pil bildirimi skip — KAPALI")
+                    continue
+                }
+
+                val bilgi = BatteryUtils.pilBilgisiAl(this@EdaForegroundService)
+                if (bilgi != null) {
+                    val yuzde = bilgi.yuzde
+
+                    // ═══ هشدار بحرانی (< 15%) ═══
+                    if (Settings.pilKritikUyariAktif && yuzde < Settings.pilKritikEsik) {
+                        val seviye = (yuzde / 5) * 5
+                        if (seviye != sonPilUyariSeviyesi) {
+                            sonPilUyariSeviyesi = seviye
+                            konus("Acil! Pil yüzde $yuzde. Hemen şarja tak!")
+                            continue
+                        }
+                    }
+                    // ═══ هشدار کم (۱۵-۳۰٪) هر ۵٪ ═══
+                    else if (Settings.pilDusukUyariAktif && yuzde < Settings.pilDusukEsik && yuzde >= Settings.pilKritikEsik) {
+                        val seviye = (yuzde / 5) * 5
+                        if (seviye != sonPilUyariSeviyesi) {
+                            sonPilUyariSeviyesi = seviye
+                            konus("Dikkat! Pil yüzde $yuzde. Şarj etmen iyi olur")
+                            continue
+                        }
+                    }
+
+                    // ═══ عادی (بالای ۳۰٪) ═══
+                    konus("Pil yüzde $yuzde ${Settings.kullaniciAdi}.")
+                }
+            }
+        }
+    }
+
+    // --- HATIRLATMA KONTROLU (her 30 saniyede bir, mod ne olursa olsun) ---
+    private fun hatirlatmaKontrolBaslat() {
+        hatirlatmaJob?.cancel()
+        hatirlatmaJob = serviceScope.launch {
+            while (isActive) {
+                delay(30_000L)
+                val tetiklenenler = ReminderChecker.kontrolEt(this@EdaForegroundService)
+                tetiklenenler.forEach { mesaj -> konus("Hatırlatma: $mesaj") }
+            }
+        }
+    }
+
+    // --- DINLEME DONGUSU ---
+    private val audioManager by lazy { getSystemService(AUDIO_SERVICE) as android.media.AudioManager }
+
+    // Cihazda offline Turkce konusma tanima paketi yoksa (ERROR_LANGUAGE_UNAVAILABLE/
+    // ERROR_LANGUAGE_NOT_SUPPORTED), bunu bir kez tespit edip bir daha offline
+    // denemeyi birakiyoruz - yoksa her seferinde ayni hatayla bip dongusune giriyor.
+    private var offlineDestekYok = false
+
+    private fun baslatDinleme() {
+        if (dinlemeAktif) return
+        if (speechRecognizer == null) return // cihazda konusma tanima yok
+        
+        // ═══ خواب عمیق: تو حالت خواب عمیق، میکروفون روشن نمی‌شه ═══
+        if (mod == Mod.UYKU) {
+            android.util.Log.d("EdaService", "خواب عمیق — dinleme başlatılmadı")
+            bildirimGuncelle("💤 Derin uyku — Widget ile uyandır")
+            return
+        }
+        
+        dinlemeAktif = true
+        val uykuModu = mod == Mod.UYKU
+        val offlineDenensin = uykuModu && !offlineDestekYok
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "tr-TR")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "tr-TR")
+            putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "tr-TR")
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+            putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
+            // Uyku modunda (sadece uyanma kelimesi icin) cihaz-ustu/hafif tanimayi
+            // tercih et - ama sadece cihazda gercekten offline paket varsa.
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, offlineDenensin)
+            // Cok erken "ERROR_SPEECH_TIMEOUT"/"ERROR_NO_MATCH" verip hemen yeniden
+            // baslamasini (ve bip sesinin ust uste binmesini) onlemek icin sessizlik
+            // toleransini uzatiyoruz.
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1500L)
+        }
+        try {
+            speechRecognizer?.startListening(intent)
+        } catch (e: Exception) {
+            dinlemeAktif = false
+            yenidenDenemeyiPlanla()
+        }
+    }
+
+    private fun yenidenDenemeyiPlanla() {
+        serviceScope.launch {
+            delay(if (mod == Mod.UYKU) Settings.uykuBeklemeAraligiMs else 300L)
+            baslatDinleme()
+        }
+    }
+
+    private fun hataAdi(kod: Int): String = when (kod) {
+        SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "ERROR_NETWORK_TIMEOUT"
+        SpeechRecognizer.ERROR_NETWORK -> "ERROR_NETWORK"
+        SpeechRecognizer.ERROR_AUDIO -> "ERROR_AUDIO"
+        SpeechRecognizer.ERROR_SERVER -> "ERROR_SERVER"
+        SpeechRecognizer.ERROR_CLIENT -> "ERROR_CLIENT"
+        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "ERROR_SPEECH_TIMEOUT"
+        SpeechRecognizer.ERROR_NO_MATCH -> "ERROR_NO_MATCH"
+        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "ERROR_RECOGNIZER_BUSY"
+        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "ERROR_INSUFFICIENT_PERMISSIONS"
+        SpeechRecognizer.ERROR_TOO_MANY_REQUESTS -> "ERROR_TOO_MANY_REQUESTS"
+        SpeechRecognizer.ERROR_SERVER_DISCONNECTED -> "ERROR_SERVER_DISCONNECTED"
+        SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED -> "ERROR_LANGUAGE_NOT_SUPPORTED"
+        SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE -> "ERROR_LANGUAGE_UNAVAILABLE"
+        SpeechRecognizer.ERROR_CANNOT_CHECK_SUPPORT -> "ERROR_CANNOT_CHECK_SUPPORT"
+        else -> "BILINMEYEN($kod)"
+    }
+
+    private val recognitionListener = object : RecognitionListener {
+        override fun onResults(results: Bundle?) {
+            dinlemeAktif = false
+            val list = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+            
+            if (list.isNullOrEmpty()) {
+                android.util.Log.d("EdaService", "STT: boş sonuç")
+                yenidenDenemeyiPlanla()
+                return
+            }
+            
+            android.util.Log.i("EdaService", "STT sonuçları (${list.size}):")
+            list.forEachIndexed { i, t -> android.util.Log.i("EdaService", "  [$i] $t") }
+            
+            // همه‌ی نتایج رو امتحان کن — اگه یکی match کرد، همون رو بفرست
+            // (best effort: از اولین نتیجه‌ای که CommandProcessor جواب معنی‌دار بده)
+            for ((index, aday) in list.withIndex()) {
+                android.util.Log.d("EdaService", "Deneniyor [$index]: $aday")
+                // فعلاً اولین نتیجه رو می‌فرستیم — بهبود بعدی: چک match
+                if (index == 0) {
+                    metniIsle(aday)
+                }
+                break
+            }
+        }
+
+        override fun onError(error: Int) {
+            dinlemeAktif = false
+            android.util.Log.e("EdaService", "SpeechRecognizer hata kodu: $error (${hataAdi(error)})")
+            if (error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ||
+                error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED
+            ) {
+                if (!offlineDestekYok) {
+                    offlineDestekYok = true
+                    android.util.Log.e("EdaService", "Offline Turkce paketi yok, online tanimaya geciliyor.")
+                }
+            }
+            // ERROR_NO_MATCH / ERROR_SPEECH_TIMEOUT gibi hatalar uyku modunda normaldir
+            // (ortam sessiz) - sadece dongude devam ediyoruz, pil dostu bekleme ile.
+            yenidenDenemeyiPlanla()
+        }
+
+        override fun onReadyForSpeech(params: Bundle?) {}
+        override fun onBeginningOfSpeech() {}
+        override fun onRmsChanged(rmsdB: Float) {}
+        override fun onBufferReceived(buffer: ByteArray?) {}
+        override fun onEndOfSpeech() {}
+        override fun onPartialResults(partialResults: Bundle?) {}
+        override fun onEvent(eventType: Int, params: Bundle?) {}
+    }
+
+    private fun metniIsle(metin: String?) {
+        if (mod == Mod.UYKU) {
+            if (WakeWordDetector.uyandiMi(metin)) {
+                mod = Mod.AKTIF
+                sonMod = "AKTIF"; Settings.sonMod = "AKTIF"
+                bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
+                konus("Buradayım ${Settings.kullaniciAdi}! Dinliyorum.") { baslatDinleme() }
+            } else {
+                baslatDinleme()
+            }
+            return
+        }
+
+        // --- AKTIF MOD ---
+        if (kapatOnayBekleniyor) {
+            kapatOnayBekleniyor = false
+            val onaylandi = metin != null && listOf("evet", "eminim", "tamam", "kapat")
+                .any { it in metin.lowercase(Locale.getDefault()) }
+            if (onaylandi) {
+                konus("Görüşmek üzere ${Settings.kullaniciAdi}.") { stopSelf() }
+            } else {
+                konus("Tamam, kapatmıyorum ${Settings.kullaniciAdi}.") { baslatDinleme() }
+            }
+            return
+        }
+
+        if (metin.isNullOrBlank()) {
+            baslatDinleme()
+            return
+        }
+
+        // CommandProcessor.isle askida kalabilir (AI/hava durumu/konum agdan
+        // cekiyor) - bu yuzden coroutine icinde cagiriyoruz, dinleme donguyu
+        // bloklamiyor.
+        val baslangicZaman = System.currentTimeMillis()
+        serviceScope.launch {
+            val sonuc = CommandProcessor.isle(this@EdaForegroundService, metin)
+
+            // ═══ ثبت لاگ در فایل (بدون Room DB) ═══
+            try {
+                val cevapMetni = (sonuc as? KomutSonucu.Cevap)?.metin ?: ""
+                com.deniz.eda.utils.EdaLog.ekle(
+                    context = this@EdaForegroundService,
+                    kullanici = metin,
+                    eda = cevapMetni,
+                    kaynak = "komut",
+                    sleep = false
+                )
+                android.util.Log.d("EdaSvc", "log kaydedildi: $metin")
+            } catch (e: Exception) {
+                android.util.Log.e("EdaSvc", "log kaydetme hatasi: ${e.message}")
+            }
+
+            // ═══ پردازش نتیجه ═══
+            when (sonuc) {
+                is KomutSonucu.Cevap -> konus(sonuc.metin) { baslatDinleme() }
+                KomutSonucu.UykuyaDon -> {
+                    mod = Mod.UYKU
+                sonMod = "UYKU"; Settings.sonMod = "UYKU"
+                    bildirimGuncelle(getString(com.deniz.eda.R.string.notif_sleeping))
+                    konus("Uyku moduna dönüyorum ${Settings.kullaniciAdi}.") { baslatDinleme() }
+                }
+                KomutSonucu.KapatOnayIste -> {
+                    kapatOnayBekleniyor = true
+                    konus("Kapatmak istediğine emin misin ${Settings.kullaniciAdi}?") { baslatDinleme() }
+                }
+                KomutSonucu.Kapat -> konus("Görüşmek üzere ${Settings.kullaniciAdi}.") { stopSelf() }
+                is KomutSonucu.GuvenlikModuDegisti -> {
+                    if (sonuc.aktif) securityMode.baslat() else securityMode.durdur()
+                    konus(
+                        if (sonuc.aktif) "Güvenlik modu açıldı ${Settings.kullaniciAdi}."
+                        else "Güvenlik modu kapatıldı ${Settings.kullaniciAdi}."
+                    ) { baslatDinleme() }
+                }
+                is KomutSonucu.GeciciUyku -> {
+                    val sureMs = sonuc.sureMs
+                    val sureDakika = sureMs / 60000.0
+                    android.util.Log.i("EdaService", "⏱ Geçici uyku: ${sureMs}ms")
+                    mod = Mod.UYKU
+                    sonMod = "UYKU"; Settings.sonMod = "UYKU"
+                    dinlemeAktif = false
+                    try {
+                        speechRecognizer?.stopListening()
+                        speechRecognizer?.cancel()
+                    } catch (e: Exception) {}
+                    bildirimGuncelle("💤 Geçici uyku — ${"%.1f".format(sureDakika)} dk")
+                    konus(sonuc.mesaj) {
+                        // بعد از مدت مشخص، خودکار بیدار شو
+                        serviceScope.launch {
+                            kotlinx.coroutines.delay(sureMs)
+                            android.util.Log.i("EdaService", "⏰ Geçici uyku bitti, geri dönüyorum")
+                            mod = Mod.AKTIF
+                            sonMod = "AKTIF"; Settings.sonMod = "AKTIF"
+                            bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
+                            konus("Geri döndüm denizçim, dinliyorum.") {
+                                baslatDinleme()
+                            }
+                        }
+                    }
+                }
+                is KomutSonucu.ArabaModuDegisti -> {
+                    konus(
+                        if (sonuc.aktif) "Araba modu açıldı ${Settings.kullaniciAdi}."
+                        else "Araba modu kapatıldı ${Settings.kullaniciAdi}."
+                    ) { baslatDinleme() }
+                }
+            }
+        }
+    }
+
+    private fun bildirimGuncelle(metin: String) {
+        val nm = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
+        nm.notify(NotificationHelper.NOTIF_ID, NotificationHelper.bildirimOlustur(this, metin))
+    }
+
+    // --- TTS ---
+    // TTS için metni temizle — ğ harfini TTS yanlış okuyor
+    private fun ttsTemizle(metin: String): String {
+        // Google TTS ترکی خودش ğ را درست می‌خواند
+        // پس تغییر نده
+        return metin
+    }
+
+    // تست: متن را در لاگ چاپ کن
+    private fun ttsTest(metin: String) {
+        android.util.Log.i("EDA-TTS", "TTS metin: $metin")
+    }
+
+    private fun konus(metin: String, tamamlaninca: (() -> Unit)? = null) {
+        val id = "eda_${System.currentTimeMillis()}"
+        val temizMetin = ttsTemizle(metin)
+        tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {}
+            override fun onDone(utteranceId: String?) {
+                if (utteranceId == id) serviceScope.launch(Dispatchers.Main) { tamamlaninca?.invoke() }
+            }
+            @Deprecated("Deprecated in Java")
+            override fun onError(utteranceId: String?) {
+                if (utteranceId == id) serviceScope.launch(Dispatchers.Main) { tamamlaninca?.invoke() }
+            }
+        })
+        val params = Bundle()
+        android.util.Log.i("EDA-TTS", "TTS metin: $temizMetin")
+        tts.speak(temizMetin, TextToSpeech.QUEUE_FLUSH, params, id)
+    }
+
+    override fun onDestroy() {
+        try {
+            panelServer?.stop()
+            android.util.Log.i("EDA-Panel", "PanelServer durduruldu")
+        } catch (e: Exception) {}
+        sonMod = "KAPALI"; Settings.sonMod = "KAPALI"
+        pilJob?.cancel()
+        hatirlatmaJob?.cancel()
+        securityMode.durdur()
+        serviceScope.cancel()
+        speechRecognizer?.destroy()
+        if (ttsHazir) tts.shutdown()
+        super.onDestroy()
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+}
