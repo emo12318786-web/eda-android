@@ -13,7 +13,7 @@ object JalaliCalendar {
         "Mehr", "Aban", "Azer", "Dey", "Behmen", "Esfend"
     )
 
-    private val GUNLER = listOf("Shanbe", "Yekshanbe", "Doshanbe", "Seshanbe", "Chaharshanbe", "Panjshanbe", "Jome")
+    private val GUNLER = listOf("Doshanbe", "Seshanbe", "Chaharshanbe", "Panjshanbe", "Jome", "Shanbe", "Yekshanbe")
 
     data class SemsiTarih(val yil: Int, val ay: Int, val gun: Int) {
         fun ayAdi(): String = SEMSI_AYLAR[ay - 1]
@@ -60,7 +60,7 @@ object JalaliCalendar {
         // Calendar.DAY_OF_WEEK: Pazar=1 ... Cumartesi=7. Python'daki weekday() (Pazartesi=0)
         // ile ayni sirayi elde etmek icin donusturuyoruz.
         val javaGun = simdi.get(Calendar.DAY_OF_WEEK) // 1=Pazar..7=Cumartesi
-        val pythonWeekday = javaGun % 7 // 0=Shanbe..6=Jome
+        val pythonWeekday = (javaGun + 5) % 7 // 0=Pazartesi..6=Pazar
         val gunAdi = GUNLER[pythonWeekday]
 
         return Pair("${semsi.gun} ${semsi.ayAdi()} ${semsi.yil}", gunAdi)

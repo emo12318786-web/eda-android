@@ -526,7 +526,7 @@ object CommandProcessor {
                 KomutSonucu.Cevap(cevap)
             }
 
-            v(metin, "tarih", "tarik", "bugün", "bugun", "hangi gün", "hangi gun", "bugün ne") -> {
+            v(metin, "tarih", "tarik") -> {
                 val (tarih, gunAdi) = JalaliCalendar.bugununSemsiTarihi()
                 KomutSonucu.Cevap("Bugün $tarih, $gunAdi $hitap.")
             }

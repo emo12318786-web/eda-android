@@ -13,7 +13,7 @@ object JalaliCalendar {
         "Mehr", "Aban", "Azer", "Dey", "Behmen", "Esfend"
     )
 
-    private val GUNLER = listOf("Shanbe", "Yekshanbe", "Doshanbe", "Seshanbe", "Chaharshanbe", "Panjshanbe", "Jome")
+    private val GUNLER = listOf("Doshanbe", "Seshanbe", "Chaharshanbe", "Panjshanbe", "Jome", "Shanbe", "Yekshanbe")
 
     data class SemsiTarih(val yil: Int, val ay: Int, val gun: Int) {
         fun ayAdi(): String = SEMSI_AYLAR[ay - 1]
