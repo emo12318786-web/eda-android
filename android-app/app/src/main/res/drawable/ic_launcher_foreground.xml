@@ -5,38 +5,30 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- ═══ سایه‌ی سنگین (drop shadow) ═══ -->
     <group android:translateX="1.2" android:translateY="1.2">
-        <!-- E -->
         <path
             android:pathData="M20,30 L20,78 L36,78 L36,62 L46,62 L46,78 L62,78 L62,30 L46,30 L46,46 L36,46 L36,30 Z"
             android:fillColor="#B0000000" />
-        <!-- D -->
         <path
             android:pathData="M66,30 L66,78 L88,78 L88,30 Z M78,40 L88,40 L88,68 L78,68 Z"
             android:fillColor="#B0000000" />
-        <!-- A -->
         <path
             android:pathData="M92,30 L92,78 L98,78 L98,62 L104,62 L104,30 Z M97,42 L104,42 L104,52 L97,52 Z"
             android:fillColor="#B0000000" />
     </group>
 
-    <!-- ═══ حرف E — سفید درخشان ═══ -->
     <path
         android:pathData="M20,30 L20,78 L36,78 L36,62 L46,62 L46,78 L62,78 L62,30 L46,30 L46,46 L36,46 L36,30 Z"
         android:fillColor="#FFFFFFFF" />
 
-    <!-- ═══ حرف D — فیروزه‌ای ═══ -->
     <path
         android:pathData="M66,30 L66,78 L88,78 L88,30 Z M78,40 L88,40 L88,68 L78,68 Z"
         android:fillColor="#FF80DEEA" />
 
-    <!-- ═══ حرف A — طلایی ═══ -->
     <path
         android:pathData="M92,30 L92,78 L98,78 L98,62 L104,62 L104,30 Z M97,42 L104,42 L104,52 L97,52 Z"
         android:fillColor="#FFFFD54F" />
 
-    <!-- ═══ خط تأکید زیر لوگو ═══ -->
     <path
         android:pathData="M20,84 L104,84 L104,88 L20,88 Z"
         android:fillColor="#FFB39DDB" />
