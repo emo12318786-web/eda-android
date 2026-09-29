@@ -115,6 +115,16 @@ object AffectionResponses {
             ).random()
         }
 
+        // ═══ ۹. Açım ═══
+        if (v(metin, "acım", "acim", "karnım aç", "karnim ac",
+              "açlık", "aclik")) {
+            return listOf(
+                "Bir şeyler ye $hitap.",
+                "Karnını doyur $hitap, sağlığın önemli.",
+                "Mutfağa git $hitap, bir şeyler hazırla."
+            ).random()
+        }
+
         // ═══ ۱۰. Susadım ═══
         if (v(metin, "susadım", "susadim", "su içmek", "su icmek", "susuz")) {
             return listOf(
