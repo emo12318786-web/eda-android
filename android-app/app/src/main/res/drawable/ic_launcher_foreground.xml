@@ -5,31 +5,48 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <group android:translateX="1.2" android:translateY="1.2">
-        <path
-            android:pathData="M20,30 L20,78 L36,78 L36,62 L46,62 L46,78 L62,78 L62,30 L46,30 L46,46 L36,46 L36,30 Z"
-            android:fillColor="#B0000000" />
-        <path
-            android:pathData="M66,30 L66,78 L88,78 L88,30 Z M78,40 L88,40 L88,68 L78,68 Z"
-            android:fillColor="#B0000000" />
-        <path
-            android:pathData="M92,30 L92,78 L98,78 L98,62 L104,62 L104,30 Z M97,42 L104,42 L104,52 L97,52 Z"
-            android:fillColor="#B0000000" />
-    </group>
-
+    <!-- ═══ لبخند Cheshire (دندان‌های سفید) ═══ -->
+    <!-- سایه لبخند -->
     <path
-        android:pathData="M20,30 L20,78 L36,78 L36,62 L46,62 L46,78 L62,78 L62,30 L46,30 L46,46 L36,46 L36,30 Z"
+        android:pathData="M25,82 Q54,100 83,82"
+        android:strokeWidth="6"
+        android:strokeColor="#80000000"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- لبخند اصلی -->
+    <path
+        android:pathData="M25,80 Q54,98 83,80"
+        android:strokeWidth="5"
+        android:strokeColor="#FF00FF88"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- ═══ دندان‌ها (سفید) ═══ -->
+    <path
+        android:pathData="M32,84 L35,92 L38,84 Z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M40,88 L43,97 L46,88 Z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M48,91 L51,100 L54,91 Z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M56,91 L59,100 L62,91 Z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M64,88 L67,97 L70,88 Z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M72,84 L75,92 L78,84 Z"
         android:fillColor="#FFFFFFFF" />
 
+    <!-- ═══ هاله‌ی سبز زیر لبخند ═══ -->
     <path
-        android:pathData="M66,30 L66,78 L88,78 L88,30 Z M78,40 L88,40 L88,68 L78,68 Z"
-        android:fillColor="#FF80DEEA" />
-
-    <path
-        android:pathData="M92,30 L92,78 L98,78 L98,62 L104,62 L104,30 Z M97,42 L104,42 L104,52 L97,52 Z"
-        android:fillColor="#FFFFD54F" />
-
-    <path
-        android:pathData="M20,84 L104,84 L104,88 L20,88 Z"
-        android:fillColor="#FFB39DDB" />
+        android:pathData="M30,80 Q54,95 78,80"
+        android:strokeWidth="12"
+        android:strokeColor="#4000FF88"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
 </vector>
