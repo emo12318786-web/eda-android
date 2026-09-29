@@ -1,5 +1,6 @@
 package com.deniz.eda.core
 
+import com.deniz.eda.utils.SystemTools
 import android.content.Context
 import com.deniz.eda.ai.AiRouter
 import com.deniz.eda.data.DiaryStore
