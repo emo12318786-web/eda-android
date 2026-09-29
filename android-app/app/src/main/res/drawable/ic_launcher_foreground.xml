@@ -1,9 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- سایه‌ی سنگین (drop shadow) -->
+    <group android:translateX="0.8" android:translateY="0.8">
+        <path
+            android:pathData="M18,32 L18,76 L34,76 L34,60 L44,60 L44,76 L60,76 L60,32 L44,32 L44,48 L34,48 L34,32 Z"
+            android:fillColor="#80000000" />
+        <path
+            android:pathData="M64,32 L64,76 L86,76 L86,32 Z M76,42 L86,42 L86,66 L76,66 Z"
+            android:fillColor="#80000000" />
+        <path
+            android:pathData="M90,32 L90,76 L96,76 L96,60 L102,60 L102,32 Z"
+            android:fillColor="#80000000" />
+    </group>
+
+    <!-- حرف E (بنفش روشن) -->
     <path
-        android:fillColor="#00E5C7"
-        android:pathData="M34,30 h40 v10 h-28 v14 h24 v10 h-24 v14 h28 v10 h-40 z" />
+        android:pathData="M18,32 L18,76 L34,76 L34,60 L44,60 L44,76 L60,76 L60,32 L44,32 L44,48 L34,48 L34,32 Z"
+        android:fillColor="#FFFFFFFF" />
+
+    <!-- حرف D (فیروزه‌ای روشن) -->
+    <path
+        android:pathData="M64,32 L64,76 L86,76 L86,32 Z M76,42 L86,42 L86,66 L76,66 Z"
+        android:fillColor="#FF80DEEA" />
+
+    <!-- حرف A (زرد طلایی روشن) -->
+    <path
+        android:pathData="M90,32 L90,76 L96,76 L96,60 L102,60 L102,32 Z M95,42 L102,42 L102,50 L95,50 Z"
+        android:fillColor="#FFFFD54F" />
 </vector>
