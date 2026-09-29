@@ -79,7 +79,7 @@ Sen: Merhaba denizçim, iyiyim sen nasılsın?
     }
 
     private suspend fun checkInternetText(context: Context): String {
-        return if (checkInternet(context)) "Internet baglantisi var" else "Internet baglantisi yok"
+        return if (checkInternet(context)) "Internet var" else "Internet yok"
     }
 
     private suspend fun checkOllamaText(context: Context): String = withContext(Dispatchers.IO) {
