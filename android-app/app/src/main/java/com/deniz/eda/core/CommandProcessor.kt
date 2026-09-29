@@ -187,16 +187,18 @@ object CommandProcessor {
 
         // ═══ حافظه واقعی — ذخیره سؤال کاربر ═══
         MemoryStore.ekle(context, metinHam, "sohbet")
-        MemoryStore.ekle(context, metinHam, "son_soru")
 
         // ═══ یادگیری خودکار ═══
         otomatikOgren(context, metinHam)
         tekrarKontrol(context, metinHam)
 
-        // ═══ خود-تصحیح: دوباره بررسی کن ═══
+        // ═══ خود-تصحیح: دوباره بررسی کن (قبل از ذخیره son_soru) ═══
         if (v(metin, "tekrar kontrol", "yeniden kontrol", "tekrar bak", "yeniden bak", "daha kontrol", "tekrar dene", "yeniden dene")) {
             return yenidenKontrol(context, hitap)
         }
+
+        // ═══ حالا son_soru را ذخیره کن ═══
+        MemoryStore.ekle(context, metinHam, "son_soru")
 
         // ═══ حافظه: یادت باشه X ═══
         for (onEk in listOf("yadet ", "yadında ", "hatırla ", "hatirla ", "unutma ", "not al ")) {
@@ -665,6 +667,31 @@ object CommandProcessor {
             // ═══ Geçici Uyku (60 ثانیه) ═══
             v(metin, "geçici uyku", "gecici uyku", "kısa uyku", "kisa uyku", "biraz uyu", "dinlen") -> {
                 KomutSonucu.GeciciUyku(60_000L, "Kısa bir mola veriyorum $hitap.")
+            }
+
+            // ═══ Sistem Araclari (dogrudan, AI'siz) ═══
+            v(metin, "internet", "internetin", "internete", "baglanti", "bağlantı") && v(metin, "var", "yok", "var mi", "var mı", "kontrol", "erisim", "erişim", "iletisim", "iletişim", "nasil", "nasıl") -> {
+                val varMi = SystemTools.checkInternet(context)
+                KomutSonucu.Cevap(if (varMi) "Evet $hitap, internet baglantim var." else "Hayir $hitap, internet baglantim yok.")
+            }
+            v(metin, "internet", "internetin", "internete") -> {
+                val varMi = SystemTools.checkInternet(context)
+                KomutSonucu.Cevap(if (varMi) "Evet $hitap, internet baglantim var." else "Hayir $hitap, internet baglantim yok.")
+            }
+            v(metin, "ollama", "gemma") && v(metin, "calisiyor", "çalışıyor", "hazir", "hazır", "var mi", "var mı", "kontrol") -> {
+                KomutSonucu.Cevap(SystemTools.runTool("CHECK_OLLAMA", context))
+            }
+            v(metin, "groq") && v(metin, "calisiyor", "çalışıyor", "hazir", "hazır", "var mi", "var mı") -> {
+                KomutSonucu.Cevap(SystemTools.runTool("CHECK_GROQ", context))
+            }
+            v(metin, "pil", "batarya", "sarj", "şarj") && v(metin, "nasil", "nasıl", "kac", "kaç", "durum", "var mi", "var mı", "seviye") -> {
+                KomutSonucu.Cevap(SystemTools.runTool("GET_BATTERY", context))
+            }
+            v(metin, "hangi ai", "hangi model", "hangi beyin", "ai ne", "model ne") -> {
+                KomutSonucu.Cevap(SystemTools.runTool("GET_AI", context))
+            }
+            v(metin, "sistem test", "sistem testi", "her seyi kontrol", "her şeyi kontrol", "sistemi kontrol") -> {
+                KomutSonucu.Cevap(SystemTools.runTool("FULL_CHECK", context))
             }
 
             else -> {
