@@ -51,17 +51,11 @@ class DashboardActivity : ComponentActivity() {
     }
 
     private fun sendAction(action: String) {
-        when (action) {
-            "ACTION_AI_GROQ" -> viewModel.setAiProvider("groq")
-            "ACTION_AI_POLLINATIONS" -> viewModel.setAiProvider("pollinations")
-            "ACTION_AI_OLLAMA" -> viewModel.setAiProvider("ollama")
-            else -> {
-                val intent = Intent(this, EdaForegroundService::class.java).apply {
-                    this.action = action
-                }
-                startService(intent)
-            }
+        val intent = Intent(this, EdaForegroundService::class.java).apply {
+            this.action = action
         }
+        startService(intent)
+        // بعد ۵۰۰ms یه بار دیگه refresh کن
         viewModel.yenile()
     }
 }
@@ -228,34 +222,6 @@ fun DashboardScreen(
                     value = if (state.ogrenmeAktif) "Açık" else "Kapalı",
                     subtitle = "AI learning",
                     color = if (state.ogrenmeAktif) Color(0xFF4CAF50) else Color(0xFF757575),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            // ═══ بخش: انتخاب AI ═══
-            SectionTitle("🎯 AI Secimi (ana saglayici)")
-
-            val secili = state.aiSaglayici.split(" → ").firstOrNull() ?: "?"
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AiSelectButton(
-                    label = "Groq",
-                    selected = secili.contains("Groq"),
-                    onClick = { onAction("ACTION_AI_GROQ") },
-                    modifier = Modifier.weight(1f)
-                )
-                AiSelectButton(
-                    label = "Pollinations",
-                    selected = secili.contains("Pollinations"),
-                    onClick = { onAction("ACTION_AI_POLLINATIONS") },
-                    modifier = Modifier.weight(1f)
-                )
-                AiSelectButton(
-                    label = "Ollama",
-                    selected = secili.contains("Ollama"),
-                    onClick = { onAction("ACTION_AI_OLLAMA") },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -493,34 +459,6 @@ fun AiStatusRow(
                 )
             }
         }
-    }
-}
-
-@Composable
-fun AiSelectButton(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier.height(48.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (selected) Color(0xFF7E57C2) else Color(0xFF141836)
-        ),
-        shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            if (selected) Color(0xFFBB86FC) else Color(0xFF3A3F5C)
-        )
-    ) {
-        Text(
-            label,
-            color = if (selected) Color.White else Color(0xFFB0BEC5),
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold
-        )
     }
 }
 

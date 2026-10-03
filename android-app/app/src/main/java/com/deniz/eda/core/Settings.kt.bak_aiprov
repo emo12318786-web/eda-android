@@ -12,9 +12,6 @@ import android.content.SharedPreferences
  * ile ayni sadelikte.
  */
 object Settings {
-    /** Aktif AI saglayici: "groq", "pollinations", "ollama" */
-    var aiProvider: String = "pollinations"
-
 
     private const val PREFS_NAME = "eda_settings"
     private lateinit var prefs: SharedPreferences
