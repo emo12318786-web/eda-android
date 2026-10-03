@@ -763,7 +763,7 @@ object CommandProcessor {
             }
             
             // 4. Groq
-            (metin.contains("groq") || metin.contains("grok")) -> {
+            metin.contains("groq") -> {
                 KomutSonucu.Cevap(SystemTools.runTool("CHECK_GROQ", context))
             }
             

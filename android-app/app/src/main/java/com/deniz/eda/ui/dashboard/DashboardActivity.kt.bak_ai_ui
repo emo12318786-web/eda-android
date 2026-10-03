@@ -226,35 +226,6 @@ fun DashboardScreen(
                 )
             }
 
-            // ═══ بخش: AI Durumu ═══
-            SectionTitle("🤖 AI Durumu")
-
-            AiStatusRow(
-                name = "🌐 Internet",
-                status = if (state.internetStatus) "Bağlı" else "Bağlı değil",
-                isOk = state.internetStatus
-            )
-            AiStatusRow(
-                name = "🦙 Ollama (${state.aiModel})",
-                status = state.ollamaStatus,
-                isOk = state.ollamaStatus.lowercase().contains("acik") ||
-                       state.ollamaStatus.lowercase().contains("calisiyor") ||
-                       state.ollamaStatus.lowercase().contains("çalışıyor")
-            )
-            AiStatusRow(
-                name = "⚡ Groq",
-                status = state.groqStatus,
-                isOk = state.groqStatus.lowercase().contains("var") &&
-                       !state.groqStatus.lowercase().contains("yok")
-            )
-            AiStatusRow(
-                name = "🌸 Pollinations",
-                status = state.pollinationsStatus,
-                isOk = state.pollinationsStatus.lowercase().contains("acik") ||
-                       state.pollinationsStatus.lowercase().contains("calisiyor") ||
-                       state.pollinationsStatus.lowercase().contains("çalışıyor")
-            )
-
             // ═══ بخش: آمار DB ═══
             SectionTitle("💾 Veritabanı")
 
@@ -417,47 +388,6 @@ fun ActionButton(
         ) {
             Text(emoji, fontSize = 20.sp)
             Text(label, color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-fun AiStatusRow(
-    name: String,
-    status: String,
-    isOk: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF141836)),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                if (isOk) "🟢" else "🔴",
-                fontSize = 16.sp
-            )
-            Spacer(Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    name,
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    status,
-                    color = Color(0xFFB0BEC5),
-                    fontSize = 11.sp,
-                    maxLines = 1
-                )
-            }
         }
     }
 }

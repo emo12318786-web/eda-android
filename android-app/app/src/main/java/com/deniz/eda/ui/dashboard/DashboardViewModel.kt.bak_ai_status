@@ -7,7 +7,6 @@ import com.deniz.eda.core.Settings
 import com.deniz.eda.data.db.EdaDatabase
 import com.deniz.eda.utils.BatteryUtils
 import com.deniz.eda.utils.EdaLog
-import com.deniz.eda.utils.SystemTools
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,13 +40,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         val saat: String = "",
         val tarih: String = "",
         val kullaniciAdi: String = "",
-        val sonLoglar: List<String> = emptyList(),
-        // ═══ AI Durumu ═══
-        val ollamaStatus: String = "...",
-        val groqStatus: String = "...",
-        val pollinationsStatus: String = "...",
-        val internetStatus: Boolean = false,
-        val aiModel: String = "..."
+        val sonLoglar: List<String> = emptyList()
     )
 
     private val _state = MutableStateFlow(DashboardState())
@@ -98,18 +91,6 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                 runCatching { db.diaryDao().listele(1000).size }.getOrDefault(0)
             }
 
-            // ═══ AI Durumu kontrol ═══
-            val internet = try { SystemTools.checkInternet(ctx) } catch (e: Exception) { false }
-            val ollama = try {
-                withContext(Dispatchers.IO) { SystemTools.runTool("CHECK_OLLAMA", ctx) }
-            } catch (e: Exception) { "Ollama kapali" }
-            val groq = try {
-                withContext(Dispatchers.IO) { SystemTools.runTool("CHECK_GROQ", ctx) }
-            } catch (e: Exception) { "Groq yok" }
-            val pollinations = try {
-                withContext(Dispatchers.IO) { SystemTools.runTool("CHECK_POLLINATIONS", ctx) }
-            } catch (e: Exception) { "Pollinations hata" }
-
             _state.value = DashboardState(
                 pilYuzde = pilYuzde,
                 pilDurum = pilDurum,
@@ -126,12 +107,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                 saat = saat,
                 tarih = tarih,
                 kullaniciAdi = Settings.kullaniciAdi,
-                sonLoglar = EdaLog.oku(ctx).takeLast(15).reversed(),
-                ollamaStatus = ollama,
-                groqStatus = groq,
-                pollinationsStatus = pollinations,
-                internetStatus = internet,
-                aiModel = Settings.gemmaModel
+                sonLoglar = EdaLog.oku(ctx).takeLast(15).reversed()
             )
         }
     }

@@ -762,8 +762,9 @@ object CommandProcessor {
                 KomutSonucu.Cevap(SystemTools.runTool("GET_BATTERY", context))
             }
             
-            // 4. Groq
-            (metin.contains("groq") || metin.contains("grok")) -> {
+            // 4. Servis (Groq)
+            (metin.contains("servis") || metin.contains("service") ||
+             metin.contains("groq") || metin.contains("grok")) -> {
                 KomutSonucu.Cevap(SystemTools.runTool("CHECK_GROQ", context))
             }
             
