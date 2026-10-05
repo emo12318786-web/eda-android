@@ -278,7 +278,7 @@ fun DashboardScreen(
             AiStatusRow(
                 name = "⚡ Groq",
                 status = state.groqStatus,
-                isOk = state.groqStatus.lowercase().contains("bagli") &&
+                isOk = state.groqStatus.lowercase().contains("var") &&
                        !state.groqStatus.lowercase().contains("yok")
             )
             AiStatusRow(
@@ -474,7 +474,7 @@ fun AiStatusRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                if (status.contains("LIVE")) "🟢🟢" else if (isOk) "🟢" else "🔴",
+                if (isOk) "🟢" else "🔴",
                 fontSize = 16.sp
             )
             Spacer(Modifier.width(10.dp))

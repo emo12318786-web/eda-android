@@ -96,15 +96,9 @@ Sen: Merhaba denizçim, iyiyim sen nasılsın?
         } catch (e: Exception) { "Ollama kapali" }
     }
 
-    private suspend fun checkGroqText(): String {
-        if (Settings.groqApiKey.isBlank()) return "Groq anahtari yok"
-        return withContext(Dispatchers.IO) {
-            try {
-                val c = OkHttpClient.Builder().connectTimeout(5, TimeUnit.SECONDS).readTimeout(5, TimeUnit.SECONDS).build()
-                val r = Request.Builder().url("https://api.groq.com/openai/v1/models").header("Authorization", "Bearer " + Settings.groqApiKey).build()
-                c.newCall(r).execute().use { if (it.isSuccessful) "Groq bagli LIVE" else "Groq hata " + it.code }
-            } catch (e: Exception) { "Groq erisilemedi" }
-        }
+    private fun checkGroqText(): String {
+        return if (Settings.groqApiKey.isBlank()) "Groq anahtari yok"
+        else "Groq anahtari var"
     }
 
     private suspend fun checkPollinationsText(): String = withContext(Dispatchers.IO) {
@@ -115,7 +109,7 @@ Sen: Merhaba denizçim, iyiyim sen nasılsın?
                 .build()
             val req = Request.Builder().url("https://text.pollinations.ai/").build()
             client.newCall(req).execute().use { resp ->
-                if (resp.isSuccessful) "Pollinations calisiyor LIVE" else "Pollinations hata kodu ${resp.code}"
+                if (resp.isSuccessful) "Pollinations calisiyor" else "Pollinations hata kodu ${resp.code}"
             }
         } catch (e: Exception) { "Pollinations hata" }
     }
