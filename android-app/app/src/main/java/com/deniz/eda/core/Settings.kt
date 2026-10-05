@@ -20,7 +20,7 @@ object Settings {
     private lateinit var prefs: SharedPreferences
 
     // --- Varsayilan degerler (DEFAULT_SETTINGS karsiligidir) ---
-    const val KULLANICI_ADI_VARSAYILAN = "denizçim"
+    const val KULLANICI_ADI_VARSAYILAN = "deniz"
     val WAKE_WORDS_VARSAYILAN = listOf("eda", "e da", "hey eda", "uyan eda")
 
     fun init(context: Context) {

@@ -119,7 +119,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             // bildirimi guncelliyoruz.
             bildirimGuncelle("⚠️ Bu cihazda konuşma tanıma servisi bulunamadı.")
         } else {
-            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
+            speechRecognizer = createBestRecognizer()?.apply {
                 setRecognitionListener(recognitionListener)
             }
         }
@@ -130,6 +130,53 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         // Servis yeniden baslatildiysa (orn. telefon acilinca) daha once
         // acik birakilmis guvenlik modunu geri yukle.
         if (Settings.guvenlikModuAktif) securityMode.baslat()
+    }
+
+
+    private fun createBestRecognizer(): SpeechRecognizer? {
+        // 1. Varsayilan sistem motoru
+        try {
+            val r = SpeechRecognizer.createSpeechRecognizer(this)
+            if (r != null) {
+                android.util.Log.i("EdaService", "Default recognizer OK")
+                return r
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("EdaService", "Default fail: " + e.message)
+        }
+        // 2. Google
+        try {
+            val cn = android.content.ComponentName(
+                "com.google.android.googlequicksearchbox",
+                "com.google.android.voicesearch.serviceapi.GoogleRecognitionService"
+            )
+            val r = SpeechRecognizer.createSpeechRecognizer(this, cn)
+            if (r != null) {
+                android.util.Log.i("EdaService", "Google recognizer OK")
+                return r
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("EdaService", "Google fail: " + e.message)
+        }
+        // 3. Herhangi bir servis
+        try {
+            val pm = packageManager
+            val it = android.content.Intent(android.speech.RecognitionService.SERVICE_INTERFACE)
+            val services = pm.queryIntentServices(it, 0)
+            for (info in services) {
+                try {
+                    val cn = android.content.ComponentName(info.serviceInfo.packageName, info.serviceInfo.name)
+                    val r = SpeechRecognizer.createSpeechRecognizer(this, cn)
+                    if (r != null) {
+                        android.util.Log.i("EdaService", "Found: " + info.serviceInfo.packageName)
+                        return r
+                    }
+                } catch (ee: Exception) { }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("EdaService", "None found: " + e.message)
+        }
+        return null
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -151,14 +198,14 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 sonMod = "AKTIF"; Settings.sonMod = "AKTIF"
                 Settings.derinUyku = false
                 if (speechRecognizer == null && SpeechRecognizer.isRecognitionAvailable(this)) {
-                    speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
+                    speechRecognizer = createBestRecognizer()?.apply {
                         setRecognitionListener(recognitionListener)
                     }
                 }
                 bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
                 android.util.Log.d("EdaService", "AKTIF moda geçildi")
                 healthMonitorBaslat()
-                konus("Aktif modda çalışıyorum denizçim.") { baslatDinleme() }
+                konus("Aktif modda çalışıyorum deniz.") { baslatDinleme() }
             }
             
             "ACTION_UYKU" -> {
@@ -175,7 +222,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 speechRecognizer = null
                 bildirimGuncelle("💤 Uyku — Mikrofon kapalı")
                 android.util.Log.d("EdaService", "UYKU moda geçildi")
-                konus("Uyku moduna geçiyorum denizçim.") { }
+                konus("Uyku moduna geçiyorum deniz.") { }
             }
             
             "ACTION_SPEAK" -> {
@@ -524,7 +571,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                             mod = Mod.AKTIF
                             sonMod = "AKTIF"; Settings.sonMod = "AKTIF"
                             bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
-                            konus("Geri döndüm denizçim, dinliyorum.") {
+                            konus("Geri döndüm deniz, dinliyorum.") {
                                 baslatDinleme()
                             }
                         }

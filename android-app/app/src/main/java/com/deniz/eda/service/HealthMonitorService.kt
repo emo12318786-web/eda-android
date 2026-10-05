@@ -143,7 +143,7 @@ class HealthMonitorService : Service() {
             hr >= HR_DANGER_HIGH -> {
                 highHRCount++
                 if (highHRCount >= 2) {
-                    konusVeNotify("⚠️ denizçim! Nabzın çok yüksek: $hr! İyi misin?")
+                    konusVeNotify("⚠️ deniz! Nabzın çok yüksek: $hr! İyi misin?")
                     highHRCount = 0
                 }
             }
@@ -152,19 +152,19 @@ class HealthMonitorService : Service() {
             hr <= HR_DANGER_LOW -> {
                 lowHRCount++
                 if (lowHRCount >= 2) {
-                    konusVeNotify("⚠️ denizçim! Nabzın çok düşük: $hr! Doktora görünmen gerekebilir.")
+                    konusVeNotify("⚠️ deniz! Nabzın çok düşük: $hr! Doktora görünmen gerekebilir.")
                     lowHRCount = 0
                 }
             }
             
             // هشدار بالا (نه خطرناک)
             hr >= HR_WARNING_HIGH -> {
-                konus("denizçim, nabzın $hr. Biraz yüksek, sakinleş.")
+                konus("deniz, nabzın $hr. Biraz yüksek, sakinleş.")
             }
             
             // هشدار پایین
             hr <= HR_WARNING_LOW -> {
-                konus("denizçim, nabzın $hr. Biraz düşük.")
+                konus("deniz, nabzın $hr. Biraz düşük.")
             }
             
             // عادی — ریست
@@ -183,7 +183,7 @@ class HealthMonitorService : Service() {
         val hr = healthManager.getLatestHeartRate(60)
         
         val mesaj = buildString {
-            append("Günaydın denizçim! ")
+            append("Günaydın deniz! ")
             if (sleep != null) {
                 append("Dün gece " + DigitUtils.formatFloat(sleep) + " saat uyumuşsun. ")
             }
@@ -211,9 +211,9 @@ class HealthMonitorService : Service() {
     private suspend fun sendNightReminder() {
         val hr = healthManager.getLatestHeartRate(60)
         val mesaj = if (hr != null && hr > 90) {
-            "denizçim, saat 22. Nabzın $hr, hâlâ yüksek. Biraz sakinleş ve yat."
+            "deniz, saat 22. Nabzın $hr, hâlâ yüksek. Biraz sakinleş ve yat."
         } else {
-            "denizçim, saat 22. Yatma vakti geldi, iyi geceler."
+            "deniz, saat 22. Yatma vakti geldi, iyi geceler."
         }
         
         android.util.Log.i(TAG, "🌙 Night: $mesaj")
@@ -225,9 +225,9 @@ class HealthMonitorService : Service() {
     // ─────────────────────────────────────
     private suspend fun askDailyQuestion(saat: Int) {
         val mesaj = when (saat) {
-            9 -> "Günaydın denizçim! Kahvaltı yaptın mı? Su içtin mi?"
-            14 -> "denizçim, öğlen oldu. Yemek yedin mi? Biraz mola ver."
-            19 -> "denizçim, akşam oldu. Bugün nasılsın? İlaç içtin mi?"
+            9 -> "Günaydın deniz! Kahvaltı yaptın mı? Su içtin mi?"
+            14 -> "deniz, öğlen oldu. Yemek yedin mi? Biraz mola ver."
+            19 -> "deniz, akşam oldu. Bugün nasılsın? İlaç içtin mi?"
             else -> return
         }
         
@@ -243,7 +243,7 @@ class HealthMonitorService : Service() {
         val sleep = healthManager.getLastNightSleepHours()
         
         val mesaj = buildString {
-            append("denizçim, haftalık rapor: ")
+            append("deniz, haftalık rapor: ")
             if (hr != null) append("Nabzın $hr. ")
             if (sleep != null) append("Son uykun " + DigitUtils.formatFloat(sleep) + " saat. ")
             append("Bu hafta sağlığına dikkat et, seni seviyorum. 💙")

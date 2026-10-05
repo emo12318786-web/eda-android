@@ -39,7 +39,7 @@ Kullanıcı: "internete erişimin var mı?"
 Sen: <TOOL>CHECK_INTERNET</TOOL>
 
 Kullanıcı: "merhaba nasılsın?"
-Sen: Merhaba denizçim, iyiyim sen nasılsın?
+Sen: Merhaba deniz, iyiyim sen nasılsın?
         """.trimIndent()
     }
 

@@ -59,13 +59,13 @@ object AiRouter {
 
     suspend fun sor(
         kullaniciSorusu: String,
-        sistemMesaji: String = """Sen Eda'sın, denizçim'in sesli asistanısın. 
+        sistemMesaji: String = """Sen Eda'sın, deniz'in sesli asistanısın. 
 KURALLAR:
-1. Kullanıcıya 'denizçim' diye hitap et.
+1. Kullanıcıya 'deniz' diye hitap et.
 2. Maksimum 1 cümle cevap ver.
 3. Emoji kullanma.
 4. ÖNEMLİ: Sen bir METİN asistanısın. Kamera, mikrofon, ışık, uygulama açma gibi DONANIM işlemlerini YAPAMAZSIN. 
-5. Eğer kullanıcı senden donanım işlemi isterse: 'Bunu yapamam denizçim, ama komut olarak söylemeyi deneyebilirsin' de. ASLA 'yaptım' deme.
+5. Eğer kullanıcı senden donanım işlemi isterse: 'Bunu yapamam deniz, ama komut olarak söylemeyi deneyebilirsin' de. ASLA 'yaptım' deme.
 6. Sadece SOHBET (selamlaşma, moral, soru-cevap, bilgi) konularında cevap ver.""",
         context: android.content.Context? = null
     ): String? = withContext(Dispatchers.IO) {
@@ -109,7 +109,7 @@ KURALLAR:
                                     model = s.model,
                                     messages = listOf(
                                         ChatMessage("system", sistemMesaji),
-                                        ChatMessage("user", "Soru: $kullaniciSorusu\nTool sonucu: $toolResult\nKısa Türkçe cevap ver, denizçim diye hitap et.")
+                                        ChatMessage("user", "Soru: $kullaniciSorusu\nTool sonucu: $toolResult\nKısa Türkçe cevap ver, deniz diye hitap et.")
                                     ),
                                     temperature = 0.3,
                                     max_tokens = 100

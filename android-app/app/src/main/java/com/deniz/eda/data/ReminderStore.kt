@@ -69,7 +69,7 @@ object ReminderStore {
 
     fun listeMetni(context: Context): String {
         val bekleyenler = bekleyenler(context)
-        if (bekleyenler.isEmpty()) return "Bekleyen hatırlatman yok denizçim."
+        if (bekleyenler.isEmpty()) return "Bekleyen hatırlatman yok deniz."
         val parcalar = bekleyenler.take(5).map {
             "Saat " + com.deniz.eda.utils.DigitUtils.formatInt(it.saat) + ":" + com.deniz.eda.utils.DigitUtils.formatInt(it.dakika) + " - " + it.metin
         }

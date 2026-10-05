@@ -137,11 +137,11 @@ object ExtraCommands {
     //  ودا مساژلاری (پیام‌های خداحافظی)
     // ═══════════════════════════════════════════════════════════
     val VEDA_MESAJLARI = listOf(
-        "Tamam denizçim, sistemleri kapatıyorum. Görüşmek üzere.",
-        "Işıkları söndürüyorum denizçim. İhtiyacın olduğunda buradayım.",
-        "Tamam denizçim, bir sonrakine kadar hoşça kal.",
-        "Devre dışı kalıyorum denizçim. Sesini duyana kadar.",
-        "Tamam denizçim. Kendine iyi bak, ben burada bekliyorum."
+        "Tamam deniz, sistemleri kapatıyorum. Görüşmek üzere.",
+        "Işıkları söndürüyorum deniz. İhtiyacın olduğunda buradayım.",
+        "Tamam deniz, bir sonrakine kadar hoşça kal.",
+        "Devre dışı kalıyorum deniz. Sesini duyana kadar.",
+        "Tamam deniz. Kendine iyi bak, ben burada bekliyorum."
     )
 
     fun vedaMesaji(): String {
