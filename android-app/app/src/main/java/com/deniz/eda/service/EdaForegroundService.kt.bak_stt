@@ -52,8 +52,6 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private lateinit var tts: TextToSpeech
     private var panelServer: PanelServer? = null
     private var speechRecognizer: SpeechRecognizer? = null
-    private var sttFallbackAktif = false
-    private var ardisikHataSayisi = 0
     private var mod = Mod.UYKU
     private var kapatOnayBekleniyor = false
 
@@ -184,17 +182,6 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // ═══ هندل کردن action های Widget ═══
         when (intent?.action) {
-            "com.deniz.eda.STT_RESULT" -> {
-                val sttText = intent.getStringExtra("stt_text") ?: ""
-                android.util.Log.i("EdaService", "STT fallback sonuc: " + sttText)
-                dinlemeAktif = false
-                if (sttText.isNotBlank()) {
-                    metniIsle(sttText)
-                } else {
-                    yenidenDenemeyiPlanla()
-                }
-                return START_STICKY
-            }
             "ACTION_BASLAT" -> {
                 // 🟢 Başlat — mod'u AKTIF yap و dinlemeye başla
                 mod = Mod.AKTIF
@@ -377,21 +364,6 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
     private fun baslatDinleme() {
         if (dinlemeAktif) return
-
-        if (sttFallbackAktif) {
-            dinlemeAktif = true
-            try {
-                val i = Intent(this, SttActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                startActivity(i)
-                android.util.Log.i("EdaService", "SttActivity baslatildi (fallback)")
-            } catch (e: Exception) {
-                dinlemeAktif = false
-                yenidenDenemeyiPlanla()
-            }
-            return
-        }
         if (speechRecognizer == null) return // cihazda konusma tanima yok
         
         // ═══ خواب عمیق: تو حالت خواب عمیق، میکروفون روشن نمی‌شه ═══
@@ -457,7 +429,6 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private val recognitionListener = object : RecognitionListener {
         override fun onResults(results: Bundle?) {
             dinlemeAktif = false
-            ardisikHataSayisi = 0
             val list = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
             
             if (list.isNullOrEmpty()) {
@@ -483,12 +454,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
         override fun onError(error: Int) {
             dinlemeAktif = false
-            ardisikHataSayisi++
-            android.util.Log.e("EdaService", "SpeechRecognizer hata kodu: $error (${hataAdi(error)}) ardisik=$ardisikHataSayisi")
-            if (ardisikHataSayisi >= 3 && !sttFallbackAktif) {
-                sttFallbackAktif = true
-                android.util.Log.w("EdaService", "Fallback aktif - SttActivity kullanilacak")
-            }
+            android.util.Log.e("EdaService", "SpeechRecognizer hata kodu: $error (${hataAdi(error)})")
             if (error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ||
                 error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED
             ) {

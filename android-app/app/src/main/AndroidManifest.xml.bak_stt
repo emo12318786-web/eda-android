@@ -80,12 +80,6 @@
             android:exported="false"
             android:label="EDA Panel"
             android:configChanges="orientation|screenSize|keyboardHidden" />
-        <activity
-            android:name=".service.SttActivity"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar"
-            android:excludeFromRecents="true"
-            android:noHistory="true"
-            android:exported="false" />
         <service
             android:name=".service.EdaForegroundService"
             android:exported="false"

@@ -1,52 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- ═══ لبخند Cheshire (دندان‌های سفید) ═══ -->
-    <!-- سایه لبخند -->
-    <path
-        android:pathData="M25,82 Q54,100 83,82"
-        android:strokeWidth="6"
-        android:strokeColor="#80000000"
-        android:strokeLineCap="round"
-        android:fillColor="#00000000" />
+    <!-- E -->
+    <path android:pathData="M28,38 L28,72 L46,72 L46,67 L33,67 L33,57 L43,57 L43,52 L33,52 L33,43 L46,43 L46,38 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear"
+                android:startX="28" android:startY="38"
+                android:endX="46" android:endY="72">
+                <item android:offset="0.0" android:color="#FFBB86FC"/>
+                <item android:offset="1.0" android:color="#FF7E57C2"/>
+            </gradient>
+        </aapt:attr>
+    </path>
 
-    <!-- لبخند اصلی -->
-    <path
-        android:pathData="M25,80 Q54,98 83,80"
-        android:strokeWidth="5"
-        android:strokeColor="#FF00FF88"
-        android:strokeLineCap="round"
-        android:fillColor="#00000000" />
+    <!-- D -->
+    <path android:pathData="M50,38 L50,72 L59,72 C66,72 70,68 70,55 C70,42 66,38 59,38 Z M55,43 L59,43 C62,43 65,45 65,55 C65,65 62,67 59,67 L55,67 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear"
+                android:startX="50" android:startY="38"
+                android:endX="70" android:endY="72">
+                <item android:offset="0.0" android:color="#FFBB86FC"/>
+                <item android:offset="1.0" android:color="#FF7E57C2"/>
+            </gradient>
+        </aapt:attr>
+    </path>
 
-    <!-- ═══ دندان‌ها (سفید) ═══ -->
-    <path
-        android:pathData="M32,84 L35,92 L38,84 Z"
-        android:fillColor="#FFFFFFFF" />
-    <path
-        android:pathData="M40,88 L43,97 L46,88 Z"
-        android:fillColor="#FFFFFFFF" />
-    <path
-        android:pathData="M48,91 L51,100 L54,91 Z"
-        android:fillColor="#FFFFFFFF" />
-    <path
-        android:pathData="M56,91 L59,100 L62,91 Z"
-        android:fillColor="#FFFFFFFF" />
-    <path
-        android:pathData="M64,88 L67,97 L70,88 Z"
-        android:fillColor="#FFFFFFFF" />
-    <path
-        android:pathData="M72,84 L75,92 L78,84 Z"
-        android:fillColor="#FFFFFFFF" />
+    <!-- A -->
+    <path android:pathData="M74,72 L79,38 L84,38 L89,72 L84,72 L83,62 L80,62 L79,72 Z M80.5,57 L82.5,57 L81.5,45 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear"
+                android:startX="74" android:startY="38"
+                android:endX="89" android:endY="72">
+                <item android:offset="0.0" android:color="#FFBB86FC"/>
+                <item android:offset="1.0" android:color="#FF7E57C2"/>
+            </gradient>
+        </aapt:attr>
+    </path>
 
-    <!-- ═══ هاله‌ی سبز زیر لبخند ═══ -->
-    <path
-        android:pathData="M30,80 Q54,95 78,80"
-        android:strokeWidth="12"
-        android:strokeColor="#4000FF88"
-        android:strokeLineCap="round"
-        android:fillColor="#00000000" />
 </vector>
