@@ -52,6 +52,10 @@ pip install SpeechRecognition
 
 Termux:API uygulamasının Android tarafında da kurulu ve gerekli izinlerin verilmiş olması gerekir.
 
+## AI Agent
+
+`agent_aktif: true` ayarı, serbest konuşmayı sınırlı bir araç döngüsünden geçirir. İzinli araçlar yerel saat/tarih, güvenli aritmetik ve Eda hafızasına not ekleme/arama ile sınırlıdır. Doğrudan telefon komutları mevcut komut işleyicide kalır. Agent araçları rastgele kabuk komutu veya Python kodu çalıştırmaz.
+
 ## AI sağlayıcıları
 
 `settings.json` içinden şu sağlayıcılar kullanılabilir:
