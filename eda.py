@@ -413,7 +413,7 @@ def gemma_sor(soru, max_chars=150):
             cevap = emoji_temizle(cevap)
             cevap = cevap.replace("Eda:", "").replace("denizçim", "").strip()
             if len(cevap) > max_chars:
-                cevap = cevap[:150].rsplit(" ", 1)[0] + "..."
+                cevap = cevap[:max_chars].rsplit(" ", 1)[0] + "..."
             return cevap if cevap else None
 
     except Exception as e:
@@ -493,7 +493,7 @@ def groq_sor(soru, max_chars=150):
                 return None
             cevap = emoji_temizle(cevap)
             if len(cevap) > max_chars:
-                cevap = cevap[:150].rsplit(" ", 1)[0] + "..."
+                cevap = cevap[:max_chars].rsplit(" ", 1)[0] + "..."
             return cevap if cevap else None
 
     except urllib.error.HTTPError as e:
@@ -558,7 +558,7 @@ def deepseek_sor(soru, max_chars=150):
                 return None
             cevap = emoji_temizle(cevap)
             if len(cevap) > max_chars:
-                cevap = cevap[:150].rsplit(" ", 1)[0] + "..."
+                cevap = cevap[:max_chars].rsplit(" ", 1)[0] + "..."
             return cevap if cevap else None
 
     except urllib.error.HTTPError as e:
@@ -627,7 +627,7 @@ def openrouter_sor(soru, max_chars=150):
                 return None
             cevap = emoji_temizle(cevap)
             if len(cevap) > max_chars:
-                cevap = cevap[:150].rsplit(" ", 1)[0] + "..."
+                cevap = cevap[:max_chars].rsplit(" ", 1)[0] + "..."
             return cevap if cevap else None
 
     except urllib.error.HTTPError as e:
