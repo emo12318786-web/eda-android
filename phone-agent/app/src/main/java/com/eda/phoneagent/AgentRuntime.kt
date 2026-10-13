@@ -90,11 +90,12 @@ internal class AgentRuntime(private val context: Context) {
         try {
             connection = (URL("${endpoint.trimEnd('/')}/chat/completions").openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
+                instanceFollowRedirects = false
                 connectTimeout = 15000
                 readTimeout = 30000
                 doOutput = true
                 setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("Authorization", "Bearer $apiKey")
+                if (apiKey.isNotBlank()) setRequestProperty("Authorization", "Bearer $apiKey")
             }
             val body = JSONObject().put("model", model).put("messages", messages)
                 .put("temperature", 0.2).toString()
