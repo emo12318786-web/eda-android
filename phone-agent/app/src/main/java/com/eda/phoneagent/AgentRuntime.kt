@@ -21,7 +21,7 @@ internal class AgentRuntime(private val context: Context) {
 
         repeat(MAX_STEPS) {
             val response = callModel(endpoint, model, apiKey, messages)
-            val parsed = try { JSONObject(response) } catch (_: Exception) { null }
+            val parsed = parseJsonObject(response)
             if (parsed == null) return response
             when (parsed.optString("type")) {
                 "final" -> return parsed.optString("answer").ifBlank { "مدل پاسخ خالی فرستاد." }
@@ -44,6 +44,16 @@ internal class AgentRuntime(private val context: Context) {
             JSONObject(last).optString("answer").ifBlank { "برای جلوگیری از اجرای بی‌پایان، کار را پس از $MAX_STEPS مرحله متوقف کردم." }
         } catch (_: Exception) {
             "برای جلوگیری از اجرای بی‌پایان، کار را پس از $MAX_STEPS مرحله متوقف کردم."
+        }
+    }
+
+    private fun parseJsonObject(raw: String): JSONObject? {
+        val text = raw.trim().removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
+        return try { JSONObject(text) } catch (_: Exception) {
+            val first = text.indexOf('{')
+            val last = text.lastIndexOf('}')
+            if (first >= 0 && last > first) try { JSONObject(text.substring(first, last + 1)) } catch (_: Exception) { null }
+            else null
         }
     }
 
