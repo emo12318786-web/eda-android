@@ -97,7 +97,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         keyInput = EditText(this).apply { hint = "API anahtarı (yerel modelde boş bırak)" }
         box.addView(TextView(this).apply {
-            text = "API سازگار با OpenAI/Ollama. HTTP فقط برای localhost/127.0.0.1 مجاز است. کلید آنلاین فقط در حافظه می‌ماند و برای مدل محلی لازم نیست."
+            text = "OpenAI uyumlu API veya Ollama. HTTP yalnızca localhost/127.0.0.1 için kullanılabilir. API anahtarı diske kaydedilmez."
         })
         box.addView(endpointInput)
         box.addView(modelInput)
@@ -105,20 +105,20 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         AlertDialog.Builder(this)
             .setTitle("Yapay zekâ bağlantısı")
             .setView(box)
-            .setNegativeButton("لغو", null)
+            .setNegativeButton("İptal", null)
             .setPositiveButton("Kaydet") { _, _ ->
                 val endpoint = endpointInput.text.toString().trim().trimEnd('/')
                 val model = modelInput.text.toString().trim()
                 val key = keyInput.text.toString().trim()
                 if (!isAllowedEndpoint(endpoint) || model.isBlank()) {
-                    show("آدرس باید HTTPS باشد؛ HTTP فقط برای localhost یا 127.0.0.1 مجاز است. نام مدل هم لازم است.")
+                    show("Adres HTTPS olmalı; HTTP yalnızca localhost veya 127.0.0.1 için kullanılabilir. Model adı gerekli.")
                 } else if (!endpoint.startsWith("http://") && key.isBlank()) {
-                    show("برای سرویس آنلاین کلید API لازم است؛ برای مدل محلی کلید را خالی بگذار.")
+                    show("Çevrim içi servis için API anahtarı gerekir; yerel modelde boş bırak.")
                 } else {
                     apiKey = key
                     getSharedPreferences("eda_agent", MODE_PRIVATE).edit()
                         .putString("endpoint", endpoint).putString("model", model).apply()
-                    show("تنظیمات ذخیره شد؛ کلید فقط تا بسته‌شدن برنامه در حافظه می‌ماند.")
+                    show("Ayarlar kaydedildi. API anahtarı yalnızca uygulama belleğinde tutulur.")
                 }
             }.show()
     }
@@ -173,7 +173,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     }
 
     private fun askModel(prompt: String) {
-        if (busy) { show("یک درخواست در حال اجراست؛ کمی صبر کن."); return }
+        if (busy) { show("Bir istek zaten çalışıyor; lütfen bekle."); return }
         val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
         val endpoint = prefs.getString("endpoint", "https://api.openai.com/v1").orEmpty().trimEnd('/')
         val model = prefs.getString("model", "gpt-4o-mini").orEmpty()
@@ -215,7 +215,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             if (cameraId == null) { show("Kontrol edilebilir fener bulunamadı."); return }
             manager.setTorchMode(cameraId, enable)
             show(if (enable) "Fener açıldı." else "Fener kapatıldı.")
-        } catch (e: Exception) { show("چراغ‌قوه اجرا نشد: " + (e.message ?: "خطای نامشخص")) }
+        } catch (e: Exception) { show("Fener çalışmadı: " + (e.message ?: "bilinmeyen hata")) }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, results: IntArray) {
