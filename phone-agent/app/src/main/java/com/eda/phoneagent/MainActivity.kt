@@ -3,7 +3,7 @@ package com.eda.phoneagent
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
-import android.content.Intent
+[object Object]import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
@@ -73,6 +73,30 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         root.addView(Button(this).apply {
             text = "Yanıtı sesli oku"
             setOnClickListener { speak(output.text.toString()) }
+        })
+        root.addView(Button(this).apply {
+            text = "🔋 Pil durumu"
+            setOnClickListener { showBattery() }
+        })
+        root.addView(Button(this).apply {
+            text = "📔 Günlük"
+            setOnClickListener { diaryDialog() }
+        })
+        root.addView(Button(this).apply {
+            text = "⏰ Hatırlatıcılar"
+            setOnClickListener { reminderDialog() }
+        })
+        root.addView(Button(this).apply {
+            text = "🧮 Hesap makinesi"
+            setOnClickListener { calculatorDialog() }
+        })
+        root.addView(Button(this).apply {
+            text = "🚗 Araba modu"
+            setOnClickListener { toggleCarMode() }
+        })
+        root.addView(Button(this).apply {
+            text = "🧠 Hafıza / öğrenme"
+            setOnClickListener { memoryDialog() }
         })
         setContentView(ScrollView(this).apply { addView(root) })
     }
@@ -149,11 +173,20 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (q.isBlank()) { show("Komut boş."); return }
         when {
             q.contains("saat") || q == "time" ->
-                show("Saat " + SimpleDateFormat("HH:mm", Locale("tr", "TR")).format(Date()))
+                show("Saat " + SimpleDateFormat("hh:mm a", Locale("tr", "TR")).format(Date()))
             q.contains("tarih") || q.contains("bugün") ->
                 show("Bugün " + SimpleDateFormat("dd MMMM yyyy", Locale("tr", "TR")).format(Date()))
             (q.contains("fener") || q.contains("ışık")) && (q.contains("aç") || q.contains("kapat") || q.contains("yak")) ->
                 setTorch(!q.contains("kapat"))
+            q.contains("pil") || q.contains("batarya") -> showBattery()
+            q.startsWith("hatırlat ") || q.startsWith("hatirlat ") -> createReminderFromCommand(raw)
+            q.contains("hatırlatmalar") || q.contains("hatirlatmalar") -> reminderDialog()
+            q.startsWith("günlük ") || q.startsWith("gunluk ") -> saveDiary(raw.substringAfter(' ').trim())
+            q == "günlük" || q == "gunluk" -> diaryDialog()
+            q.startsWith("öğren ") || q.startsWith("ogren ") -> teachCommand(raw.substringAfter(' ').trim())
+            q.contains("araba modu") -> toggleCarMode()
+            q.startsWith("hesapla ") -> calculate(raw.substringAfter("hesapla ").trim())
+
             q.startsWith("not al ") || q.startsWith("not:") || q.startsWith("not ") -> {
                 val note = raw.substringAfter(if (q.startsWith("not:")) ":" else if (q.startsWith("not al ")) "not al" else "not").trim()
                 if (note.isBlank()) show("Not metnini de söyle.")
@@ -226,6 +259,113 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             if (results.isNotEmpty() && results[0] == PackageManager.PERMISSION_GRANTED && action != null) setTorch(action)
             else show("Kamera izni olmadan fener kontrol edilemez.")
         }
+    }
+
+    private fun showBattery() {
+        val bm = getSystemService(BATTERY_SERVICE) as BatteryManager
+        val level = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        val status = registerReceiver(null, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val plugged = status?.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+        val charging = plugged != 0
+        show("Pil yüzde $level. " + if (charging) "Telefon şarj oluyor." else "Telefon şarjda değil.")
+    }
+
+    private fun diaryDialog() {
+        val edit = EditText(this).apply { hint = "Bugün neler oldu?"; minLines = 3 }
+        val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+        val old = prefs.getString("diary", "").orEmpty()
+        AlertDialog.Builder(this).setTitle("Günlük")
+            .setMessage(if (old.isBlank()) "Henüz günlük kaydı yok." else old.takeLast(4000))
+            .setView(edit)
+            .setNegativeButton("Kapat", null)
+            .setPositiveButton("Kaydet") { _, _ -> saveDiary(edit.text.toString().trim()) }.show()
+    }
+
+    private fun saveDiary(entry: String) {
+        if (entry.isBlank()) { show("Günlük metni boş."); return }
+        val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+        val stamp = SimpleDateFormat("dd.MM.yyyy hh:mm a", Locale("tr", "TR")).format(Date())
+        prefs.edit().putString("diary", (prefs.getString("diary", "").orEmpty() + "\n[$stamp] $entry").takeLast(30000)).apply()
+        show("Günlük kaydedildi.")
+    }
+
+    private fun reminderDialog() {
+        val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+        val saved = prefs.getString("reminders", "").orEmpty()
+        val edit = EditText(this).apply { hint = "Örnek: 19:30 su iç"; singleLine = true }
+        AlertDialog.Builder(this).setTitle("Hatırlatıcılar")
+            .setMessage(if (saved.isBlank()) "Kayıtlı hatırlatıcı yok.\nSaat ve metin gir: 19:30 su iç" else saved.takeLast(3000) + "\n\nYeni hatırlatıcı: saat metin")
+            .setView(edit).setNegativeButton("Kapat", null)
+            .setPositiveButton("Ekle") { _, _ -> createReminderFromCommand("hatırlat " + edit.text.toString()) }.show()
+    }
+
+    private fun createReminderFromCommand(raw: String) {
+        val payload = raw.substringAfter(' ').trim()
+        val time = payload.take(5)
+        if (!Regex("^([01]?[0-9]|2[0-3]):[0-5][0-9]$").matches(time)) {
+            show("Saat ve metni yaz: hatırlat 19:30 su iç"); return
+        }
+        val message = payload.drop(time.length).trim()
+        if (message.isBlank()) { show("Hatırlatma metni eksik."); return }
+        val parts = time.split(":")
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, parts[0].toInt())
+            set(Calendar.MINUTE, parts[1].toInt())
+            set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            if (timeInMillis <= System.currentTimeMillis()) add(Calendar.DAY_OF_YEAR, 1)
+        }
+        val id = (System.currentTimeMillis() % Int.MAX_VALUE).toInt()
+        val alarm = getSystemService(ALARM_SERVICE) as AlarmManager
+        val intent = Intent(this, ReminderReceiver::class.java).apply {
+            putExtra("message", message); putExtra("id", id)
+        }
+        val pending = PendingIntent.getBroadcast(this, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        alarm.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pending)
+        val stamp = SimpleDateFormat("dd.MM hh:mm a", Locale("tr", "TR")).format(cal.time)
+        val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+        prefs.edit().putString("reminders", (prefs.getString("reminders", "").orEmpty() + "\n$stamp — $message").takeLast(12000)).apply()
+        show("Hatırlatıcı kuruldu: $stamp. Android pil ayarları teslim saatini etkileyebilir.")
+    }
+
+    private fun calculatorDialog() {
+        val edit = EditText(this).apply { hint = "Örnek: 12*(5+3)"; singleLine = true }
+        AlertDialog.Builder(this).setTitle("Hesap makinesi").setView(edit)
+            .setNegativeButton("İptal", null).setPositiveButton("Hesapla") { _, _ -> calculate(edit.text.toString()) }.show()
+    }
+
+    private fun calculate(expression: String) {
+        val safe = expression.replace(" ", "")
+        if (safe.isBlank() || !safe.matches(Regex("[0-9+\\-*/().%]+")) || safe.length > 80) {
+            show("Geçersiz işlem. Yalnızca sayılar ve + - * / parantez kullan."); return
+        }
+        try {
+            val result = SafeCalculator.eval(safe)
+            show("Sonuç: $result")
+        } catch (_: Exception) { show("İşlem hesaplanamadı; ifadeyi kontrol et.") }
+    }
+
+    private fun toggleCarMode() {
+        val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+        val enabled = !prefs.getBoolean("car_mode", false)
+        prefs.edit().putBoolean("car_mode", enabled).apply()
+        show(if (enabled) "Araba modu açık. Yanıtlar kısa tutulacak; lütfen sürüşte ekrana bakma." else "Araba modu kapalı.")
+    }
+
+    private fun memoryDialog() {
+        val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+        val edit = EditText(this).apply { hint = "Öğrenilecek ifade veya hafıza notu"; minLines = 2 }
+        AlertDialog.Builder(this).setTitle("Hafıza ve öğrenme")
+            .setMessage("Notlar: " + prefs.getString("notes", "").orEmpty().lines().takeLast(8).joinToString("\n") +
+                "\n\nÖğrenilen komutlar: " + prefs.getString("learned", "").orEmpty().takeLast(1500))
+            .setView(edit).setNegativeButton("Kapat", null)
+            .setPositiveButton("Kaydet") { _, _ -> teachCommand(edit.text.toString().trim()) }.show()
+    }
+
+    private fun teachCommand(text: String) {
+        if (text.isBlank()) { show("Öğretilecek metin boş."); return }
+        val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+        prefs.edit().putString("learned", (prefs.getString("learned", "").orEmpty() + "\n• " + text).takeLast(10000)).apply()
+        show("Bu ifade öğrenme listesine eklendi. Henüz otomatik komut olarak çalıştırılmaz.")
     }
 
     private fun shareNote(note: String) {
