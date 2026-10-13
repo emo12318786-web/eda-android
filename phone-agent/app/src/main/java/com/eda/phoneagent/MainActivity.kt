@@ -88,16 +88,16 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             setPadding(24, 12, 24, 4)
         }
         endpointInput = EditText(this).apply {
-            hint = "آدرس API، مثلاً https://api.example.com/v1"
+            hint = "HTTPS یا لوکال: http://127.0.0.1:11434/v1"
             setText(getSharedPreferences("eda_agent", MODE_PRIVATE).getString("endpoint", "https://api.openai.com/v1"))
         }
         modelInput = EditText(this).apply {
             hint = "نام مدل"
             setText(getSharedPreferences("eda_agent", MODE_PRIVATE).getString("model", "gpt-4o-mini"))
         }
-        keyInput = EditText(this).apply { hint = "کلید API (در حافظه می‌ماند؛ ذخیره نمی‌شود)" }
+        keyInput = EditText(this).apply { hint = "کلید API (برای مدل محلی خالی بگذار)" }
         box.addView(TextView(this).apply {
-            text = "API سازگار با OpenAI. آدرس و نام مدل ذخیره می‌شوند؛ کلید فقط تا بسته‌شدن برنامه در حافظه می‌ماند."
+            text = "API سازگار با OpenAI/Ollama. HTTP فقط برای localhost/127.0.0.1 مجاز است. کلید آنلاین فقط در حافظه می‌ماند و برای مدل محلی لازم نیست."
         })
         box.addView(endpointInput)
         box.addView(modelInput)
@@ -110,8 +110,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 val endpoint = endpointInput.text.toString().trim().trimEnd('/')
                 val model = modelInput.text.toString().trim()
                 val key = keyInput.text.toString().trim()
-                if (!endpoint.startsWith("https://") || model.isBlank() || key.isBlank()) {
-                    show("آدرس HTTPS، نام مدل و کلید API لازم است.")
+                if (!isAllowedEndpoint(endpoint) || model.isBlank()) {
+                    show("آدرس باید HTTPS باشد؛ HTTP فقط برای localhost یا 127.0.0.1 مجاز است. نام مدل هم لازم است.")
+                } else if (!endpoint.startsWith("http://") && key.isBlank()) {
+                    show("برای سرویس آنلاین کلید API لازم است؛ برای مدل محلی کلید را خالی بگذار.")
                 } else {
                     apiKey = key
                     getSharedPreferences("eda_agent", MODE_PRIVATE).edit()
@@ -175,8 +177,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val endpoint = prefs.getString("endpoint", "https://api.openai.com/v1").orEmpty().trimEnd('/')
         val model = prefs.getString("model", "gpt-4o-mini").orEmpty()
         val key = apiKey
-        if (key.isBlank()) {
-            show("برای پرسش آزاد، از دکمهٔ «تنظیم اتصال مدل هوش مصنوعی» استفاده کن. فرمان‌های محلی بدون مدل کار می‌کنند.")
+        if (!isAllowedEndpoint(endpoint) || (!endpoint.startsWith("http://") && key.isBlank())) {
+            show("برای پرسش آزاد، اتصال مدل را تنظیم کن. مدل محلی می‌تواند بدون کلید باشد؛ فرمان‌های محلی بدون مدل هم کار می‌کنند.")
             return
         }
         busy = true
@@ -185,6 +187,17 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             val result = AgentRuntime(applicationContext).answer(prompt, endpoint, model, key)
             runOnUiThread { busy = false; show(result) }
         }.start()
+    }
+
+    private fun isAllowedEndpoint(endpoint: String): Boolean {
+        return try {
+            val url = URL(endpoint)
+            when (url.protocol.lowercase(Locale.ROOT)) {
+                "https" -> url.host.isNotBlank()
+                "http" -> url.host.lowercase(Locale.ROOT) in setOf("localhost", "127.0.0.1", "[::1]", "::1")
+                else -> false
+            }
+        } catch (_: Exception) { false }
     }
 
     private fun setTorch(enable: Boolean) {
