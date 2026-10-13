@@ -16,6 +16,7 @@
   "car_mode": false,
   "öğrenme_aktif": true,
   "ai_aktif": true,
+  "agent_aktif": true,
   "ai_provider": "openrouter",
   "groq_api_key": "",
   "groq_model": "openai/gpt-oss-20b",
