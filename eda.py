@@ -23,6 +23,13 @@ from datetime import datetime, timedelta
 import speech_recognition as sr
 
 try:
+    from agent import Tool, ToolResult, build_eda_agent
+    EDA_AGENT_PACKAGE_AVAILABLE = True
+except Exception:
+    EDA_AGENT_PACKAGE_AVAILABLE = False
+    Tool = ToolResult = build_eda_agent = None
+
+try:
     from vosk import Model as VoskModel, KaldiRecognizer
     VOSK_KUTUPHANESI_VAR = True
 except ImportError:
@@ -194,6 +201,7 @@ DEFAULT_SETTINGS = {
 
     # --- AI SAGLAYICI AYARLARI ---
     "ai_aktif": True,
+    "agent_aktif": True,
     "ai_provider": "openrouter",     # oncelikli saglayici: "openrouter", "groq", "deepseek" veya "gemma"
     "openrouter_api_key": "",        # <-- BURAYA kendi OpenRouter anahtarini yaz
     "openrouter_model": "openrouter/free",
@@ -364,7 +372,7 @@ def gemma_başlat():
         print(f"⚠️ Gemma başlatılamadı: {e}")
         return False
 
-def gemma_sor(soru):
+def gemma_sor(soru, max_chars=150):
     try:
         if not gemma_kontrol() and ayar_getir("gemma_otomatik", True):
             if not gemma_başlat():
@@ -376,7 +384,7 @@ def gemma_sor(soru):
         host = ayar_getir("gemma_host", "http://localhost:11434")
         model = ayar_getir("gemma_model", "gemma3:1b")
 
-        sistem_prompt = (
+        sistem_prompt = AI_AGENT_SISTEM_PROMPTU if AI_AGENT_MODE else (
             "Sen Eda'sin. Kullanıcıya 'denizçim' diye hitap edersin. "
             "Sadece soruyu cevapla, sohbet etme. Maksimum 1 cumle cevap ver. "
             "Emoji kullanma! Gereksiz konusma, direkt ve kisa cevap ver."
@@ -389,7 +397,7 @@ def gemma_sor(soru):
                 {"role": "user", "content": soru}
             ],
             "stream": False,
-            "options": {"temperature": 0.2, "top_p": 0.8, "num_predict": 50}
+            "options": {"temperature": 0.2, "top_p": 0.8, "num_predict": min(800, max(50, max_chars // 4))}
         }).encode('utf-8')
 
         req = urllib.request.Request(
@@ -404,8 +412,8 @@ def gemma_sor(soru):
                 return None
             cevap = emoji_temizle(cevap)
             cevap = cevap.replace("Eda:", "").replace("denizçim", "").strip()
-            if len(cevap) > 150:
-                cevap = cevap[:150].rsplit(" ", 1)[0] + "..."
+            if len(cevap) > max_chars:
+                cevap = cevap[:max_chars].rsplit(" ", 1)[0] + "..."
             return cevap if cevap else None
 
     except Exception as e:
@@ -415,6 +423,12 @@ def gemma_sor(soru):
 # ============================================================
 # GROQ - BULUT AI (ONLINE, HIZLI, ONCELIKLI)
 # ============================================================
+
+AI_AGENT_MODE = False
+AI_AGENT_SISTEM_PROMPTU = (
+    "You are Eda's bounded tool planner. Return only the exact JSON schema requested by the user prompt. "
+    "Do not use markdown fences or explanatory text outside JSON. Never claim a tool ran unless its result confirms it."
+)
 
 EDA_SISTEM_PROMPTU = (
     "Sen Eda'sin. Kullanıcıya 'denizçim' diye hitap edersin. "
@@ -441,7 +455,7 @@ def _ai_cevabi_bozuk_mu(cevap):
 # bu yüzden gerçek bir tarayici User-Agent gönderiyoruz.
 GROQ_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 
-def groq_sor(soru):
+def groq_sor(soru, max_chars=150):
     try:
         api_key = ayar_getir("groq_api_key", "")
         if not api_key:
@@ -455,11 +469,11 @@ def groq_sor(soru):
         data = json.dumps({
             "model": model,
             "messages": [
-                {"role": "system", "content": EDA_SISTEM_PROMPTU},
+                {"role": "system", "content": AI_AGENT_MODE and AI_AGENT_SISTEM_PROMPTU or EDA_SISTEM_PROMPTU},
                 {"role": "user", "content": soru}
             ],
             "temperature": 0.3,
-            "max_tokens": 100
+            "max_tokens": min(1000, max(100, max_chars // 4))
         }).encode('utf-8')
 
         req = urllib.request.Request(
@@ -478,8 +492,8 @@ def groq_sor(soru):
             if not cevap:
                 return None
             cevap = emoji_temizle(cevap)
-            if len(cevap) > 150:
-                cevap = cevap[:150].rsplit(" ", 1)[0] + "..."
+            if len(cevap) > max_chars:
+                cevap = cevap[:max_chars].rsplit(" ", 1)[0] + "..."
             return cevap if cevap else None
 
     except urllib.error.HTTPError as e:
@@ -497,7 +511,7 @@ def groq_sor(soru):
 # DEEPSEEK - BULUT AI (ONLINE, ALTERNATIF)
 # ============================================================
 
-def deepseek_sor(soru):
+def deepseek_sor(soru, max_chars=150):
     try:
         api_key = ayar_getir("deepseek_api_key", "")
         if not api_key:
@@ -512,11 +526,11 @@ def deepseek_sor(soru):
         istek_govdesi = {
             "model": model,
             "messages": [
-                {"role": "system", "content": EDA_SISTEM_PROMPTU},
+                {"role": "system", "content": AI_AGENT_MODE and AI_AGENT_SISTEM_PROMPTU or EDA_SISTEM_PROMPTU},
                 {"role": "user", "content": soru}
             ],
             "temperature": 0.3,
-            "max_tokens": 100,
+            "max_tokens": min(1000, max(100, max_chars // 4)),
             "stream": False
         }
         # 'dusunme modu' (R1 tarzi reasoning) istege bagli olarak acilir.
@@ -543,8 +557,8 @@ def deepseek_sor(soru):
             if not cevap:
                 return None
             cevap = emoji_temizle(cevap)
-            if len(cevap) > 150:
-                cevap = cevap[:150].rsplit(" ", 1)[0] + "..."
+            if len(cevap) > max_chars:
+                cevap = cevap[:max_chars].rsplit(" ", 1)[0] + "..."
             return cevap if cevap else None
 
     except urllib.error.HTTPError as e:
@@ -562,7 +576,7 @@ def deepseek_sor(soru):
 # OPENROUTER - BULUT AI (ONLINE, UCRETSIZ MODELLER)
 # ============================================================
 
-def openrouter_sor(soru):
+def openrouter_sor(soru, max_chars=150):
     try:
         api_key = ayar_getir("openrouter_api_key", "")
         if not api_key:
@@ -578,11 +592,11 @@ def openrouter_sor(soru):
         data = json.dumps({
             "model": model,
             "messages": [
-                {"role": "system", "content": EDA_SISTEM_PROMPTU},
+                {"role": "system", "content": AI_AGENT_MODE and AI_AGENT_SISTEM_PROMPTU or EDA_SISTEM_PROMPTU},
                 {"role": "user", "content": soru}
             ],
             "temperature": 0.3,
-            "max_tokens": 400
+            "max_tokens": min(1000, max(400, max_chars // 4))
         }).encode('utf-8')
 
         req = urllib.request.Request(
@@ -612,8 +626,8 @@ def openrouter_sor(soru):
                 print(f"⚠️ OpenRouter bozuk/ham cevap dondurdu, atlaniyor: {cevap[:60]}...")
                 return None
             cevap = emoji_temizle(cevap)
-            if len(cevap) > 150:
-                cevap = cevap[:150].rsplit(" ", 1)[0] + "..."
+            if len(cevap) > max_chars:
+                cevap = cevap[:max_chars].rsplit(" ", 1)[0] + "..."
             return cevap if cevap else None
 
     except urllib.error.HTTPError as e:
@@ -671,7 +685,7 @@ def aktif_ai_zinciri():
     
     return " > ".join(aktifler)
 
-def ai_sor(soru):
+def ai_sor(soru, max_chars=150):
     """
     Once tercih edilen saglayiciyi (ai_provider ayari) dener, basarisiz
     olursa sirayla digerlerini dener. Gemma (offline) her zaman zincirin
@@ -692,12 +706,23 @@ def ai_sor(soru):
 
         ad, _kisa, fonksiyon = AI_SAGLAYICILAR[anahtar]
         print(f"🧠 {ad}'a soruluyor...")
-        cevap = fonksiyon(soru)
+        cevap = fonksiyon(soru, max_chars=max_chars)
         if cevap:
             return cevap
         print(f"🔄 {ad} basarisiz, siradaki saglayiciya geciliyor...")
 
     return "Şu an hiçbir AI sağlayıcısına ulaşamadım denizçim."
+
+
+def ai_agent_sor(soru):
+    """Agent için uzun JSON yanıtlarına izin verir; normal konuşma sınırını değiştirmez."""
+    global AI_AGENT_MODE
+    onceki = AI_AGENT_MODE
+    AI_AGENT_MODE = True
+    try:
+        return ai_sor(soru, max_chars=4000)
+    finally:
+        AI_AGENT_MODE = onceki
 
 # ============================================================
 # HAVA DURUMU
@@ -1600,6 +1625,44 @@ def eda_uyandi_mi(metin):
     return False
 
 # ============================================================
+# EDA AGENT - allowlisted tools, bounded loop, existing memory adapter
+# ============================================================
+
+def _agent_hafizaya_ekle(text="", **_):
+    text = str(text).strip()[:2000]
+    if not text:
+        return ToolResult(False, "Metin boş.")
+    hafizaya_ekle(text, kategori="agent")
+    return ToolResult(True, "Not Eda hafızasına kaydedildi.")
+
+def _agent_hafizada_ara(query="", **_):
+    q = str(query).strip().casefold()
+    if not q:
+        return ToolResult(False, "Arama ifadesi boş.")
+    notes = hafiza_yukle().get("notlar", [])
+    found = [n for n in notes if q in str(n.get("metin", "")).casefold()]
+    return ToolResult(True, f"{len(found)} not bulundu.", found[-10:])
+
+EDA_AGENT = None
+if EDA_AGENT_PACKAGE_AVAILABLE:
+    try:
+        EDA_AGENT = build_eda_agent(
+            ai_agent_sor,
+            memory_path=os.path.join(KLASOR, "agent_memory.json")
+        )
+        EDA_AGENT.register_tool(Tool(
+            "save_note", "Kullanıcının açıkça istediği notu Eda hafızasına kaydeder.",
+            {"text": "string"}, _agent_hafizaya_ekle
+        ))
+        EDA_AGENT.register_tool(Tool(
+            "search_notes", "Eda'nın mevcut hafızasında arama yapar.",
+            {"query": "string"}, _agent_hafizada_ara
+        ))
+    except Exception as _agent_init_error:
+        print(f"⚠️ Agent başlatılamadı: {_agent_init_error}")
+        EDA_AGENT = None
+
+# ============================================================
 # ANA KOMUT ISLEME
 # ============================================================
 
@@ -1904,7 +1967,14 @@ def komut_isle_tek(metin):
         return "Zaman belirt denizçim. Örnek: 'saat 8' veya '1 saat sonra'"
 
     if len(metin.split()) >= 2 and ayar_getir("ai_aktif", True):
-        cevap = ai_sor(metin)
+        cevap = None
+        if ayar_getir("agent_aktif", True) and EDA_AGENT is not None:
+            try:
+                cevap = EDA_AGENT.run(metin)
+            except Exception as hata:
+                print(f"⚠️ Agent hatası; normal AI'ye dönülüyor: {hata}")
+        if not cevap:
+            cevap = ai_sor(metin)
         if cevap:
             öğren_komut_eslesmesi(metin, "sohbet")
             komut_isle_tek._derinlik = 0

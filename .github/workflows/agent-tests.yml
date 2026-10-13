@@ -1,0 +1,25 @@
+name: Eda Agent tests
+
+on:
+  push:
+    paths:
+      - "agent/**"
+      - ".github/workflows/agent-tests.yml"
+  pull_request:
+    paths:
+      - "agent/**"
+      - ".github/workflows/agent-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check Python syntax
+        run: python -m py_compile eda.py agent/agent_core.py
+      - name: Run unit tests
+        working-directory: agent
+        run: python -m unittest -v
