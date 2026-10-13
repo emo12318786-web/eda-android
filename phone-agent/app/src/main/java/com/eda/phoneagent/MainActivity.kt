@@ -55,7 +55,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             textSize = 16f
             setPadding(0, 14, 0, 14)
         }
-        root.addView(output, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        root.addView(output, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         input = EditText(this).apply { hint = "فرمان یا پرسشت را بنویس" }
         root.addView(input)
         root.addView(Button(this).apply {
@@ -198,7 +198,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     .put("model", model)
                     .put("messages", JSONArray()
                         .put(JSONObject().put("role", "system").put("content",
-                            "You are Eda, a concise and kind Persian-speaking Android assistant. Answer in the user's language. Never claim to have performed phone actions. Phone tools available locally: time/date, flashlight, local notes. Ask before sensitive actions."))
+                            "You are Eda, a concise and kind Persian-speaking Android assistant. Answer in the user's language. You cannot directly execute phone actions from the AI connection. Never claim to have performed an action unless the app confirms it. The app itself handles simple time/date, flashlight and local-note commands before calling you. Ask before sensitive actions."))
                         .put(JSONObject().put("role", "user").put("content", prompt)))
                     .put("temperature", 0.4)
                     .toString()
