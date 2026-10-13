@@ -127,7 +127,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "tr-TR")
-            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true //)
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
             putExtra(RecognizerIntent.EXTRA_PROMPT, "Komutunu söyle")
         }
         try { startActivityForResult(intent, requestSpeech) }
