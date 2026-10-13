@@ -2,6 +2,7 @@ package com.eda.phoneagent
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.camera2.CameraCharacteristics
@@ -84,7 +85,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun showProviderSettings() {
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(20, 16, 20, 16)
+            setPadding(24, 12, 24, 4)
         }
         endpointInput = EditText(this).apply {
             hint = "آدرس API، مثلاً https://api.example.com/v1"
@@ -96,30 +97,28 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         keyInput = EditText(this).apply { hint = "کلید API (در حافظه می‌ماند؛ ذخیره نمی‌شود)" }
         box.addView(TextView(this).apply {
-            text = "سازگار با API سبک OpenAI. آدرس و مدل ذخیره می‌شوند؛ کلید فقط تا بسته‌شدن برنامه در حافظه می‌ماند."
+            text = "API سازگار با OpenAI. آدرس و نام مدل ذخیره می‌شوند؛ کلید فقط تا بسته‌شدن برنامه در حافظه می‌ماند."
         })
         box.addView(endpointInput)
         box.addView(modelInput)
         box.addView(keyInput)
-        val save = Button(this).apply {
-            text = "ذخیره تنظیمات و اتصال"
-            setOnClickListener {
+        AlertDialog.Builder(this)
+            .setTitle("اتصال هوش مصنوعی")
+            .setView(box)
+            .setNegativeButton("لغو", null)
+            .setPositiveButton("ذخیره و اتصال") { _, _ ->
                 val endpoint = endpointInput.text.toString().trim().trimEnd('/')
                 val model = modelInput.text.toString().trim()
                 val key = keyInput.text.toString().trim()
                 if (!endpoint.startsWith("https://") || model.isBlank() || key.isBlank()) {
-                    show("آدرس باید HTTPS باشد و مدل و کلید را هم وارد کن.")
-                    return@setOnClickListener
+                    show("آدرس HTTPS، نام مدل و کلید API لازم است.")
+                } else {
+                    apiKey = key
+                    getSharedPreferences("eda_agent", MODE_PRIVATE).edit()
+                        .putString("endpoint", endpoint).putString("model", model).apply()
+                    show("تنظیمات ذخیره شد؛ کلید فقط تا بسته‌شدن برنامه در حافظه می‌ماند.")
                 }
-                apiKey = key
-                getSharedPreferences("eda_agent", MODE_PRIVATE).edit()
-                    .putString("endpoint", endpoint).putString("model", model).apply()
-                show("تنظیمات ذخیره شد. کلید فقط در حافظهٔ فعلی برنامه است.")
-            }
-        }
-        box.addView(save)
-        val scroll = ScrollView(this).apply { addView(box) }
-        setContentView(scroll)
+            }.show()
     }
 
     private fun startSpeech() {
@@ -137,22 +136,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == requestSpeech && resultCode == RESULT_OK) {
             val text = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull().orEmpty()
-            setContentView(buildMainView())
             input.setText(text)
             handleCommand(text)
         }
-    }
-
-    private fun buildMainView(): ScrollView {
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(24, 24, 24, 24) }
-        root.addView(TextView(this).apply { text = "Eda Phone Agent · V0.2"; textSize = 24f })
-        root.addView(output, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
-        root.addView(input)
-        root.addView(Button(this).apply { text = "🎙 گفتن فرمان"; setOnClickListener { startSpeech() } })
-        root.addView(Button(this).apply { text = "اجرا / پرسش از هوش مصنوعی"; setOnClickListener { handleCommand(input.text.toString()) } })
-        root.addView(Button(this).apply { text = "تنظیم اتصال مدل هوش مصنوعی"; setOnClickListener { showProviderSettings() } })
-        root.addView(Button(this).apply { text = "بلندگو: تکرار پاسخ"; setOnClickListener { speak(output.text.toString()) } })
-        return ScrollView(this).apply { addView(root) }
     }
 
     private fun handleCommand(raw: String) {
