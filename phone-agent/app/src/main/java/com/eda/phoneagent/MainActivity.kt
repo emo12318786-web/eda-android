@@ -161,7 +161,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
                     val old = prefs.getString("notes", "").orEmpty()
                     prefs.edit().putString("notes", (old + "\n• " + note).takeLast(20000)).apply()
-                    show("Not Eda uygulamasında saklandı; paylaşım menüsünden Samsung Notes'u seçebilirsin.")
+                    show("Not Eda uygulamasında saklandı."); shareNote(note)
                 }
             }
             q.contains("notlarım") || q.contains("notlar") -> {
