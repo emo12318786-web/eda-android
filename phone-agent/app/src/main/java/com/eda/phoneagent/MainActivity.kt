@@ -182,44 +182,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         busy = true
         show("دارم فکر می‌کنم…")
         Thread {
-            var result = ""
-            var conn: HttpURLConnection? = null
-            try {
-                val url = URL("$endpoint/chat/completions")
-                conn = (url.openConnection() as HttpURLConnection).apply {
-                    requestMethod = "POST"
-                    connectTimeout = 15000
-                    readTimeout = 30000
-                    doOutput = true
-                    setRequestProperty("Content-Type", "application/json")
-                    setRequestProperty("Authorization", "Bearer $key")
-                }
-                val body = JSONObject()
-                    .put("model", model)
-                    .put("messages", JSONArray()
-                        .put(JSONObject().put("role", "system").put("content",
-                            "You are Eda, a concise and kind Persian-speaking Android assistant. Answer in the user's language. You cannot directly execute phone actions from the AI connection. Never claim to have performed an action unless the app confirms it. The app itself handles simple time/date, flashlight and local-note commands before calling you. Ask before sensitive actions."))
-                        .put(JSONObject().put("role", "user").put("content", prompt)))
-                    .put("temperature", 0.4)
-                    .toString()
-                conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
-                val code = conn.responseCode
-                val stream = if (code in 200..299) conn.inputStream else conn.errorStream
-                val response = stream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-                if (code in 200..299) {
-                    result = JSONObject(response).getJSONArray("choices").getJSONObject(0)
-                        .getJSONObject("message").optString("content", "").trim()
-                    if (result.isBlank()) result = "مدل پاسخ خالی فرستاد."
-                } else {
-                    result = "اتصال مدل ناموفق بود (HTTP $code). آدرس، مدل، کلید و اینترنت را بررسی کن."
-                }
-            } catch (e: Exception) {
-                result = "اتصال برقرار نشد. اینترنت و آدرس API را بررسی کن. جزئیات: ${e.javaClass.simpleName}"
-            } finally {
-                conn?.disconnect()
-                val finalResult = result
-                runOnUiThread { busy = false; show(finalResult) }
-            }
+            val result = AgentRuntime(applicationContext).answer(prompt, endpoint, model, key)
+            runOnUiThread { busy = false; show(result) }
         }.start()
     }
 
