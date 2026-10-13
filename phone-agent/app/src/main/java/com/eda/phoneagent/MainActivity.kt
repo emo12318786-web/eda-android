@@ -228,6 +228,16 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
     }
 
+    private fun shareNote(note: String) {
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "Eda notu")
+            putExtra(Intent.EXTRA_TEXT, note)
+        }
+        try { startActivity(Intent.createChooser(send, "Notu hangi uygulamaya göndermek istersin?")) }
+        catch (_: Exception) { show("Not Eda uygulamasında saklandı; paylaşım uygulaması bulunamadı.") }
+    }
+
     private fun show(text: String) { output.text = text; speak(text) }
     private fun speak(text: String) { if (ttsReady) tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "eda-response") }
 
