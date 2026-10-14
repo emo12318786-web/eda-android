@@ -150,14 +150,14 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun handleCommand(raw: String) {
         val q = raw.trim().lowercase(Locale.ROOT)
-        if (q.isBlank()) { show("فرمان خالی است."); return }
+        if (q.isBlank()) { show("Komut boş."); return }
         when {
-            q.contains("ساعت") || q == "time" ->
-                show("ساعت " + SimpleDateFormat("hh:mm a", Locale("tr", "TR")).format(Date()))
-            q.contains("تاریخ") || q.contains("امروز") ->
-                show("تاریخ " + SimpleDateFormat("dd MMMM yyyy", Locale("tr", "TR")).format(Date()))
-            q.contains("چراغ") && (q.contains("روشن") || q.contains("خاموش") || q.contains("باز")) ->
-                setTorch(!q.contains("خاموش"))
+            q.contains("ساعت") || q.contains("saat") || q == "time" ->
+                show("Saat " + SimpleDateFormat("hh:mm a", Locale("tr", "TR")).format(Date()))
+            q.contains("تاریخ") || q.contains("امروز") || q.contains("tarih") || q.contains("bugün") ->
+                show("Tarih " + SimpleDateFormat("dd MMMM yyyy", Locale("tr", "TR")).format(Date()))
+            (q.contains("چراغ") && (q.contains("روشن") || q.contains("خاموش") || q.contains("باز"))) || (q.contains("fener") && (q.contains("aç") || q.contains("kapat")) ) ->
+                setTorch(!(q.contains("خاموش") || q.contains("kapat")))
             q.startsWith("یادداشت ") || q.startsWith("یادداشت:") -> {
                 val note = raw.substringAfter(if (q.startsWith("یادداشت:")) ":" else "یادداشت").trim()
                 if (note.isBlank()) show("متن یادداشت را هم بگو.")
@@ -182,12 +182,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     show("Not Eda'nın yerel hafızasına kaydedildi.")
                 }
             }
-            q.startsWith("günlük ") || q.startsWith("gunluk ") || q.startsWith("günlüğe yaz ") -> saveDiary(raw.substringAfter(" ").trim())
-            q.contains("günlüğüm") || q.contains("gunlugum") || q.contains("günlükler") -> showDiary()
-            q.startsWith("hatırlat ") || q.startsWith("hatirlat ") -> scheduleReminder(raw.substringAfter(" ").trim())
-            q.contains("pil kaç") || q.contains("pil durumu") || q.contains("batarya") -> showBattery()
-            q.startsWith("hesapla ") || q.startsWith("hesap ") -> calculate(raw.substringAfter(" ").trim())
-            q.startsWith("notu paylaş ") || q.startsWith("notu paylas ") -> shareNote(raw.substringAfter(" ").trim())
+            q.startsWith("günlük ") || q.startsWith("gunluk ") || q.startsWith("günlüğe yaz ") || q.startsWith("günlüğe kaydet ") -> saveDiary(raw.substringAfter(" ").trim())
+            q.contains("günlüğüm") || q.contains("gunlugum") || q.contains("günlükler") || q.contains("günlüğü göster") || q.contains("günlüğümü göster") -> showDiary()
+            q.startsWith("hatırlat ") || q.startsWith("hatirlat ") || q.startsWith("hatırlatıcı ") -> scheduleReminder(raw.substringAfter(" ").trim())
+            q.contains("pil kaç") || q.contains("pil durumu") || q.contains("batarya") || q.contains("pil yüzde") || q.contains("şarj durumu") -> showBattery()
+            q.startsWith("hesapla ") || q.startsWith("hesap ") || q.startsWith("hesapla:") -> calculate(raw.substringAfter(" ").trim())
+            q.startsWith("notu paylaş ") || q.startsWith("notu paylas ") || q.startsWith("notu paylaş:") -> shareNote(raw.substringAfter(" ").trim())
             q.contains("araba modu") -> {
                 val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
                 val enabled = !prefs.getBoolean("car_mode", false)
