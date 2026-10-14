@@ -189,6 +189,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             q.contains("pil kaç") || q.contains("pil durumu") || q.contains("batarya") || q.contains("pil yüzde") || q.contains("şarj durumu") -> showBattery()
             q.startsWith("hesapla ") || q.startsWith("hesap ") || q.startsWith("hesapla:") -> calculate(raw.substringAfter(" ").trim())
             q.startsWith("notu paylaş ") || q.startsWith("notu paylas ") || q.startsWith("notu paylaş:") -> shareNote(raw.substringAfter(" ").trim())
+            q == "hava durumu" || q == "hava nasıl" || q == "hava nasil" ->
+                show("Hangi şehir için hava durumunu istiyorsun? Örnek: hava durumu Tebriz")
+            q.startsWith("hava durumu ") -> fetchWeather(raw.substringAfter("hava durumu").trim())
             q.contains("araba modu") -> {
                 val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
                 val enabled = !prefs.getBoolean("car_mode", false)
@@ -240,6 +243,54 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             else alarm.set(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pending)
             show("Hatırlatıcı kuruldu: " + SimpleDateFormat("hh:mm a", Locale("tr", "TR")).format(cal.time) + " · " + parts[1])
         } catch (_: Exception) { show("Hatırlatıcı kurulamadı; bildirim izinlerini kontrol et.") }
+    }
+
+
+    private fun fetchWeather(city: String) {
+        if (city.isBlank()) { show("Şehir adı yaz. Örnek: hava durumu Tebriz"); return }
+        if (busy) { show("Bir istek sürüyor; lütfen bekle."); return }
+        busy = true
+        show("$city için güncel hava durumu aranıyor…")
+        Thread {
+            val result = try {
+                fun getJson(url: String): JSONObject {
+                    val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                        connectTimeout = 10000; readTimeout = 12000; instanceFollowRedirects = false
+                        setRequestProperty("Accept", "application/json")
+                    }
+                    try {
+                        val code = conn.responseCode
+                        val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+                        val body = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+                        if (code !in 200..299) error("HTTP $code")
+                        JSONObject(body)
+                    } finally { conn.disconnect() }
+                }
+                val encodedCity = java.net.URLEncoder.encode(city, "UTF-8")
+                val geo = getJson("https://geocoding-api.open-meteo.com/v1/search?name=$encodedCity&count=1&language=tr&format=json")
+                val place = geo.optJSONArray("results")?.optJSONObject(0) ?: error("Şehir bulunamadı")
+                val lat = place.getDouble("latitude")
+                val lon = place.getDouble("longitude")
+                val name = place.optString("name", city)
+                val country = place.optString("country", "")
+                val wx = getJson("https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&timezone=auto")
+                val current = wx.getJSONObject("current")
+                val code = current.optInt("weather_code", -1)
+                val desc = when (code) {
+                    0 -> "Açık"; 1 -> "Çoğunlukla açık"; 2 -> "Parçalı bulutlu"; 3 -> "Kapalı"
+                    45, 48 -> "Sisli"; 51, 53, 55 -> "Çisenti"; 56, 57 -> "Dondurucu çisenti"
+                    61, 63, 65 -> "Yağmurlu"; 66, 67 -> "Dondurucu yağmur"
+                    71, 73, 75, 77 -> "Karlı"; 80, 81, 82 -> "Sağanak yağış"
+                    85, 86 -> "Kar sağanağı"; 95 -> "Gök gürültülü fırtına"; 96, 99 -> "Dolu ihtimalli fırtına"
+                    else -> "Hava durumu"
+                }
+                val placeName = if (country.isBlank()) name else "$name, $country"
+                "$placeName güncel hava: $desc. Sıcaklık ${current.optDouble("temperature_2m")}°C, hissedilen ${current.optDouble("apparent_temperature")}°C, nem %${current.optInt("relative_humidity_2m")}, rüzgâr ${current.optDouble("wind_speed_10m")} km/sa. Veriler internetten alındı."
+            } catch (e: Exception) {
+                "Hava durumu alınamadı. İnternet bağlantısını ve şehir adını kontrol et. Ayrıntı: ${e.message ?: e.javaClass.simpleName}"
+            }
+            runOnUiThread { busy = false; show(result) }
+        }.start()
     }
 
     private fun showBattery() {
