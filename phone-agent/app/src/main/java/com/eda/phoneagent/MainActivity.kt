@@ -56,7 +56,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             textSize = 24f
         })
         output = TextView(this).apply {
-            text = "Merhaba! Ben Eda. Türkçe konuşabilir veya yazabilirsin.\nYerel komutlar hazır; serbest sohbet için model ayarlarını aç."
+            text = "Merhaba! Ben Eda. Benimle Türkçe konuşabilir veya yazabilirsin.\nSaat, tarih, fener, notlar, günlük, hatırlatıcı ve hesaplama çevrimdışı çalışır. Serbest sohbet ve canlı hava durumu için bir yapay zekâ modeli gerekir."
             textSize = 16f
             setPadding(0, 14, 0, 14)
         }
@@ -274,7 +274,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val model = prefs.getString("model", "gpt-4o-mini").orEmpty()
         val key = apiKey
         if (!isAllowedEndpoint(endpoint) || (!endpoint.startsWith("http://") && key.isBlank())) {
-            show("برای پرسش آزاد، اتصال مدل را تنظیم کن. مدل محلی می‌تواند بدون کلید باشد؛ فرمان‌های محلی بدون مدل هم کار می‌کنند.")
+            show("Serbest sohbet veya canlı hava durumu için Yapay Zekâ bağlantısını ayarla. Yerel komutlar model olmadan da çevrimdışı çalışır.")
             return
         }
         busy = true
@@ -310,7 +310,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             if (cameraId == null) { show("Bu telefonda kontrol edilebilir fener bulunamadı."); return }
             manager.setTorchMode(cameraId, enable)
             show(if (enable) "چراغ‌قوه روشن شد." else "چراغ‌قوه خاموش شد.")
-        } catch (e: Exception) { show("چراغ‌قوه اجرا نشد: " + (e.message ?: "خطای نامشخص")) }
+        } catch (e: Exception) { show("Fener çalıştırılamadı: " + (e.message ?: "bilinmeyen hata")) }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, results: IntArray) {
