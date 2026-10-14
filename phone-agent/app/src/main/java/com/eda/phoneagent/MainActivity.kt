@@ -266,7 +266,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                         val stream = if (code in 200..299) conn.inputStream else conn.errorStream
                         val body = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
                         if (code !in 200..299) error("HTTP $code")
-                        JSONObject(body)
+                        return JSONObject(body)
                     } finally { conn.disconnect() }
                 }
                 val encodedCity = java.net.URLEncoder.encode(city, "UTF-8")
