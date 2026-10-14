@@ -19,6 +19,7 @@ Bu dal, EDA V107 Android/Termux kaynaklarına dayanarak ayrı bir Android test u
 - API anahtarı yalnızca uygulama belleğinde tutulur
 
 ## Örnek komutlar
+- `yardım` / `komutlar`
 - saat kaç / bugün tarih
 - hava durumu Tebriz (güncel hava, internet gerekir)
 - feneri aç / feneri kapat
@@ -27,7 +28,7 @@ Bu dal, EDA V107 Android/Termux kaynaklarına dayanarak ayrı bir Android test u
 - hatırlat 19:30 su iç
 - pil durumu
 - hesapla 12*(5+3)
-- notu paylaş alışveriş listesi
+- notu paylaş alışveriş listesi / notlarımı paylaş
 
 Hatırlatıcı saatini 24 saat biçiminde gir; Eda saati 12 saat biçiminde gösterir. Android 13+ için bildirim izni gerekir ve bazı üretici pil ayarları hatırlatmaları geciktirebilir. Notlar/günlükler Eda'nın özel depolamasında saklanır; Samsung Notes'un özel veritabanına doğrudan yazılmaz. Paylaşım menüsü kullanıcının onayını ister.
 
