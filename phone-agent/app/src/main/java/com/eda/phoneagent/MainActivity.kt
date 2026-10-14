@@ -309,7 +309,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             }
             if (cameraId == null) { show("Bu telefonda kontrol edilebilir fener bulunamadı."); return }
             manager.setTorchMode(cameraId, enable)
-            show(if (enable) "چراغ‌قوه روشن شد." else "چراغ‌قوه خاموش شد.")
+            show(if (enable) "Fener açıldı." else "Fener kapatıldı.")
         } catch (e: Exception) { show("Fener çalıştırılamadı: " + (e.message ?: "bilinmeyen hata")) }
     }
 
