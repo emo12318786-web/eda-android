@@ -60,8 +60,8 @@ internal class AgentRuntime(private val context: Context) {
     private fun runTool(name: String, args: JSONObject): String {
         val prefs = context.getSharedPreferences("eda_agent", Context.MODE_PRIVATE)
         return when (name) {
-            "get_time" -> SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-            "get_date" -> SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Date())
+            "get_time" -> SimpleDateFormat("hh:mm a", Locale("tr", "TR")).format(Date())
+            "get_date" -> SimpleDateFormat("dd MMMM yyyy", Locale("tr", "TR")).format(Date())
             "save_note" -> {
                 val note = args.optString("text").trim()
                 if (note.isBlank()) "خطا: متن یادداشت خالی است."
