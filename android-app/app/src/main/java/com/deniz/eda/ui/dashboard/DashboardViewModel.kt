@@ -87,7 +87,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
             // Saat & Tarih
             val simdi = Calendar.getInstance()
             val saat = String.format(Locale.US, "%02d:%02d %s",
-                (simdi.get(Calendar.HOUR) .let { if (it == 0) 12 else it }), simdi.get(Calendar.MINUTE),
+                (((simdi.get(Calendar.HOUR) + 11) % 12) + 1), simdi.get(Calendar.MINUTE),
                 if (simdi.get(Calendar.AM_PM) == Calendar.AM) "AM" else "PM")
             val tarih = SimpleDateFormat("dd MMM yyyy, EEEE", Locale("tr", "TR")).format(Date())
 
