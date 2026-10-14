@@ -4,6 +4,11 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.deniz.eda.core.Settings
+import com.deniz.eda.data.DiaryStore
+import com.deniz.eda.data.LearningStore
+import com.deniz.eda.data.MemoryStore
+import com.deniz.eda.data.ReminderStore
+import java.util.Calendar
 import com.deniz.eda.utils.OllamaLocator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -33,6 +38,12 @@ Kullanıcı şu tür sorular sorarsa, sadece <TOOL>ADI</TOOL> yaz:
 - "hangi AI kullanıyorsun?", "hangi modele bağlısın?" → <TOOL>GET_AI</TOOL>
 - "hangi moddasın?", "uyku modunda mısın?" → <TOOL>GET_MODE</TOOL>
 - "sistemi kontrol et", "her şey nasıl?" → <TOOL>FULL_CHECK</TOOL>
+- "hafızanda ne var?" → <TOOL>GET_MEMORY</TOOL>
+- "günlüğümü göster" → <TOOL>GET_DIARY</TOOL>
+- "hatırlatmalarım neler?" → <TOOL>GET_REMINDERS</TOOL>
+- "ne öğrendin?" → <TOOL>GET_LEARNED</TOOL>
+- "saat kaç?" → <TOOL>GET_TIME</TOOL>
+- "bugünün tarihi" → <TOOL>GET_DATE</TOOL>
 
 ÖRNEK:
 Kullanıcı: "internete erişimin var mı?"
@@ -57,6 +68,12 @@ Sen: Merhaba deniz, iyiyim sen nasılsın?
                 "GET_AI" -> getAIText()
                 "GET_MODE" -> getModeText()
                 "FULL_CHECK" -> fullCheck(context)
+                "GET_MEMORY" -> MemoryStore.goster(context)
+                "GET_DIARY" -> DiaryStore.goster(context)
+                "GET_REMINDERS" -> ReminderStore.listeMetni(context)
+                "GET_LEARNED" -> learnedText(context)
+                "GET_TIME" -> timeText()
+                "GET_DATE" -> dateText()
                 else -> "Bilinmeyen araç: $name"
             }
         } catch (e: Exception) {
@@ -141,6 +158,26 @@ Sen: Merhaba deniz, iyiyim sen nasılsın?
 
     private fun getModeText(): String {
         return "Mod ${Settings.sonMod}"
+    }
+
+
+    private fun timeText(): String {
+        val now = Calendar.getInstance()
+        val rawHour = now.get(Calendar.HOUR)
+        val hour = if (rawHour == 0) 12 else rawHour
+        val minute = now.get(Calendar.MINUTE)
+        val suffix = if (now.get(Calendar.AM_PM) == Calendar.AM) "AM" else "PM"
+        return "Saat %02d:%02d %s".format(java.util.Locale.ROOT, hour, minute, suffix)
+    }
+
+    private fun dateText(): String =
+        java.text.SimpleDateFormat("dd MMMM yyyy, EEEE", java.util.Locale("tr", "TR"))
+            .format(java.util.Date())
+
+    private fun learnedText(context: Context): String {
+        val items = LearningStore.tumOgrendikleri(context)
+        if (items.isEmpty()) return "Henüz öğretilmiş bir komut yok."
+        return "Öğrendiklerim: " + items.take(10).joinToString("; ") { it.first + " → " + it.second }
     }
 
     suspend fun fullCheck(context: Context): String {

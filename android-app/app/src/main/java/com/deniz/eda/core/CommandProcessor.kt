@@ -415,6 +415,11 @@ object CommandProcessor {
                 ReminderStore.tumunuTemizle(context)
                 KomutSonucu.Cevap("Bütün hatırlatmaları temizledim $hitap.")
             }
+
+            // Önce listeleme: "hatırlatma listesi" yanlışlıkla yeni hatırlatma kurmasın.
+            v(metin, "hatırlatma", "hatirlatma", "hatırlatmalarım", "hatirlatmalarim") &&
+                v(metin, "listele", "list", "neler", "göster", "goster", "oku", "var") ->
+                KomutSonucu.Cevap(ReminderStore.listeMetni(context))
             v(metin, "hatırlat", "hatirlat", "hatırla", "hatirla") -> {
                 val saatEslesme = Regex("saat\\s*(\\d{1,2})(?:[:.](\\d{2}))?").find(metin)
                 if (saatEslesme != null) {
@@ -427,13 +432,18 @@ object CommandProcessor {
                     KomutSonucu.Cevap("Kaçta hatırlatmamı istersin $hitap? \"saat 8 hatırlat\" gibi söyleyebilirsin.")
                 }
             }
-            v(metin, "hatırlatma", "hatirlatma") && v(metin, "listele", "list", "neler", "göster", "goster") ->
-                KomutSonucu.Cevap(ReminderStore.listeMetni(context))
-
-            v(metin, "günlüğe", "gunluge", "günlük", "gunluk") && v(metin, "yaz", "ekle") -> {
-                val icerik = metin.substringAfter("yaz").substringAfter("ekle").trim()
-                DiaryStore.ekle(context, icerik.ifBlank { metin })
-                KomutSonucu.Cevap("Günlüğe yazdım $hitap.")
+            v(metin, "günlüğe", "gunluge", "günlüğüme", "gunlugume", "günlük", "gunluk") && v(metin, "yaz", "ekle") -> {
+                val icerik = when {
+                    " yaz " in " $metin " -> metin.substringAfter(" yaz ").trim()
+                    " ekle " in " $metin " -> metin.substringAfter(" ekle ").trim()
+                    else -> ""
+                }
+                if (icerik.isBlank()) {
+                    KomutSonucu.Cevap("Günlüğe ne yazmamı istersin $hitap?")
+                } else {
+                    DiaryStore.ekle(context, icerik)
+                    KomutSonucu.Cevap("Günlüğe yazdım $hitap.")
+                }
             }
             v(metin, "günlüğü", "gunlugu", "günlük", "gunluk") && v(metin, "göster", "goster", "oku") ->
                 KomutSonucu.Cevap(DiaryStore.goster(context))

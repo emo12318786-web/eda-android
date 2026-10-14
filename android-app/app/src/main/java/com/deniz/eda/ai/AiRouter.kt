@@ -5,6 +5,7 @@ import com.deniz.eda.utils.OllamaLocator
 import com.deniz.eda.core.Settings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 object AiRouter {
 
@@ -80,58 +81,52 @@ KURALLAR:
                     sistemMesaji + "\n\n" + com.deniz.eda.utils.SystemTools.listTools()
                 } else sistemMesaji
 
-                val istek = ChatCompletionRequest(
-                    model = s.model,
-                    messages = listOf(
-                        ChatMessage("system", sistemTam),
-                        ChatMessage("user", kullaniciSorusu)
-                    ),
-                    temperature = 0.3,
-                    max_tokens = 150
+                // EDA V5 Agent: en fazla 3 salt-okunur araç adımı; sağlayıcıya göre
+                // değişmeyen allowlist SystemTools.runTool içinde uygulanır.
+                val mesajlar = mutableListOf(
+                    ChatMessage("system", sistemTam + "\n\nAGENT KURALLARI: En fazla 3 araç adımı kullan. Araç gerekiyorsa yalnızca <TOOL>ALLOWLIST_ADI</TOOL> yaz. Araç sonucunu görmeden işlem yapıldığını iddia etme. Bir araç sonucu geldiyse gerekirse bir sonraki aracı seç; aksi halde kısa Türkçe cevap ver. Telefonun ayarlarını, mesajları veya kişisel verileri değiştiren bir araç bu listede yoktur; bunları yapmış gibi davranma."),
+                    ChatMessage("user", kullaniciSorusu)
                 )
-                val yanit = api.sohbetTamamla("Bearer $anahtar", istek)
-                if (yanit.isSuccessful) {
-                    val cevap = yanit.body()?.choices?.firstOrNull()?.message?.content?.trim()
-                    if (!cevap.isNullOrBlank()) {
-                        android.util.Log.d("AiRouter", "✅ ${s.ad}: $cevap")
-                        
-                        // ═══ چک کن اگه <TOOL> داشت ═══
-                        if (context != null && cevap.contains("<TOOL>")) {
-                            val match = Regex("<TOOL>(.+?)</TOOL>").find(cevap)
-                            val toolName = match?.groupValues?.getOrNull(1)
-                            if (toolName != null) {
-                                android.util.Log.i("AiRouter", "🔧 Tool: $toolName")
-                                val toolResult = com.deniz.eda.utils.SystemTools.runTool(toolName.trim(), context)
-                                android.util.Log.i("AiRouter", "🔧 Sonuç: $toolResult")
-                                
-                                // نتیجه رو به LLM برگردون برای جواب نهایی
-                                val istekFinal = ChatCompletionRequest(
-                                    model = s.model,
-                                    messages = listOf(
-                                        ChatMessage("system", sistemMesaji),
-                                        ChatMessage("user", "Soru: $kullaniciSorusu\nTool sonucu: $toolResult\nKısa Türkçe cevap ver, deniz diye hitap et.")
-                                    ),
-                                    temperature = 0.3,
-                                    max_tokens = 100
-                                )
-                                val yanitFinal = api.sohbetTamamla("Bearer $anahtar", istekFinal)
-                                if (yanitFinal.isSuccessful) {
-                                    val cevapFinal = yanitFinal.body()?.choices?.firstOrNull()?.message?.content?.trim()
-                                    if (!cevapFinal.isNullOrBlank()) {
-                                        android.util.Log.d("AiRouter", "✅ Final: $cevapFinal")
-                                        return@withContext cevapFinal
-                                    }
-                                }
-                                // اگه LLM جواب نداد، خودمون نتیجه رو بگیم
-                                return@withContext "Sonuç: $toolResult"
-                            }
-                        }
-                        
-                        return@withContext cevap
+                var sonCevap: String? = null
+                var aracAdimi = 0
+                while (aracAdimi <= 3) {
+                    val istek = ChatCompletionRequest(
+                        model = s.model,
+                        messages = mesajlar.toList(),
+                        temperature = 0.2,
+                        max_tokens = 180
+                    )
+                    val yanit = api.sohbetTamamla("Bearer $anahtar", istek)
+                    if (!yanit.isSuccessful) {
+                        android.util.Log.w("AiRouter", "⚠️ ${s.ad}: HTTP ${yanit.code()}")
+                        break
                     }
-                } else {
-                    android.util.Log.w("AiRouter", "⚠️ ${s.ad}: HTTP ${yanit.code()}")
+                    val cevap = yanit.body()?.choices?.firstOrNull()?.message?.content?.trim()
+                    if (cevap.isNullOrBlank()) break
+                    android.util.Log.d("AiRouter", "✅ ${s.ad} agent step=$aracAdimi")
+                    val match = Regex("<TOOL>\\s*([A-Z_]+)\\s*</TOOL>", RegexOption.IGNORE_CASE).find(cevap)
+                    if (match == null || context == null || aracAdimi >= 3) {
+                        sonCevap = cevap.replace(Regex("<TOOL>.*?</TOOL>", RegexOption.DOT_MATCHES_ALL), "").trim()
+                        break
+                    }
+                    val toolName = match.groupValues[1].uppercase(Locale.ROOT)
+                    val allowlist = setOf(
+                        "CHECK_INTERNET", "CHECK_OLLAMA", "CHECK_GROQ",
+                        "CHECK_POLLINATIONS", "GET_BATTERY", "GET_AI", "GET_MODE", "FULL_CHECK",
+                        "GET_MEMORY", "GET_DIARY", "GET_REMINDERS", "GET_LEARNED", "GET_TIME", "GET_DATE"
+                    )
+                    if (toolName !in allowlist) {
+                        sonCevap = "Bu araç EDA'da izinli değil."
+                        break
+                    }
+                    val toolResult = com.deniz.eda.utils.SystemTools.runTool(toolName, context)
+                    android.util.Log.i("AiRouter", "🔧 Agent tool=$toolName")
+                    mesajlar.add(ChatMessage("assistant", cevap))
+                    mesajlar.add(ChatMessage("user", "Araç sonucu ($toolName): $toolResult\nBu sonucu doğru yorumla. Gerekirse başka bir izinli araç seç; yoksa kullanıcıya kısa Türkçe cevap ver."))
+                    aracAdimi++
                 }
+                if (!sonCevap.isNullOrBlank()) return@withContext sonCevap
+                // Sağlayıcı başarısızsa sıradaki yapılandırılmış sağlayıcıya geç.
             } catch (e: Exception) {
                 android.util.Log.e("AiRouter", "❌ ${s.ad}: ${e.message}")
             }
