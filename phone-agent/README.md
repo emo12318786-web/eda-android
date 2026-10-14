@@ -10,6 +10,7 @@ Bu dal, EDA V107 Android/Termux kaynaklarına dayanarak ayrı bir Android test u
 - Eda uygulamasında kalıcı yerel notlar ve günlük
 - Android AlarmManager ile saatli hatırlatıcı ve bildirim
 - Pil yüzdesi/şarj durumu
+- Şehir adıyla canlı hava durumu (internet gerekir; örnek: `hava durumu Tebriz`)
 - Güvenli aritmetik hesaplama
 - Notu Android paylaşım menüsüyle Samsung Notes veya başka uygulamaya gönderme
 - Basit araba modu tercihi
@@ -19,6 +20,7 @@ Bu dal, EDA V107 Android/Termux kaynaklarına dayanarak ayrı bir Android test u
 
 ## Örnek komutlar
 - saat kaç / bugün tarih
+- hava durumu Tebriz (güncel hava, internet gerekir)
 - feneri aç / feneri kapat
 - not al alışveriş listesi / notlarım
 - günlük bugün arabayı tamir ettim / günlüğümü göster
