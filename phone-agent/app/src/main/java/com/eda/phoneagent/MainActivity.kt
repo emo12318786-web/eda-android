@@ -10,6 +10,10 @@ import android.os.Build
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationManager
+import android.media.AudioManager
+import android.provider.Settings
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.os.Bundle
@@ -211,27 +215,180 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
 
     private fun showControlPanel() {
-        val options = arrayOf(
-            "Pil ve şarj durumu",
-            "Notlarımı göster",
-            "Günlüğümü göster",
-            "Komut listesi",
-            "Yapay zekâ bağlantısı"
+        val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(8), dp(16), dp(4)) }
+        panel.addView(TextView(this).apply {
+            text = "EDA V107 • KONTROL MERKEZİ\nYerel komutlar çevrimdışı çalışır. Mikrofon sürekli açık değildir."
+            textSize = 14f; setTextColor(Color.rgb(90, 78, 126)); setPadding(0, 0, 0, dp(10))
+        })
+        val actions: List<Pair<String, () -> Unit>> = listOf(
+            "🔋 Pil ve şarj" to { showBattery() },
+            "📝 Not defteri" to { showNotesDialog() },
+            "📔 Günlük" to { showDiary() },
+            "⏰ Yeni hatırlatıcı" to { promptReminder() },
+            "🎚 Ses ve medya" to { showMediaPanel() },
+            "📍 Konumum / telefonu bul" to { locatePhone() },
+            "💱 Kur ve piyasa" to { showMarket() },
+            "🧠 فرمان‌های یادگرفته‌شده" to { showLearnedCommands() },
+            "🤖 اتصال هوش مصنوعی" to { showProviderSettings() },
+            "⚙ مجوزها و تنظیمات برنامه" to { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName"))) },
+            "❔ راهنما و فرمان‌ها" to { handleCommand("yardım") }
         )
-        AlertDialog.Builder(this)
-            .setTitle("EDA · Kontrol paneli")
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> showBattery()
-                    1 -> handleCommand("notlarım")
-                    2 -> showDiary()
-                    3 -> handleCommand("yardım")
-                    4 -> showProviderSettings()
-                }
-            }
-            .setNegativeButton("Kapat", null)
+        actions.forEach { (label, action) ->
+            panel.addView(Button(this).apply {
+                text = label; isAllCaps = false; textSize = 14f; setTextColor(Color.WHITE)
+                background = rounded(Color.rgb(34, 25, 64), Color.rgb(76, 59, 126), dp(14), dp(1))
+                setOnClickListener { action() }
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(49)))
+            addGap(panel, 6)
+        }
+        AlertDialog.Builder(this).setTitle("E · D · A / Kontrol Paneli")
+            .setView(ScrollView(this).apply { addView(panel) })
+            .setNegativeButton("Kapat", null).show()
+    }
+
+    private fun promptReminder() {
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(8), dp(18), 0) }
+        val time = EditText(this).apply { hint = "Saat (24 saat): 19:30" }
+        val message = EditText(this).apply { hint = "Hatırlatma: su iç" }
+        box.addView(time); box.addView(message)
+        AlertDialog.Builder(this).setTitle("Yeni hatırlatıcı").setView(box)
+            .setNegativeButton("İptal", null)
+            .setPositiveButton("Kur") { _, _ -> scheduleReminder(time.text.toString().trim() + " " + message.text.toString().trim()) }
             .show()
     }
+
+    private fun showNotesDialog() {
+        val notes = getSharedPreferences("eda_agent", MODE_PRIVATE).getString("notes", "").orEmpty()
+        AlertDialog.Builder(this).setTitle("EDA · Notlar")
+            .setMessage(if (notes.isBlank()) "Henüz not yok. Komut: not al alışveriş listesi" else notes)
+            .setPositiveButton("Not ekle") { _, _ -> promptNote() }
+            .setNeutralButton("Samsung Notes ile paylaş") { _, _ -> shareAllNotes() }
+            .setNegativeButton("Kapat", null).show()
+    }
+
+    private fun promptNote() {
+        val edit = EditText(this).apply { hint = "Notunu buraya yaz"; minLines = 2 }
+        AlertDialog.Builder(this).setTitle("Yeni not").setView(edit)
+            .setNegativeButton("İptal", null)
+            .setPositiveButton("Kaydet") { _, _ ->
+                val note = edit.text.toString().trim()
+                if (note.isNotBlank()) {
+                    val p = getSharedPreferences("eda_agent", MODE_PRIVATE)
+                    p.edit().putString("notes", (p.getString("notes", "").orEmpty() + "\n• " + note).takeLast(20000)).apply()
+                    show("Not EDA'nın yerel not defterine kaydedildi.")
+                } else show("Not boş olduğu için kaydedilmedi.")
+            }.show()
+    }
+
+    private fun showMediaPanel() {
+        val audio = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(8), dp(18), 0) }
+        box.addView(TextView(this).apply { text = "Ses düzeyi"; setTextColor(Color.DKGRAY) })
+        box.addView(android.widget.SeekBar(this).apply {
+            max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+            progress = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
+            setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(s: android.widget.SeekBar?, value: Int, user: Boolean) { if (user) audio.setStreamVolume(AudioManager.STREAM_MUSIC, value, 0) }
+                override fun onStartTrackingTouch(s: android.widget.SeekBar?) {}
+                override fun onStopTrackingTouch(s: android.widget.SeekBar?) {}
+            })
+        })
+        box.addView(Button(this).apply { text = "Müzik uygulamasını aç"; isAllCaps = false; setOnClickListener {
+            val intent = Intent("android.intent.action.MUSIC_PLAYER")
+            try { startActivity(intent) } catch (_: Exception) { show("Müzik uygulaması bulunamadı.") }
+        } })
+        AlertDialog.Builder(this).setTitle("Ses ve medya").setView(box).setPositiveButton("Bitti", null).show()
+    }
+
+    private fun locatePhone() {
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+            checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 7004)
+            show("Konum izni gerekli. İzin verdikten sonra komutu yeniden kullan."); return
+        }
+        try {
+            val manager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val location: Location? = manager.getProviders(true).asSequence().mapNotNull { provider ->
+                try { manager.getLastKnownLocation(provider) } catch (_: SecurityException) { null }
+            }.maxByOrNull { it.time }
+            if (location == null) show("Son bilinen konum bulunamadı. Konum servisini açıp tekrar dene.")
+            else show("Son bilinen konum: " + String.format(Locale.US, "%.5f, %.5f", location.latitude, location.longitude) + ". این ردیابی زنده نیست؛ آخرین موقعیت ذخیره‌شدهٔ گوشی است.")
+        } catch (_: Exception) { show("Konum alınamadı. Sistem konum ayarlarını kontrol et.") }
+    }
+
+    private fun showMarket() {
+        AlertDialog.Builder(this).setTitle("EDA · Kur ve piyasa")
+            .setMessage("Dolar/IRR için çevrimiçi bir referans kaynağı denenir. Toman yaklaşık IRR / 10'dur. Güvenilir ücretsiz anahtarsız canlı altın verisi yapılandırılmadığından altın fiyatı uydurulmaz.")
+            .setPositiveButton("Dolar / ریال") { _, _ -> fetchUsdIrr() }
+            .setNeutralButton("ثبت دستی قیمت طلا") { _, _ -> promptGoldPrice() }
+            .setNegativeButton("Kapat", null).show()
+    }
+
+    private fun fetchUsdIrr() {
+        if (busy) { show("Bir istek sürüyor; bekle."); return }
+        busy = true; show("Kur bilgisi aranıyor…")
+        Thread {
+            val result = try {
+                val conn = (URL("https://open.er-api.com/v6/latest/USD").openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 8000; readTimeout = 10000; instanceFollowRedirects = false
+                }
+                try {
+                    val code = conn.responseCode
+                    if (code !in 200..299) error("HTTP $code")
+                    val json = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+                    val irr = json.getJSONObject("rates").getDouble("IRR")
+                    val updated = json.optString("time_last_update_utc", "نامشخص")
+                    "USD / IRR: " + String.format(Locale.US, "%.0f", irr) + " ریال برای هر دلار (تقریباً " + String.format(Locale.US, "%.0f", irr / 10) + " تومان). منبع: $updated. نرخ رسمی صرافی ایران نیست و ممکن است با بازار آزاد تفاوت زیادی داشته باشد."
+                } finally { conn.disconnect() }
+            } catch (_: Exception) { "Kur alınamadı. İnternet bağlantısını kontrol et; bu referans kaynak İran serbest piyasasını temsil etmeyebilir." }
+            runOnUiThread { busy = false; show(result) }
+        }.start()
+    }
+
+    private fun promptGoldPrice() {
+        val edit = EditText(this).apply { hint = "قیمت هر گرم طلا (تومان)"; inputType = android.text.InputType.TYPE_CLASS_NUMBER }
+        AlertDialog.Builder(this).setTitle("ثبت دستی قیمت طلا").setView(edit)
+            .setNegativeButton("İptal", null).setPositiveButton("Kaydet") { _, _ ->
+                val price = edit.text.toString().trim()
+                if (price.toLongOrNull() == null) show("قیمت معتبر وارد کن.")
+                else {
+                    getSharedPreferences("eda_agent", MODE_PRIVATE).edit().putString("gold_price", price)
+                        .putString("gold_price_time", SimpleDateFormat("dd MMM yyyy hh:mm a", Locale("tr", "TR")).format(Date())).apply()
+                    show("قیمت دستی طلا ثبت شد: $price تومان. این قیمت زنده نیست.")
+                }
+            }.show()
+    }
+
+    private fun showLearnedCommands() {
+        val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+        val aliases = prefs.getString("learned_commands", "").orEmpty()
+        AlertDialog.Builder(this).setTitle("فرمان‌های یادگرفته‌شده")
+            .setMessage(if (aliases.isBlank()) "فرمانی ذخیره نشده است." else aliases)
+            .setPositiveButton("یادگیری فرمان") { _, _ -> promptLearnCommand() }
+            .setNegativeButton("Kapat", null).show()
+    }
+
+    private fun promptLearnCommand() {
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(8), dp(18), 0) }
+        val phrase = EditText(this).apply { hint = "عبارت دلخواه، مثلاً صبح بخیر" }
+        val action = EditText(this).apply { hint = "فرمان مجاز، مثلاً ساعت kaç" }
+        box.addView(phrase); box.addView(action)
+        AlertDialog.Builder(this).setTitle("آموزش فرمان").setView(box)
+            .setNegativeButton("لغو", null).setPositiveButton("ذخیره") { _, _ ->
+                val p = phrase.text.toString().trim(); val a = action.text.toString().trim()
+                val allowed = setOf("ساعت چند است","ساعت kaç","امروز تاریخ","چراغ قوه را روشن کن","چراغ قوه را خاموش کن","باتری چند درصد است","یادداشت‌هایم","help","saat kaç","bugün tarih","feneri aç","feneri kapat","pil durumu","notlarım")
+                if (p.isBlank() || a.isBlank() || p.length > 80 || a.length > 120) show("هر دو فیلد را کوتاه و معتبر پر کن.")
+                else if (a.lowercase(Locale.ROOT) !in allowed) show("برای امنیت، فقط فرمان‌های محلی مجاز قابل آموزش هستند.")
+                else {
+                    val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+                    val json = try { JSONObject(prefs.getString("learned_map", "{}").orEmpty()) } catch (_: Exception) { JSONObject() }
+                    json.put(p.lowercase(Locale.ROOT), a)
+                    prefs.edit().putString("learned_map", json.toString()).putString("learned_commands", json.toString(2)).apply()
+                    show("فرمان ذخیره شد. عبارت «$p» را امتحان کن.")
+                }
+            }.show()
+    }
+
 
     override fun onInit(status: Int) {
         ttsReady = status == TextToSpeech.SUCCESS
@@ -303,9 +460,17 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun handleCommand(raw: String) {
         val q = raw.trim().lowercase(Locale.ROOT)
         if (q.isBlank()) { show("Komut boş."); return }
+        val learned = try {
+            JSONObject(getSharedPreferences("eda_agent", MODE_PRIVATE).getString("learned_map", "{}").orEmpty()).optString(q, "").takeIf { it.isNotBlank() }
+        } catch (_: Exception) { null }
+        if (learned != null && learned != q) { handleCommand(learned); return }
         when {
+            q.contains("konumum") || q.contains("neredeyim") || q.contains("telefonumu bul") -> locatePhone()
+            q.contains("ses düzeyi") || q.contains("ses ayarı") || q.contains("müzik kontrol") || q.contains("volume") -> showMediaPanel()
+            q.contains("dolar") && (q.contains("kur") || q.contains("kaç") || q.contains("fiyat")) -> fetchUsdIrr()
+            q == "فرمان یاد بگیر" || q == "komut öğren" || q == "komut ogren" -> promptLearnCommand()
             q == "yardım" || q == "yardim" || q == "komutlar" || q == "help" ->
-                show("Komutlar: saat kaç; bugün tarih; feneri aç/kapat; not al ...; notlarım; notlarımı paylaş; günlük ...; günlüğümü göster; hatırlat 19:30 su iç; pil durumu; hesapla 12*(5+3); hava durumu Tebriz. Hava durumu için internet gerekir. Serbest sohbet için Yapay Zekâ bağlantısı kur.")
+                show("Komutlar: saat kaç; bugün tarih; feneri aç/kapat; not al ...; notlarım; notlarımı paylaş; günlük ...; günlüğümü göster; hatırlat 19:30 su iç; pil durumu; hesapla 12*(5+3); hava durumu Tebriz; konumum; ses düzeyi; dolar kuru; komut öğren. Serbest sohbet için AI bağlantısı gerekir.")
             q.contains("ساعت") || q.contains("saat") || q == "time" ->
                 show("Saat " + SimpleDateFormat("hh:mm a", Locale("tr", "TR")).format(Date()))
             q.contains("تاریخ") || q.contains("امروز") || q.contains("tarih") || q.contains("bugün") ->
