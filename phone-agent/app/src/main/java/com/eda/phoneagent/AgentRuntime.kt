@@ -43,7 +43,7 @@ internal class AgentRuntime(private val context: Context) {
         return try {
             JSONObject(last).optString("answer").ifBlank { "Sonsuz döngüyü önlemek için görevi $MAX_STEPS adımdan sonra durdurdum." }
         } catch (_: Exception) {
-            "برای جلوگیری از اجرای بی‌پایان، کار را پس از $MAX_STEPS مرحله متوقف کردم."
+            "Sonsuz döngüyü önlemek için görevi $MAX_STEPS adımdan sonra durdurdum."
         }
     }
 
@@ -81,7 +81,7 @@ internal class AgentRuntime(private val context: Context) {
                 else notes.lines().filter { it.contains(query, ignoreCase = true) }
                     .takeLast(20).joinToString("\n").ifBlank { "Bu ifadeyle eşleşen not bulunamadı." }
             }
-            else -> "خطا: این ابزار مجاز نیست."
+            else -> "Hata: Bu araca izin verilmiyor."
         }
     }
 
@@ -106,7 +106,7 @@ internal class AgentRuntime(private val context: Context) {
             if (code !in 200..299) return "Model bağlantısı başarısız (HTTP $code). Adresi, modeli, API anahtarını ve interneti kontrol et."
             return JSONObject(text).getJSONArray("choices").getJSONObject(0)
                 .getJSONObject("message").optString("content").trim()
-                .ifBlank { "مدل پاسخ خالی فرستاد." }
+                .ifBlank { "Model boş yanıt gönderdi." }
         } catch (e: Exception) {
             return "Bağlantı kurulamadı. İnterneti ve API adresini kontrol et. Ayrıntı: ${e.javaClass.simpleName}"
         } finally {
