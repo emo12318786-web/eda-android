@@ -112,7 +112,8 @@ KURALLAR:
                     val toolName = match.groupValues[1].uppercase(Locale.ROOT)
                     val allowlist = setOf(
                         "CHECK_INTERNET", "CHECK_OLLAMA", "CHECK_GROQ",
-                        "CHECK_POLLINATIONS", "GET_BATTERY", "GET_AI", "GET_MODE", "FULL_CHECK"
+                        "CHECK_POLLINATIONS", "GET_BATTERY", "GET_AI", "GET_MODE", "FULL_CHECK",
+                        "GET_MEMORY", "GET_DIARY", "GET_REMINDERS", "GET_LEARNED", "GET_TIME", "GET_DATE"
                     )
                     if (toolName !in allowlist) {
                         sonCevap = "Bu araç EDA'da izinli değil."
