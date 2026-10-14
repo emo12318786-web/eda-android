@@ -153,6 +153,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val q = raw.trim().lowercase(Locale.ROOT)
         if (q.isBlank()) { show("Komut boş."); return }
         when {
+            q == "yardım" || q == "yardim" || q == "komutlar" || q == "help" ->
+                show("Komutlar: saat kaç; bugün tarih; feneri aç/kapat; not al ...; notlarım; notlarımı paylaş; günlük ...; günlüğümü göster; hatırlat 19:30 su iç; pil durumu; hesapla 12*(5+3); hava durumu Tebriz. Hava durumu için internet gerekir. Serbest sohbet için Yapay Zekâ bağlantısı kur.")
             q.contains("ساعت") || q.contains("saat") || q == "time" ->
                 show("Saat " + SimpleDateFormat("hh:mm a", Locale("tr", "TR")).format(Date()))
             q.contains("تاریخ") || q.contains("امروز") || q.contains("tarih") || q.contains("bugün") ->
@@ -188,6 +190,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             q.startsWith("hatırlat ") || q.startsWith("hatirlat ") || q.startsWith("hatırlatıcı ") -> scheduleReminder(raw.substringAfter(" ").trim())
             q.contains("pil kaç") || q.contains("pil durumu") || q.contains("batarya") || q.contains("pil yüzde") || q.contains("şarj durumu") -> showBattery()
             q.startsWith("hesapla ") || q.startsWith("hesap ") || q.startsWith("hesapla:") -> calculate(raw.substringAfter(" ").trim())
+            q == "notlarımı paylaş" || q == "notlarimi paylas" -> shareAllNotes()
             q.startsWith("notu paylaş ") || q.startsWith("notu paylas ") || q.startsWith("notu paylaş:") -> shareNote(raw.substringAfter(" ").trim())
             q == "hava durumu" || q == "hava nasıl" || q == "hava nasil" ->
                 show("Hangi şehir için hava durumunu istiyorsun? Örnek: hava durumu Tebriz")
@@ -316,6 +319,18 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             putExtra(Intent.EXTRA_TEXT, note)
         }
         startActivity(Intent.createChooser(send, "Notu Samsung Notes veya başka uygulamayla paylaş"))
+    }
+
+
+    private fun shareAllNotes() {
+        val notes = getSharedPreferences("eda_agent", MODE_PRIVATE).getString("notes", "").orEmpty()
+        if (notes.isBlank()) { show("Henüz kaydedilmiş not yok."); return }
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "Eda notlarım")
+            putExtra(Intent.EXTRA_TEXT, notes)
+        }
+        startActivity(Intent.createChooser(send, "Notları Samsung Notes veya başka uygulamayla paylaş"))
     }
 
     private fun askModel(prompt: String) {
