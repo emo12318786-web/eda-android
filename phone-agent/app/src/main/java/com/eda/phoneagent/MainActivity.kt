@@ -16,6 +16,10 @@ import android.os.Bundle
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import android.view.ViewGroup
+import android.view.Gravity
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -46,40 +50,187 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.statusBarColor = Color.rgb(76, 49, 177)
+        window.navigationBarColor = Color.rgb(13, 7, 29)
+        window.decorView.systemUiVisibility = 0
         tts = TextToSpeech(this, this)
-        val root = LinearLayout(this).apply {
+
+        val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+        val page = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(24, 24, 24, 24)
+            setPadding(dp(22), dp(24), dp(22), dp(18))
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(Color.rgb(8, 5, 22), Color.rgb(24, 12, 48), Color.rgb(19, 10, 39))
+            )
         }
-        root.addView(TextView(this).apply {
-            text = "E · D · A V107 Agent"
-            textSize = 24f
-        })
-        output = TextView(this).apply {
-            text = "Merhaba! Ben Eda. Benimle Türkçe konuşabilir veya yazabilirsin.\nSaat, tarih, fener, notlar, günlük, hatırlatıcı ve hesaplama çevrimdışı çalışır. Serbest sohbet ve canlı hava durumu için bir yapay zekâ modeli gerekir."
-            textSize = 16f
-            setPadding(0, 14, 0, 14)
+
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
         }
-        root.addView(output, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        input = EditText(this).apply { hint = "Komutunu yaz veya konuş" }
-        root.addView(input)
-        root.addView(Button(this).apply {
-            text = "🎙 Komut söyle"
-            setOnClickListener { startSpeech() }
+        val brandColumn = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        brandColumn.addView(TextView(this).apply {
+            text = "E · D · A"
+            textSize = 30f
+            letterSpacing = 0.18f
+            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+            setTextColor(Color.WHITE)
         })
-        root.addView(Button(this).apply {
-            text = "Çalıştır / Yapay zekâya sor"
-            setOnClickListener { handleCommand(input.text.toString()) }
+        brandColumn.addView(TextView(this).apply {
+            text = "✦  Eda hazır · Dokununca dinler"
+            textSize = 14f
+            setTextColor(Color.rgb(210, 202, 244))
+            setPadding(0, dp(4), 0, 0)
         })
-        root.addView(Button(this).apply {
-            text = "Yapay zekâ bağlantı ayarları"
+        header.addView(brandColumn)
+        val settings = Button(this).apply {
+            text = "⚙"
+            textSize = 25f
+            setTextColor(Color.WHITE)
+            background = rounded(Color.rgb(37, 27, 70), Color.rgb(116, 86, 232), dp(28), dp(2))
+            minWidth = dp(58); minimumWidth = dp(58); minHeight = dp(58)
+            setPadding(0, 0, 0, 0)
             setOnClickListener { showProviderSettings() }
+        }
+        header.addView(settings, LinearLayout.LayoutParams(dp(62), dp(62)))
+        page.addView(header)
+        addGap(page, 28)
+
+        val statusCard = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(18), dp(18), dp(18), dp(18))
+            background = rounded(Color.rgb(25, 20, 51), Color.rgb(54, 42, 95), dp(25), dp(1))
+        }
+        statusCard.addView(TextView(this).apply {
+            text = "■"
+            textSize = 19f
+            setTextColor(Color.rgb(91, 164, 255))
+            setPadding(0, 0, dp(14), 0)
         })
-        root.addView(Button(this).apply {
-            text = "🔊 Yanıtı seslendir"
-            setOnClickListener { speak(output.text.toString()) }
+        statusCard.addView(TextView(this).apply {
+            text = "Durum"
+            textSize = 16f
+            setTextColor(Color.WHITE)
+        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        statusCard.addView(TextView(this).apply {
+            text = "Hazır"
+            textSize = 16f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.WHITE)
         })
-        setContentView(ScrollView(this).apply { addView(root) })
+        page.addView(statusCard, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(76)))
+        addGap(page, 18)
+
+        output = TextView(this).apply {
+            text = "Merhaba! Ben Eda. Benimle Türkçe konuşabilir veya yazabilirsin.\\nSaat, tarih, fener, notlar, günlük, hatırlatıcı ve hesaplama çevrimdışı çalışır. Serbest sohbet ve canlı hava durumu için bir yapay zekâ modeli gerekir."
+            textSize = 15f
+            setTextColor(Color.rgb(235, 231, 248))
+            setPadding(dp(4), dp(4), dp(4), dp(12))
+            setTextIsSelectable(true)
+        }
+        page.addView(output)
+        input = EditText(this).apply {
+            hint = "Komutunu yaz veya konuş"
+            setHintTextColor(Color.rgb(177, 167, 209))
+            setTextColor(Color.WHITE)
+            textSize = 17f
+            singleLine = false
+            maxLines = 3
+            setPadding(dp(10), dp(10), dp(10), dp(10))
+            background = rounded(Color.rgb(22, 16, 44), Color.rgb(87, 68, 141), dp(12), dp(1))
+        }
+        page.addView(input, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        addGap(page, 14)
+
+        page.addView(actionButton("▶  EDA'YI BAŞLAT", true) {
+            if (input.text.isNullOrBlank()) startSpeech() else handleCommand(input.text.toString())
+        }, buttonParams())
+        addGap(page, 12)
+        page.addView(actionButton("🎙  KOMUT SÖYLE", true) { startSpeech() }, buttonParams())
+        addGap(page, 12)
+        page.addView(actionButton("▦  KONTROL PANELİ", true) { showControlPanel() }, buttonParams())
+        addGap(page, 12)
+        page.addView(actionButton("🔊  YANITI SESLENDİR", false) { speak(output.text.toString()) }, buttonParams())
+        addGap(page, 14)
+        page.addView(actionButton("ÇALIŞTIR / YAPAY ZEKÂYA SOR", false) {
+            handleCommand(input.text.toString())
+        }, buttonParams())
+
+        val footer = TextView(this).apply {
+            text = "EDA V107 · Agent"
+            textSize = 12f
+            gravity = Gravity.CENTER
+            setTextColor(Color.rgb(169, 158, 201))
+            setPadding(0, dp(28), 0, dp(8))
+        }
+        page.addView(footer)
+        setContentView(ScrollView(this).apply {
+            isFillViewport = true
+            clipToPadding = false
+            setBackgroundColor(Color.rgb(13, 7, 29))
+            addView(page)
+        })
+    }
+
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density + 0.5f).toInt()
+
+    private fun rounded(fill: Int, stroke: Int, radius: Int, strokeWidth: Int): GradientDrawable =
+        GradientDrawable().apply {
+            setColor(fill)
+            cornerRadius = radius.toFloat()
+            setStroke(strokeWidth, stroke)
+        }
+
+    private fun addGap(parent: LinearLayout, height: Int) {
+        parent.addView(android.view.View(this), LinearLayout.LayoutParams(1, dp(height)))
+    }
+
+    private fun buttonParams() = LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT, dp(66)
+    )
+
+    private fun actionButton(label: String, primary: Boolean, action: () -> Unit): Button =
+        Button(this).apply {
+            text = label
+            textSize = 14f
+            letterSpacing = 0.035f
+            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+            setTextColor(Color.WHITE)
+            background = if (primary)
+                rounded(Color.rgb(105, 73, 222), Color.rgb(127, 103, 245), dp(22), dp(1))
+            else rounded(Color.rgb(34, 25, 64), Color.rgb(76, 59, 126), dp(20), dp(1))
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            isAllCaps = false
+            setOnClickListener { action() }
+        }
+
+    private fun showControlPanel() {
+        val options = arrayOf(
+            "Pil ve şarj durumu",
+            "Notlarımı göster",
+            "Günlüğümü göster",
+            "Komut listesi",
+            "Yapay zekâ bağlantısı"
+        )
+        AlertDialog.Builder(this)
+            .setTitle("EDA · Kontrol paneli")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> showBattery()
+                    1 -> handleCommand("notlarım")
+                    2 -> showDiary()
+                    3 -> handleCommand("yardım")
+                    4 -> showProviderSettings()
+                }
+            }
+            .setNegativeButton("Kapat", null)
+            .show()
     }
 
     override fun onInit(status: Int) {
