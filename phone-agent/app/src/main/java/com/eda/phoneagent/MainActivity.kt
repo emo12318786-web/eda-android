@@ -3,7 +3,12 @@ package com.eda.phoneagent
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
-[object Object]import android.content.Intent
+import android.app.AlarmManager
+import android.app.NotificationManager
+import android.content.Intent
+import android.os.Build
+import android.os.BatteryManager
+import java.util.Calendar
 import android.content.pm.PackageManager
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
@@ -50,7 +55,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             setPadding(24, 24, 24, 24)
         }
         root.addView(TextView(this).apply {
-            text = "Eda Phone Agent · V0.2"
+            text = "Eda · V0.3"
             textSize = 24f
         })
         output = TextView(this).apply {
