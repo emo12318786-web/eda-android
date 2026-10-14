@@ -127,7 +127,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         addGap(page, 18)
 
         output = TextView(this).apply {
-            text = "Merhaba! Ben Eda. Benimle Türkçe konuşabilir veya yazabilirsin.\\nSaat, tarih, fener, notlar, günlük, hatırlatıcı ve hesaplama çevrimdışı çalışır. Serbest sohbet ve canlı hava durumu için bir yapay zekâ modeli gerekir."
+            text = "Merhaba! Ben Eda. Benimle Türkçe konuşabilir veya yazabilirsin.\nSaat, tarih, fener, notlar, günlük, hatırlatıcı ve hesaplama çevrimdışı çalışır. Serbest sohbet ve canlı hava durumu için bir yapay zekâ modeli gerekir."
             textSize = 15f
             setTextColor(Color.rgb(235, 231, 248))
             setPadding(dp(4), dp(4), dp(4), dp(12))
