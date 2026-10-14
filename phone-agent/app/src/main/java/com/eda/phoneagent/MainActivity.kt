@@ -168,9 +168,31 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     show("یادداشت روی همین گوشی ذخیره شد.")
                 }
             }
-            q.contains("یادداشت‌ها") || q.contains("یادداشت ها") -> {
+            q.contains("یادداشت‌ها") || q.contains("یادداشت ها") || q.contains("notlarım") || q.contains("notlar") -> {
                 val notes = getSharedPreferences("eda_agent", MODE_PRIVATE).getString("notes", "").orEmpty()
-                show(if (notes.isBlank()) "هنوز یادداشتی ذخیره نشده." else notes)
+                show(if (notes.isBlank()) "Henüz not yok." else notes)
+            }
+            q.startsWith("not al ") || q.startsWith("not:") -> {
+                val note = raw.substringAfter(if (q.startsWith("not:")) ":" else "not al").trim()
+                if (note.isBlank()) show("Not metnini de söyle.")
+                else {
+                    val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+                    val oldNotes = prefs.getString("notes", "").orEmpty()
+                    prefs.edit().putString("notes", (oldNotes + "\n• " + note).takeLast(20000)).apply()
+                    show("Not Eda'nın yerel hafızasına kaydedildi.")
+                }
+            }
+            q.startsWith("günlük ") || q.startsWith("gunluk ") || q.startsWith("günlüğe yaz ") -> saveDiary(raw.substringAfter(" ").trim())
+            q.contains("günlüğüm") || q.contains("gunlugum") || q.contains("günlükler") -> showDiary()
+            q.startsWith("hatırlat ") || q.startsWith("hatirlat ") -> scheduleReminder(raw.substringAfter(" ").trim())
+            q.contains("pil kaç") || q.contains("pil durumu") || q.contains("batarya") -> showBattery()
+            q.startsWith("hesapla ") || q.startsWith("hesap ") -> calculate(raw.substringAfter(" ").trim())
+            q.startsWith("notu paylaş ") || q.startsWith("notu paylas ") -> shareNote(raw.substringAfter(" ").trim())
+            q.contains("araba modu") -> {
+                val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+                val enabled = !prefs.getBoolean("car_mode", false)
+                prefs.edit().putBoolean("car_mode", enabled).apply()
+                show(if (enabled) "Araba modu açık. Sürüşte ekranla uğraşma." else "Araba modu kapalı.")
             }
             else -> askModel(raw)
         }
