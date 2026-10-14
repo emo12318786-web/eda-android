@@ -5,6 +5,7 @@ import com.deniz.eda.utils.OllamaLocator
 import com.deniz.eda.core.Settings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 object AiRouter {
 
