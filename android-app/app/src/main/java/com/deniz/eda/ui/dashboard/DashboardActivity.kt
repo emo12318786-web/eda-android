@@ -5,9 +5,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -18,30 +20,35 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.deniz.eda.core.Settings
 import com.deniz.eda.service.EdaForegroundService
 
-/**
- * Dashboard — مدرن، Native (بدون WebView)
- */
-class DashboardActivity : ComponentActivity() {
+private val VoidBlack = Color(0xFF080A12)
+private val Panel = Color(0xFF121626)
+private val PanelRaised = Color(0xFF191F33)
+private val Violet = Color(0xFFB49AFF)
+private val Cyan = Color(0xFF64E5E0)
+private val Muted = Color(0xFF98A2B9)
+private val Good = Color(0xFF69E6A6)
+private val Warn = Color(0xFFFFC36E)
+private val Bad = Color(0xFFFF788B)
 
+class DashboardActivity : ComponentActivity() {
     private val viewModel: DashboardViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Settings.init(this)
         viewModel.yenile()
-
         setContent {
-            MaterialTheme(
-                colorScheme = darkColorScheme(
-                    primary = Color(0xFFBB86FC),
-                    background = Color(0xFF0A0E21),
-                    surface = Color(0xFF1A1F3A)
-                )
-            ) {
-                DashboardScreen(
+            MaterialTheme(colorScheme = darkColorScheme(
+                primary = Violet, secondary = Cyan, background = VoidBlack, surface = Panel,
+                onBackground = Color.White, onSurface = Color.White
+            )) {
+                EdaDashboard(
                     viewModel = viewModel,
                     onAction = { action -> sendAction(action) },
                     onShareLog = { com.deniz.eda.utils.EdaLog.share(this) }
@@ -56,517 +63,280 @@ class DashboardActivity : ComponentActivity() {
             "ACTION_AI_POLLINATIONS" -> viewModel.setAiProvider("pollinations")
             "ACTION_AI_OLLAMA" -> viewModel.setAiProvider("ollama")
             else -> {
-                val intent = Intent(this, EdaForegroundService::class.java).apply {
-                    this.action = action
+                val intent = Intent(this, EdaForegroundService::class.java).apply { this.action = action }
+                if (action == "ACTION_AKTIF" && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    startForegroundService(intent)
+                } else {
+                    startService(intent)
                 }
-                startService(intent)
             }
         }
         viewModel.yenile()
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(
-    viewModel: DashboardViewModel,
-    onAction: (String) -> Unit,
-    onShareLog: () -> Unit
-) {
+private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Unit, onShareLog: () -> Unit) {
     val state by viewModel.state.collectAsState()
+    var selectedTab by remember { mutableStateOf(0) }
+    val active = Settings.sonMod == "AKTIF"
+    val sleeping = Settings.sonMod == "UYKU"
+    val statusColor = when {
+        active -> Good
+        sleeping -> Warn
+        else -> Bad
+    }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("🎙 ", fontSize = 24.sp)
-                        Text(
-                            "E · D · A",
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFBB86FC),
-                            fontSize = 22.sp
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "V5",
-                            fontWeight = FontWeight.Light,
-                            color = Color(0xFF7E57C2),
-                            fontSize = 16.sp
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF141836)
-                )
-            )
-        },
-        containerColor = Color(0xFF0A0E21)
+        containerColor = VoidBlack,
+        bottomBar = {
+            NavigationBar(containerColor = Panel, contentColor = Violet) {
+                NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 },
+                    icon = { Text("◈", fontSize = 20.sp) }, label = { Text("Merkez") })
+                NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 },
+                    icon = { Text("⌘", fontSize = 20.sp) }, label = { Text("Kontrol") })
+                NavigationBarItem(selected = selectedTab == 2, onClick = { selectedTab = 2 },
+                    icon = { Text("◉", fontSize = 20.sp) }, label = { Text("Sistem") })
+            }
+        }
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
+                .padding(horizontal = 18.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
-            // ═══ Header کارت گرادیانتی ═══
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        brush = Brush.horizontalGradient(
-                            listOf(Color(0xFF7E57C2), Color(0xFF2196F3), Color(0xFF00BCD4))
-                        ),
-                        shape = RoundedCornerShape(20.dp)
-                    )
-                    .padding(20.dp)
-            ) {
-                Column {
-                    Text(
-                        "🌅 Merhaba, ${state.kullaniciAdi}",
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        "🕐 ${state.saat}  •  📅 ${state.tarih}",
-                        color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 13.sp
-                    )
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(48.dp).background(
+                        Brush.linearGradient(listOf(Violet, Color(0xFF6554E8), Cyan)), CircleShape
+                    ),
+                    contentAlignment = Alignment.Center
+                ) { Text("E", color = VoidBlack, fontSize = 27.sp, fontWeight = FontWeight.Black) }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("EDA", fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
+                    Text("KİŞİSEL YAPAY ZEKÂ • V5", fontSize = 9.sp, color = Muted, letterSpacing = 1.4.sp)
                 }
-            }
-
-            // ═══ ۴ دکمه اصلی ═══
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                ActionButton(
-                    emoji = "🟢",
-                    label = "Aktif",
-                    color = Color(0xFF4CAF50),
-                    modifier = Modifier.weight(1f),
-                    onClick = { onAction("ACTION_AKTIF") }
-                )
-                ActionButton(
-                    emoji = "💤",
-                    label = "Uyku",
-                    color = Color(0xFF2196F3),
-                    modifier = Modifier.weight(1f),
-                    onClick = { onAction("ACTION_UYKU") }
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                ActionButton(
-                    emoji = "❌",
-                    label = "Durdur",
-                    color = Color(0xFFF44336),
-                    modifier = Modifier.weight(1f),
-                    onClick = { onAction("ACTION_STOP") }
-                )
-                ActionButton(
-                    emoji = "📜",
-                    label = "Log",
-                    color = Color(0xFFFF9800),
-                    modifier = Modifier.weight(1f),
-                    onClick = { viewModel.yenile() }
-                )
-            }
-
-            // ═══ بخش: وضعیت سریع ═══
-            SectionTitle("⚡ Durum")
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                InfoCard(
-                    emoji = "🔋",
-                    title = "Batarya",
-                    value = "${state.pilYuzde}%",
-                    subtitle = state.pilDurum,
-                    color = when {
-                        state.pilYuzde > 50 -> Color(0xFF4CAF50)
-                        state.pilYuzde > 20 -> Color(0xFFFF9800)
-                        else -> Color(0xFFF44336)
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-                InfoCard(
-                    emoji = "🧠",
-                    title = "AI",
-                    value = state.aiSaglayici.split(" → ").firstOrNull() ?: "?",
-                    subtitle = "zincir: ${state.aiSaglayici.count { it == '→' } + 1}",
-                    color = Color(0xFF00BCD4),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                InfoCard(
-                    emoji = "🎯",
-                    title = "Mod",
-                    value = state.mod,
-                    subtitle = if (state.guvenlikAktif) "güvenlik aktif" else "normal",
-                    color = if (state.arabaAktif) Color(0xFFFF9800) else Color(0xFF4CAF50),
-                    modifier = Modifier.weight(1f)
-                )
-                InfoCard(
-                    emoji = "📚",
-                    title = "Öğrenme",
-                    value = if (state.ogrenmeAktif) "Açık" else "Kapalı",
-                    subtitle = "AI learning",
-                    color = if (state.ogrenmeAktif) Color(0xFF4CAF50) else Color(0xFF757575),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            // ═══ بخش: انتخاب AI ═══
-            SectionTitle("🎯 AI Secimi (ana saglayici)")
-
-            val secili = state.aiSaglayici.split(" → ").firstOrNull() ?: "?"
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AiSelectButton(
-                    label = "Groq",
-                    selected = secili.contains("Groq"),
-                    onClick = { onAction("ACTION_AI_GROQ") },
-                    modifier = Modifier.weight(1f)
-                )
-                AiSelectButton(
-                    label = "Pollinations",
-                    selected = secili.contains("Pollinations"),
-                    onClick = { onAction("ACTION_AI_POLLINATIONS") },
-                    modifier = Modifier.weight(1f)
-                )
-                AiSelectButton(
-                    label = "Ollama",
-                    selected = secili.contains("Ollama"),
-                    onClick = { onAction("ACTION_AI_OLLAMA") },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            // ═══ بخش: AI Durumu ═══
-            SectionTitle("🤖 AI Durumu")
-
-            AiStatusRow(
-                name = "🌐 Internet",
-                status = if (state.internetStatus) "Bağlı" else "Bağlı değil",
-                isOk = state.internetStatus
-            )
-            AiStatusRow(
-                name = "🦙 Ollama (${state.aiModel})",
-                status = state.ollamaStatus,
-                isOk = state.ollamaStatus.lowercase().contains("acik") ||
-                       state.ollamaStatus.lowercase().contains("calisiyor") ||
-                       state.ollamaStatus.lowercase().contains("çalışıyor")
-            )
-            AiStatusRow(
-                name = "⚡ Groq",
-                status = state.groqStatus,
-                isOk = state.groqStatus.lowercase().contains("bagli") &&
-                       !state.groqStatus.lowercase().contains("yok")
-            )
-            AiStatusRow(
-                name = "🌸 Pollinations",
-                status = state.pollinationsStatus,
-                isOk = state.pollinationsStatus.lowercase().contains("acik") ||
-                       state.pollinationsStatus.lowercase().contains("calisiyor") ||
-                       state.pollinationsStatus.lowercase().contains("çalışıyor")
-            )
-
-            // ═══ بخش: آمار DB ═══
-            SectionTitle("💾 Veritabanı")
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                InfoCard(
-                    emoji = "🧠",
-                    title = "Hafıza",
-                    value = "${state.hafizaSayi}",
-                    subtitle = "kayıt",
-                    color = Color(0xFF9C27B0),
-                    modifier = Modifier.weight(1f)
-                )
-                InfoCard(
-                    emoji = "📖",
-                    title = "Günlük",
-                    value = "${state.gunlukSayi}",
-                    subtitle = "kayıt",
-                    color = Color(0xFF9C27B0),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                InfoCard(
-                    emoji = "⏰",
-                    title = "Hatırlatma",
-                    value = "${state.hatirlatmaSayi}",
-                    subtitle = "bekliyor",
-                    color = Color(0xFF9C27B0),
-                    modifier = Modifier.weight(1f)
-                )
-                InfoCard(
-                    emoji = "📋",
-                    title = "Log",
-                    value = "${state.logSayi}",
-                    subtitle = "kayıt",
-                    color = Color(0xFF9C27B0),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            // ═══ بخش: لاگ‌های اخیر ═══
-            SectionTitle("📜 Son Aktiviteler")
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF141836)),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    if (state.sonLoglar.isEmpty()) {
-                        Text(
-                            "Henüz log yok",
-                            color = Color(0xFF757575),
-                            fontSize = 13.sp,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    } else {
-                        state.sonLoglar.take(15).forEach { log ->
-                            Text(
-                                log,
-                                color = Color(0xFFB0BEC5),
-                                fontSize = 11.sp,
-                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 3.dp)
-                            )
-                        }
+                Surface(shape = RoundedCornerShape(50), color = statusColor.copy(alpha = 0.12f),
+                    border = BorderStroke(1.dp, statusColor.copy(alpha = 0.5f))) {
+                    Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(7.dp).background(statusColor, CircleShape))
+                        Spacer(Modifier.width(6.dp))
+                        Text(if (active) "AKTİF" else if (sleeping) "UYKU" else "KAPALI",
+                            color = statusColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
 
-            // ═══ دکمه‌های عملیات ═══
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Button(
-                    onClick = { viewModel.yenile() },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF7E57C2)
-                    ),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text("🔄  Yenile", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            if (selectedTab == 0) {
+                HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
+                SectionHeader("CANLI GÖSTERGE", "Cihazın nabzı")
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    MetricCard("BATARYA", "⚡", "${state.pilYuzde}%", state.pilDurum,
+                        if (state.pilYuzde <= 20) Bad else Good, Modifier.weight(1f))
+                    MetricCard("BAĞLANTI", "⌁", if (state.internetStatus) "ÇEVRİM İÇİ" else "ÇEVRİM DIŞI",
+                        "İnternet kontrolü", if (state.internetStatus) Cyan else Warn, Modifier.weight(1f))
                 }
-                Button(
-                    onClick = { onShareLog() },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2196F3)
-                    ),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text("📤  Paylaş", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıt", Violet, Modifier.weight(1f))
+                    MetricCard("HATIRLATICI", "◷", state.hatirlatmaSayi.toString(), "bekleyen", Warn, Modifier.weight(1f))
                 }
+                SectionHeader("YAPAY ZEKÂ", "Öncelikli sağlayıcı")
+                ProviderPanel(state.aiSaglayici, onAction)
+                SectionHeader("EDA'NIN İZLERİ", "Son hareketler")
+                LogsPanel(state.sonLoglar)
+            } else if (selectedTab == 1) {
+                HeroMini("KONTROL ODASI", "Eda'nın modunu tek dokunuşla yönet.")
+                SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
+                ControlTile("▶", "Aktif dinleme", "Eda komutlarını dinler ve yanıtlar", Good) { onAction("ACTION_AKTIF") }
+                ControlTile("☾", "Uykuya geç", "Derin uyku modu: mikrofon kapatılır", Cyan) { onAction("ACTION_UYKU") }
+                ControlTile("■", "Eda'yı durdur", "Arka plan servisini kapat", Bad) { onAction("ACTION_STOP") }
+                SectionHeader("ÖZEL MODLAR", "Sesli komutla güvenli kontrol")
+                InfoNotice("🚘  Araba modu", "Eda'ya “araba modunu aç” diyebilirsin. Bu panel mevcut durumu gösterir.")
+                InfoNotice("🛡  Güvenlik modu", "Eda'ya “güvenlik modunu aç” diyerek mevcut güvenlik işlevini kullan.")
+                InfoNotice("🎙  Uyanma kelimesi", "Aktif dinleme sırasında “Eda” diyerek konuşmayı başlat.")
+            } else {
+                HeroMini("SİSTEM MERKEZİ", "Bağlantıları ve yerel kayıtlarını gör.")
+                SectionHeader("SAĞLAYICI DURUMLARI", "Mevcut kontroller")
+                StatusLine("🌐 İnternet", if (state.internetStatus) "Bağlı" else "Bağlı değil", state.internetStatus)
+                StatusLine("🦙 Ollama · ${state.aiModel}", state.ollamaStatus, state.ollamaStatus.contains("açık", true) || state.ollamaStatus.contains("çalışıyor", true))
+                StatusLine("⚡ Groq", state.groqStatus, state.groqStatus.contains("bağlı", true) && !state.groqStatus.contains("yok", true))
+                StatusLine("🌸 Pollinations", state.pollinationsStatus, state.pollinationsStatus.contains("açık", true) || state.pollinationsStatus.contains("çalışıyor", true))
+                SectionHeader("YEREL VERİLER", "Telefonunda tutulan kayıtlar")
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıt", Violet, Modifier.weight(1f))
+                    MetricCard("GÜNLÜK", "▤", state.gunlukSayi.toString(), "kayıt", Cyan, Modifier.weight(1f))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    MetricCard("HATIRLATMA", "◷", state.hatirlatmaSayi.toString(), "bekleyen", Warn, Modifier.weight(1f))
+                    MetricCard("LOG", "≋", state.logSayi.toString(), "kayıt", Good, Modifier.weight(1f))
+                }
+                SectionHeader("ARAÇLAR", "Bakım")
+                Button(onClick = { viewModel.yenile() }, modifier = Modifier.fillMaxWidth().height(52.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻   Bilgileri yenile") }
+                Button(onClick = onShareLog, modifier = Modifier.fillMaxWidth().height(52.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("⇧   Sistem kayıtlarını paylaş") }
+                LogsPanel(state.sonLoglar)
             }
-
-            // ═══ Footer ═══
-            Text(
-                "🎙️ Söyle: \"Eda\" ➜ Uyandır",
-                fontSize = 12.sp,
-                color = Color(0xFF757575),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(Modifier.height(20.dp))
-        }
-    }
-}
-
-// ═══════════════════════════════════════
-//  Composable های کمکی
-// ═══════════════════════════════════════
-
-@Composable
-fun SectionTitle(text: String) {
-    Text(
-        text,
-        fontSize = 15.sp,
-        fontWeight = FontWeight.Bold,
-        color = Color(0xFFBB86FC),
-        modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
-    )
-}
-
-@Composable
-fun ActionButton(
-    emoji: String,
-    label: String,
-    color: Color,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier.height(64.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = color.copy(alpha = 0.15f)),
-        shape = RoundedCornerShape(14.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.5f))
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(emoji, fontSize = 20.sp)
-            Text(label, color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("EDA • HER ZAMAN YANINDA", Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 14.dp),
+                color = Muted, fontSize = 9.sp, letterSpacing = 2.sp, textAlign = TextAlign.Center)
         }
     }
 }
 
 @Composable
-fun AiStatusRow(
-    name: String,
-    status: String,
-    isOk: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF141836)),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                if (status.contains("LIVE")) "🟢🟢" else if (isOk) "🟢" else "🔴",
-                fontSize = 16.sp
-            )
-            Spacer(Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    name,
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    status,
-                    color = Color(0xFFB0BEC5),
-                    fontSize = 11.sp,
-                    maxLines = 1
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun AiSelectButton(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier.height(48.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (selected) Color(0xFF7E57C2) else Color(0xFF141836)
-        ),
-        shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            if (selected) Color(0xFFBB86FC) else Color(0xFF3A3F5C)
-        )
-    ) {
-        Text(
-            label,
-            color = if (selected) Color.White else Color(0xFFB0BEC5),
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-fun InfoCard(
-    emoji: String,
-    title: String,
-    value: String,
-    subtitle: String,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.height(90.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF141836)),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
+private fun HeroPanel(name: String, time: String, date: String, status: Color, active: Boolean, sleeping: Boolean, onAction: (String) -> Unit) {
+    Box(Modifier.fillMaxWidth().background(
+        Brush.linearGradient(listOf(Color(0xFF292047), Color(0xFF151C32), Color(0xFF102B35))),
+        RoundedCornerShape(26.dp)
+    ).padding(20.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("MERHABA, ${name.uppercase()}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+            Text("Ben Eda.\nBuradayım.", fontSize = 31.sp, lineHeight = 36.sp,
+                fontWeight = FontWeight.Bold, color = Color.White)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(emoji, fontSize = 16.sp)
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    title,
-                    color = Color(0xFFB0BEC5),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Text(time, fontSize = 22.sp, color = Cyan, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.width(10.dp))
+                Text("•  $date", fontSize = 10.sp, color = Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
-            Text(
-                value,
-                color = color,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
-            )
-            Text(
-                subtitle,
-                color = Color(0xFF757575),
-                fontSize = 10.sp,
-                maxLines = 1
-            )
+            Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                Button(onClick = { onAction("ACTION_AKTIF") }, modifier = Modifier.weight(1f).height(48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = if (active) Good.copy(alpha = .2f) else Violet),
+                    shape = RoundedCornerShape(15.dp)) {
+                    Text(if (active) "✓  Dinliyorum" else "▶  Eda'yı uyandır",
+                        color = if (active) Good else VoidBlack, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                }
+                OutlinedButton(onClick = { onAction("ACTION_UYKU") }, modifier = Modifier.weight(.72f).height(48.dp),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = .18f)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                    shape = RoundedCornerShape(15.dp)) { Text(if (sleeping) "☾  Uyuyor" else "☾  Uyku", fontSize = 11.sp) }
+            }
+            Text("“Eda” de, konuşmaya başlayalım.", color = Color.White.copy(alpha = .68f), fontSize = 11.sp)
+        }
+    }
+}
+
+@Composable
+private fun HeroMini(title: String, subtitle: String) {
+    Column(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Color(0xFF292047), Panel)),
+        RoundedCornerShape(22.dp)).padding(20.dp)) {
+        Text(title, color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        Text(subtitle, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String, subtitle: String) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
+            Spacer(Modifier.height(3.dp))
+            Text(subtitle, color = Muted, fontSize = 11.sp)
+        }
+        Box(Modifier.width(44.dp).height(2.dp).background(Brush.horizontalGradient(listOf(Violet, Cyan)), RoundedCornerShape(2.dp)))
+    }
+}
+
+@Composable
+private fun MetricCard(label: String, icon: String, value: String, detail: String, tint: Color, modifier: Modifier = Modifier) {
+    Card(modifier, shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Panel)) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(icon, color = tint, fontSize = 17.sp)
+                Spacer(Modifier.width(7.dp))
+                Text(label, color = Muted, fontSize = 9.sp, letterSpacing = .8.sp, fontWeight = FontWeight.Bold)
+            }
+            Text(value, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(detail, color = tint, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+@Composable
+private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
+    val main = selected.split(" → ").firstOrNull().orEmpty()
+    Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(20.dp)).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("Öncelik zinciri", color = Muted, fontSize = 10.sp)
+        Text(selected, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("Groq", "Pollinations", "Ollama").forEach { provider ->
+                val action = when (provider) {
+                    "Groq" -> "ACTION_AI_GROQ"
+                    "Pollinations" -> "ACTION_AI_POLLINATIONS"
+                    else -> "ACTION_AI_OLLAMA"
+                }
+                val isSelected = main.contains(provider, true)
+                OutlinedButton(onClick = { onAction(action) }, modifier = Modifier.weight(1f),
+                    border = BorderStroke(1.dp, if (isSelected) Violet else Color(0xFF30384E)),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = if (isSelected) Violet.copy(alpha = .16f) else PanelRaised),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(12.dp)) {
+                    Text(provider, color = if (isSelected) Violet else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ControlTile(icon: String, title: String, detail: String, tint: Color, onClick: () -> Unit) {
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Panel)) {
+        Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(44.dp).background(tint.copy(alpha = .12f), RoundedCornerShape(14.dp)),
+                contentAlignment = Alignment.Center) { Text(icon, color = tint, fontSize = 21.sp) }
+            Spacer(Modifier.width(13.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+                Text(detail, color = Muted, fontSize = 10.sp)
+            }
+            Text("›", color = tint, fontSize = 24.sp)
+        }
+    }
+}
+
+@Composable
+private fun InfoNotice(title: String, detail: String) {
+    Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(16.dp)).padding(15.dp)) {
+        Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        Spacer(Modifier.height(5.dp))
+        Text(detail, color = Muted, fontSize = 11.sp, lineHeight = 16.sp)
+    }
+}
+
+@Composable
+private fun StatusLine(name: String, status: String, ok: Boolean) {
+    Row(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(14.dp)).padding(13.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(8.dp).background(if (ok) Good else Warn, CircleShape))
+        Spacer(Modifier.width(11.dp))
+        Column(Modifier.weight(1f)) {
+            Text(name, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Text(status, color = Muted, fontSize = 10.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
+        Text(if (ok) "OK" else "—", color = if (ok) Good else Warn, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun LogsPanel(logs: List<String>) {
+    Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(18.dp)).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (logs.isEmpty()) {
+            Text("Henüz kayıt yok. Eda'yı kullandıkça burada görünecek.", color = Muted, fontSize = 11.sp)
+        } else {
+            logs.take(8).forEachIndexed { index, log ->
+                Row(verticalAlignment = Alignment.Top) {
+                    Text("•", color = if (index == 0) Cyan else Violet, fontSize = 16.sp)
+                    Spacer(Modifier.width(8.dp))
+                    Text(log, color = if (index == 0) Color.White else Muted, fontSize = 10.sp,
+                        lineHeight = 15.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                }
+            }
         }
     }
 }
