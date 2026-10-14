@@ -14,6 +14,12 @@ Bu dal, EDA V107 Android/Termux kaynaklarına dayanarak ayrı bir Android test u
 - Güvenli aritmetik hesaplama
 - Notu Android paylaşım menüsüyle Samsung Notes veya başka uygulamaya gönderme
 - Basit araba modu tercihi
+- Geliştirilmiş EDA kontrol merkezi: pil, not defteri, günlük, hatırlatıcı, ses/medya, konum, kur/piyasa, öğrenilmiş komutlar, AI ayarları ve uygulama izinleri
+- Yerel komut alias'ları için sınırlı öğrenme: yalnızca güvenli ve izin verilen komutlar eşleştirilir
+- Son bilinen konumu okuma (izin gerekir; canlı takip değildir)
+- Müzik ses düzeyini değiştirme ve sistem müzik uygulamasını açma
+- USD/IRR için çevrimiçi referans kur sorgusu; İran serbest piyasa fiyatı garantisi yoktur
+- Altın fiyatını elle kaydetme; canlı altın kaynağı bağlanmamıştır
 - Sınırlı AI Agent: yalnızca izinli zaman/tarih ve not araçları, en fazla üç araç adımı
 - HTTPS OpenAI-uyumlu endpoint veya aynı cihazdaki Ollama endpoint'i
 - API anahtarı yalnızca uygulama belleğinde tutulur
@@ -50,8 +56,10 @@ Google uygulaması / تنظیمات Android → Voice / Speech recognition → O
 - سرویس پس‌زمینهٔ پایدار و اعلام شارژ دوره‌ای
 - انتقال و سازگاری کامل فایل‌های حافظه/یادگیری EDA قدیمی
 - اجرای خودکار همهٔ فرمان‌های یادگرفته‌شده
-- همهٔ ابزارهای Termux:API، مکان‌یابی، SMS، کنترل رسانه و تنظیمات پیشرفتهٔ گوشی
-- قیمت زندهٔ دلار/طلا و آب‌وهوا بدون سرویس داده
+- بیدارباش دائمی «Eda» و سرویس میکروفون پس‌زمینهٔ کم‌مصرف؛ عمداً ادعای اجرای دائمی یا کم‌مصرف نمی‌شود
+- انتقال کامل همهٔ ابزارهای Termux:API، SMS و کنترل رسانهٔ پیشرفته (نسخهٔ فعلی فقط کنترل صدا و بازکردن برنامهٔ موسیقی دارد)
+- قفل/پاک‌کردن از راه دور گوشی و ردیابی زنده؛ این نسخه فقط آخرین موقعیت ذخیره‌شده را می‌خواند
+- قیمت زندهٔ طلا و نرخ بازار آزاد ایران؛ منبع پایدار و تأییدشده‌ای متصل نشده است
 - تست واقعی روی Galaxy A71 و اندازه‌گیری مصرف باتری
 
 ## Build
