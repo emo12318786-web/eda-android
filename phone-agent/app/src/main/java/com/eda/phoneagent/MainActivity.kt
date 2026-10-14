@@ -139,7 +139,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             setHintTextColor(Color.rgb(177, 167, 209))
             setTextColor(Color.WHITE)
             textSize = 17f
-            singleLine = false
+            isSingleLine = false
             maxLines = 3
             setPadding(dp(10), dp(10), dp(10), dp(10))
             background = rounded(Color.rgb(22, 16, 44), Color.rgb(87, 68, 141), dp(12), dp(1))
