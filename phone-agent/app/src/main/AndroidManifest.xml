@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-feature android:name="android.hardware.camera.flash" android:required="false" />
-    <application android:allowBackup="false" android:label="EDA V107 Agent"
+    <application android:allowBackup="false" android:label="EDA V107 Agent" android:icon="@drawable/eda_logo"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="false"
         android:networkSecurityConfig="@xml/network_security_config">
