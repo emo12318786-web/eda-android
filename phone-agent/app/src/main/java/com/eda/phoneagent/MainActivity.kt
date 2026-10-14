@@ -228,10 +228,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             "🎚 Ses ve medya" to { showMediaPanel() },
             "📍 Konumum / telefonu bul" to { locatePhone() },
             "💱 Kur ve piyasa" to { showMarket() },
-            "🧠 فرمان‌های یادگرفته‌شده" to { showLearnedCommands() },
-            "🤖 اتصال هوش مصنوعی" to { showProviderSettings() },
-            "⚙ مجوزها و تنظیمات برنامه" to { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName"))) },
-            "❔ راهنما و فرمان‌ها" to { handleCommand("yardım") }
+            "🧠 Öğrenilmiş komutlar" to { showLearnedCommands() },
+            "🤖 Yapay zekâ bağlantısı" to { showProviderSettings() },
+            "⚙ İzinler ve uygulama ayarları" to { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName"))) },
+            "❔ Yardım ve komutlar" to { handleCommand("yardım") }
         )
         actions.forEach { (label, action) ->
             panel.addView(Button(this).apply {
@@ -318,9 +318,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun showMarket() {
         AlertDialog.Builder(this).setTitle("EDA · Kur ve piyasa")
-            .setMessage("Dolar/IRR için çevrimiçi bir referans kaynağı denenir. Toman yaklaşık IRR / 10'dur. Güvenilir ücretsiz anahtarsız canlı altın verisi yapılandırılmadığından altın fiyatı uydurulmaz.")
-            .setPositiveButton("Dolar / ریال") { _, _ -> fetchUsdIrr() }
-            .setNeutralButton("ثبت دستی قیمت طلا") { _, _ -> promptGoldPrice() }
+            .setMessage("Dolar/IRR için çevrimiçi referans kaynağı denenir. Toman yaklaşık IRR / 10'dur. Güvenilir ücretsiz ve anahtarsız canlı altın kaynağı bağlı değil; Eda fiyat uydurmaz.")
+            .setPositiveButton("Dolar / İran riyali") { _, _ -> fetchUsdIrr() }
+            .setNeutralButton("Altın fiyatını elle kaydet") { _, _ -> promptGoldPrice() }
             .setNegativeButton("Kapat", null).show()
     }
 
@@ -346,15 +346,15 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     }
 
     private fun promptGoldPrice() {
-        val edit = EditText(this).apply { hint = "قیمت هر گرم طلا (تومان)"; inputType = android.text.InputType.TYPE_CLASS_NUMBER }
+        val edit = EditText(this).apply { hint = "Gram altın fiyatı (toman)"; inputType = android.text.InputType.TYPE_CLASS_NUMBER }
         AlertDialog.Builder(this).setTitle("ثبت دستی قیمت طلا").setView(edit)
             .setNegativeButton("İptal", null).setPositiveButton("Kaydet") { _, _ ->
                 val price = edit.text.toString().trim()
-                if (price.toLongOrNull() == null) show("قیمت معتبر وارد کن.")
+                if (price.toLongOrNull() == null) show("Geçerli bir fiyat gir.")
                 else {
                     getSharedPreferences("eda_agent", MODE_PRIVATE).edit().putString("gold_price", price)
                         .putString("gold_price_time", SimpleDateFormat("dd MMM yyyy hh:mm a", Locale("tr", "TR")).format(Date())).apply()
-                    show("قیمت دستی طلا ثبت شد: $price تومان. این قیمت زنده نیست.")
+                    show("Elle girilen altın fiyatı kaydedildi: $price toman. Bu canlı fiyat değildir.")
                 }
             }.show()
     }
@@ -362,29 +362,29 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun showLearnedCommands() {
         val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
         val aliases = prefs.getString("learned_commands", "").orEmpty()
-        AlertDialog.Builder(this).setTitle("فرمان‌های یادگرفته‌شده")
-            .setMessage(if (aliases.isBlank()) "فرمانی ذخیره نشده است." else aliases)
-            .setPositiveButton("یادگیری فرمان") { _, _ -> promptLearnCommand() }
+        AlertDialog.Builder(this).setTitle("Öğrenilmiş komutlar")
+            .setMessage(if (aliases.isBlank()) "Henüz öğrenilmiş komut yok." else aliases)
+            .setPositiveButton("Komut öğret") { _, _ -> promptLearnCommand() }
             .setNegativeButton("Kapat", null).show()
     }
 
     private fun promptLearnCommand() {
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(8), dp(18), 0) }
-        val phrase = EditText(this).apply { hint = "عبارت دلخواه، مثلاً صبح بخیر" }
-        val action = EditText(this).apply { hint = "فرمان مجاز، مثلاً ساعت kaç" }
+        val phrase = EditText(this).apply { hint = "Özel ifade, ör. günaydın" }
+        val action = EditText(this).apply { hint = "İzin verilen komut, ör. saat kaç" }
         box.addView(phrase); box.addView(action)
         AlertDialog.Builder(this).setTitle("آموزش فرمان").setView(box)
             .setNegativeButton("لغو", null).setPositiveButton("ذخیره") { _, _ ->
                 val p = phrase.text.toString().trim(); val a = action.text.toString().trim()
                 val allowed = setOf("ساعت چند است","ساعت kaç","امروز تاریخ","چراغ قوه را روشن کن","چراغ قوه را خاموش کن","باتری چند درصد است","یادداشت‌هایم","help","saat kaç","bugün tarih","feneri aç","feneri kapat","pil durumu","notlarım")
-                if (p.isBlank() || a.isBlank() || p.length > 80 || a.length > 120) show("هر دو فیلد را کوتاه و معتبر پر کن.")
-                else if (a.lowercase(Locale.ROOT) !in allowed) show("برای امنیت، فقط فرمان‌های محلی مجاز قابل آموزش هستند.")
+                if (p.isBlank() || a.isBlank() || p.length > 80 || a.length > 120) show("İki alanı da kısa ve geçerli doldur.")
+                else if (a.lowercase(Locale.ROOT) !in allowed) show("Güvenlik için yalnızca izin verilen yerel komutlar öğretilebilir.")
                 else {
                     val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
                     val json = try { JSONObject(prefs.getString("learned_map", "{}").orEmpty()) } catch (_: Exception) { JSONObject() }
                     json.put(p.lowercase(Locale.ROOT), a)
                     prefs.edit().putString("learned_map", json.toString()).putString("learned_commands", json.toString(2)).apply()
-                    show("فرمان ذخیره شد. عبارت «$p» را امتحان کن.")
+                    show("Komut kaydedildi. «$p» ifadesini deneyebilirsin.")
                 }
             }.show()
     }
@@ -504,7 +504,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             q.startsWith("günlük ") || q.startsWith("gunluk ") || q.startsWith("günlüğe yaz ") || q.startsWith("günlüğe kaydet ") -> saveDiary(raw.substringAfter(" ").trim())
             q.contains("günlüğüm") || q.contains("gunlugum") || q.contains("günlükler") || q.contains("günlüğü göster") || q.contains("günlüğümü göster") -> showDiary()
             q.startsWith("hatırlat ") || q.startsWith("hatirlat ") || q.startsWith("hatırlatıcı ") -> scheduleReminder(raw.substringAfter(" ").trim())
-            q.contains("pil kaç") || q.contains("pil durumu") || q.contains("batarya") || q.contains("pil yüzde") || q.contains("şarj durumu") -> showBattery()
+            q.contains("pil kaç") || q.contains("pil durumu") || q.contains("batarya") || q.contains("pil yüzde") || q.contains("şarj durumu") || q.contains("battery") || q.contains("باتری") -> showBattery()
             q.startsWith("hesapla ") || q.startsWith("hesap ") || q.startsWith("hesapla:") -> calculate(raw.substringAfter(" ").trim())
             q == "notlarımı paylaş" || q == "notlarimi paylas" -> shareAllNotes()
             q.startsWith("notu paylaş ") || q.startsWith("notu paylas ") || q.startsWith("notu paylaş:") -> shareNote(raw.substringAfter(" ").trim())
