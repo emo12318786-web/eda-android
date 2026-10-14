@@ -1,34 +1,53 @@
-# Eda Phone Agent V0.2
+# EDA V107 Agent - Android test sürümü
 
-این برنامه به‌صورت جداگانه زیر پوشهٔ `phone-agent/` ساخته شده تا کد فعلی EDA/Termux دست‌نخورده بماند.
+Bu dal, GitHub'daki EDA V4 PRO / Android build #107 kaynaklarını koruyarak ayrı bir Android uygulamasında taşınabilen işlevleri toplar. Ana Termux sürümünün dosyalarını değiştirmez.
 
-## قابلیت‌های فعلی
-- ورود متن یا گفتار با سرویس تشخیص گفتار Android
-- پاسخ صوتی با موتور TTS گوشی
-- ساعت و تاریخ
-- چراغ‌قوه با درخواست مجوز Android
-- ذخیره و نمایش یادداشت محلی
-- اتصال به APIهای سازگار با OpenAI Chat Completions از طریق HTTPS
-- پشتیبانی اولیه از Ollama محلی با آدرس `http://127.0.0.1:11434/v1`؛ HTTP فقط برای loopback پذیرفته می‌شود و کلید برای مدل محلی لازم نیست
-- تنظیم آدرس API و نام مدل از داخل برنامه
+## Bu dalda
+- Türkçe arayüz, tr-TR konuşma tanıma isteği ve Türkçe TTS
+- 12 saatlik saat ve Türkçe tarih
+- Metin/ses girişi, fener kontrolü
+- Eda'nın uygulama içi yerel not hafızası
+- Günlük kayıtları
+- Yerel Android bildirimli saatli hatırlatıcı (hatırlat 19:30 su iç)
+- Pil yüzdesi ve şarj durumu
+- Güvenli offline aritmetik (hesapla 12*(5+3))
+- Notu Samsung Notes veya başka uygulamayla paylaşma menüsü
+- Araba modu tercihi
+- Yapay zekâ Agent döngüsü: izinli araçlar, en fazla üç araç adımı, zaman/tarih ve not kaydetme/arama
+- HTTPS API veya yerel Ollama endpoint'i; HTTP yalnızca localhost için ağ güvenliği kuralıyla sınırlandırılır
+- API anahtarı yalnızca işlem belleğinde tutulur
 
-## اتصال مدل
-از داخل برنامه روی «تنظیم اتصال مدل هوش مصنوعی» بزن:
-1. آدرس پایهٔ ارائه‌دهنده را وارد کن، مثلاً `https://api.openai.com/v1`؛ برای Ollama محلی `http://127.0.0.1:11434/v1` را وارد کن و مطمئن شو سرور Ollama روی همان گوشی اجراست.
-2. نام دقیق مدل را وارد کن.
-3. کلید API را وارد کن و ذخیره را بزن. برای Ollama محلی فیلد کلید را خالی بگذار. در مدل محلی، مدل باید از قبل در Ollama دانلود شده باشد.
+## Örnek komutlar
+- saat kaç
+- bugün tarih
+- feneri aç / feneri kapat
+- not al alışveriş listesi
+- notlarım
+- notu paylaş alışveriş listesi
+- günlük bugün arabayı tamir ettim
+- günlüğümü göster
+- hatırlat 19:30 su iç
+- pil durumu
+- hesapla 12*(5+3)
 
-کلید API عمداً روی دیسک ذخیره نمی‌شود؛ با بسته‌شدن فرایند برنامه باید دوباره وارد شود. آدرس و نام مدل در تنظیمات محلی ذخیره می‌شوند. از کلید اشتراکی یا کلیدی که اجازهٔ افشای آن را نداری استفاده نکن.
+Hatırlatma saati 24 saat biçiminde girilir; yanıt saati 12 saat biçiminde gösterilir. Hatırlatma, Android bildirim iznine ve cihazın pil yönetimine bağlıdır. Günlük/notlar Eda'nın özel uygulama depolamasında kalır; bunlar otomatik olarak Samsung Notes uygulamasının veritabanına yazılmaz. Not paylaşımı Android paylaşım menüsünü açar.
 
-## ساخت APK آزمایشی
-پوشهٔ `phone-agent` را در Android Studio باز کن و Build > Build APK را اجرا کن. GitHub Actions نیز برای ساخت debug APK پیکربندی شده و باید نتیجهٔ واقعی اجرای workflow بررسی شود؛ تا وقتی artifact ساخته نشده، فایل APK آماده اعلام نمی‌شود.
+## Yerel Ollama
+- Endpoint: http://127.0.0.1:11434/v1
+- Model adı: Ollama'da gerçekten yüklü olan model
+- API anahtarı: boş
 
-## محدودیت‌هایی که هنوز باید تکمیل و آزمایش شوند
-- هنوز به هستهٔ `agent/agent_core.py` وصل نشده؛ برنامهٔ اندرویدی فعلاً فرمان‌های محدود محلی را اجرا می‌کند و پرسش‌های دیگر را به مدل می‌فرستد.
-- یک چرخهٔ Agent محدود و allowlist‌شده اضافه شده است: مدل می‌تواند ساعت/تاریخ را بخواند و با درخواست روشن کاربر یادداشت ذخیره یا یادداشت‌ها را جست‌وجو کند؛ حداکثر سه فراخوانی ابزار در هر درخواست مجاز است. اجرای کد دلخواه، فرمان پوسته و ابزارهای خارج از فهرست مجاز نیست. این رفتار هنوز باید با مدل واقعی آزمایش شود.
-- wake word، سرویس پس‌زمینه، حالت خواب کم‌مصرف و اتصال کامل به کد قبلی EDA وجود ندارد.
-- پاسخ گفتاری، تشخیص گفتار فارسی، چراغ‌قوه و API باید روی Samsung Galaxy A71 واقعی آزمایش شوند.
-- این خروجی debug برای تست است، نه APK انتشار امضاشده.
+Yerel Ollama sunucusu aynı telefonda çalışmalı ve model önceden indirilmiş olmalıdır. Çevrim içi sağlayıcı için HTTPS endpoint ve kendi API anahtarın gerekir.
 
-## حریم خصوصی
-یادداشت‌ها و آدرس/مدل در فضای خصوصی برنامه ذخیره می‌شوند. متن‌هایی که برای پاسخ‌گویی به API آنلاین فرستاده می‌شوند از گوشی خارج می‌شوند؛ اطلاعات خصوصی را به ارائه‌دهنده‌ای که به آن اعتماد نداری نفرست.
+## EDA V107 ile farklar
+Bu Android port henüz Termux EDA V107'nin birebir eşdeğeri değildir. Henüz taşınması/test edilmesi gerekenler:
+- Sürekli wake word “Eda” ve pil tasarruflu arka plan uyku döngüsü
+- Termux:API, Whisper.cpp ve sağlayıcı fallback zincirinin aynısı
+- SMS, konum, kamera, telefonu bulma/kilitleme ve gelişmiş medya kontrolü
+- Canlı hava durumu, dolar ve altın fiyatları
+- Eski EDA JSON hafıza, günlük, öğrenme ve ayar dosyalarının içe aktarılması
+- Gerçek öğrenme eşleşmelerinin otomatik komut çalıştırması
+- Samsung Galaxy A71 üzerinde gerçek cihaz/pil testi
+
+## Build
+GitHub Actions'taki Eda Phone Agent Android build workflow debug APK oluşturur. APK yalnızca workflow başarıyla bitip artifact mevcut olduğunda hazır sayılır. Bu bir debug test paketi; release imzalı APK değildir.
