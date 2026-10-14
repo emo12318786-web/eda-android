@@ -93,16 +93,16 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             setPadding(24, 12, 24, 4)
         }
         endpointInput = EditText(this).apply {
-            hint = "HTTPS یا لوکال: http://127.0.0.1:11434/v1"
+            hint = "HTTPS veya yerel Ollama: http://127.0.0.1:11434/v1"
             setText(getSharedPreferences("eda_agent", MODE_PRIVATE).getString("endpoint", "https://api.openai.com/v1"))
         }
         modelInput = EditText(this).apply {
-            hint = "نام مدل"
+            hint = "Model adı"
             setText(getSharedPreferences("eda_agent", MODE_PRIVATE).getString("model", "gpt-4o-mini"))
         }
-        keyInput = EditText(this).apply { hint = "کلید API (برای مدل محلی خالی بگذار)" }
+        keyInput = EditText(this).apply { hint = "API anahtarı (yerel modelde boş bırak)" }
         box.addView(TextView(this).apply {
-            text = "API سازگار با OpenAI/Ollama. HTTP فقط برای localhost/127.0.0.1 مجاز است. کلید آنلاین فقط در حافظه می‌ماند و برای مدل محلی لازم نیست."
+            text = "OpenAI uyumlu API / Ollama. HTTP yalnızca yerel localhost adreslerinde izinlidir. API anahtarı diske kaydedilmez."
         })
         box.addView(endpointInput)
         box.addView(modelInput)
@@ -110,20 +110,20 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         AlertDialog.Builder(this)
             .setTitle("Yapay zekâ bağlantısı")
             .setView(box)
-            .setNegativeButton("لغو", null)
-            .setPositiveButton("ذخیره و اتصال") { _, _ ->
+            .setNegativeButton("İptal", null)
+            .setPositiveButton("Kaydet ve bağlan") { _, _ ->
                 val endpoint = endpointInput.text.toString().trim().trimEnd('/')
                 val model = modelInput.text.toString().trim()
                 val key = keyInput.text.toString().trim()
                 if (!isAllowedEndpoint(endpoint) || model.isBlank()) {
-                    show("آدرس باید HTTPS باشد؛ HTTP فقط برای localhost یا 127.0.0.1 مجاز است. نام مدل هم لازم است.")
+                    show("Adres HTTPS olmalı; HTTP yalnızca localhost için izinli. Model adı gerekli.")
                 } else if (!endpoint.startsWith("http://") && key.isBlank()) {
-                    show("برای سرویس آنلاین کلید API لازم است؛ برای مدل محلی کلید را خالی بگذار.")
+                    show("Çevrim içi servis için API anahtarı gerekli; yerel modelde boş bırak.")
                 } else {
                     apiKey = key
                     getSharedPreferences("eda_agent", MODE_PRIVATE).edit()
                         .putString("endpoint", endpoint).putString("model", model).apply()
-                    show("تنظیمات ذخیره شد؛ کلید فقط تا بسته‌شدن برنامه در حافظه می‌ماند.")
+                    show("Ayarlar kaydedildi; API anahtarı yalnızca bellekte tutuluyor.")
                 }
             }.show()
     }
@@ -132,10 +132,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "tr-TR")
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
             putExtra(RecognizerIntent.EXTRA_PROMPT, "Komutunu söyle")
         }
         try { startActivityForResult(intent, requestSpeech) }
-        catch (_: Exception) { show("سرویس تشخیص گفتار روی گوشی در دسترس نیست.") }
+        catch (_: Exception) { show("Telefonda konuşma tanıma servisi bulunamadı. Google uygulamasında çevrimdışı Türkçe dilini indir.") }
     }
 
     @Deprecated("Handled for compatibility with Android speech recognizer")
@@ -160,12 +161,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 setTorch(!(q.contains("خاموش") || q.contains("kapat")))
             q.startsWith("یادداشت ") || q.startsWith("یادداشت:") -> {
                 val note = raw.substringAfter(if (q.startsWith("یادداشت:")) ":" else "یادداشت").trim()
-                if (note.isBlank()) show("متن یادداشت را هم بگو.")
+                if (note.isBlank()) show("Not metnini de söyle.")
                 else {
                     val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
                     val old = prefs.getString("notes", "").orEmpty()
                     prefs.edit().putString("notes", (old + "\n• " + note).takeLast(20000)).apply()
-                    show("یادداشت روی همین گوشی ذخیره شد.")
+                    show("Not Eda’nın yerel hafızasına kaydedildi.")
                 }
             }
             q.contains("یادداشت‌ها") || q.contains("یادداشت ها") || q.contains("notlarım") || q.contains("notlar") -> {
@@ -267,7 +268,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     }
 
     private fun askModel(prompt: String) {
-        if (busy) { show("یک درخواست در حال اجراست؛ کمی صبر کن."); return }
+        if (busy) { show("Bir istek sürüyor; lütfen bekle."); return }
         val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
         val endpoint = prefs.getString("endpoint", "https://api.openai.com/v1").orEmpty().trimEnd('/')
         val model = prefs.getString("model", "gpt-4o-mini").orEmpty()
@@ -277,7 +278,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             return
         }
         busy = true
-        show("دارم فکر می‌کنم…")
+        show("Düşünüyorum…")
         Thread {
             val result = AgentRuntime(applicationContext).answer(prompt, endpoint, model, key)
             runOnUiThread { busy = false; show(result) }
@@ -306,7 +307,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             val cameraId = manager.cameraIdList.firstOrNull {
                 manager.getCameraCharacteristics(it).get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
             }
-            if (cameraId == null) { show("این گوشی چراغ‌قوهٔ قابل‌کنترل پیدا نکرد."); return }
+            if (cameraId == null) { show("Bu telefonda kontrol edilebilir fener bulunamadı."); return }
             manager.setTorchMode(cameraId, enable)
             show(if (enable) "چراغ‌قوه روشن شد." else "چراغ‌قوه خاموش شد.")
         } catch (e: Exception) { show("چراغ‌قوه اجرا نشد: " + (e.message ?: "خطای نامشخص")) }
@@ -318,7 +319,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             val action = pendingTorch
             pendingTorch = null
             if (results.isNotEmpty() && results[0] == PackageManager.PERMISSION_GRANTED && action != null) setTorch(action)
-            else show("بدون اجازهٔ دوربین، کنترل چراغ‌قوه ممکن نیست.")
+            else show("Kamera izni olmadan fener kontrol edilemez.")
         }
     }
 
