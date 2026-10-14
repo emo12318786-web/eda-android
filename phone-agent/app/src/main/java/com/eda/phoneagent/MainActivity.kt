@@ -2,6 +2,11 @@ package com.eda.phoneagent
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
+import android.os.BatteryManager
+import android.os.Build
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -47,31 +52,31 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             setPadding(24, 24, 24, 24)
         }
         root.addView(TextView(this).apply {
-            text = "Eda Phone Agent · V0.2"
+            text = "E · D · A V107 Agent"
             textSize = 24f
         })
         output = TextView(this).apply {
-            text = "سلام! من اَدا هستم. فرمانت را بنویس یا صحبت کن.\nابزارهای محلی فعال‌اند؛ برای پاسخ هوشمند، تنظیمات مدل را وارد کن."
+            text = "Merhaba! Ben Eda. Türkçe konuşabilir veya yazabilirsin.\nYerel komutlar hazır; serbest sohbet için model ayarlarını aç."
             textSize = 16f
             setPadding(0, 14, 0, 14)
         }
         root.addView(output, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        input = EditText(this).apply { hint = "فرمان یا پرسشت را بنویس" }
+        input = EditText(this).apply { hint = "Komutunu yaz veya konuş" }
         root.addView(input)
         root.addView(Button(this).apply {
-            text = "🎙 گفتن فرمان"
+            text = "🎙 Komut söyle"
             setOnClickListener { startSpeech() }
         })
         root.addView(Button(this).apply {
-            text = "اجرا / پرسش از هوش مصنوعی"
+            text = "Çalıştır / Yapay zekâya sor"
             setOnClickListener { handleCommand(input.text.toString()) }
         })
         root.addView(Button(this).apply {
-            text = "تنظیم اتصال مدل هوش مصنوعی"
+            text = "Yapay zekâ bağlantı ayarları"
             setOnClickListener { showProviderSettings() }
         })
         root.addView(Button(this).apply {
-            text = "بلندگو: تکرار پاسخ"
+            text = "🔊 Yanıtı seslendir"
             setOnClickListener { speak(output.text.toString()) }
         })
         setContentView(ScrollView(this).apply { addView(root) })
@@ -79,7 +84,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     override fun onInit(status: Int) {
         ttsReady = status == TextToSpeech.SUCCESS
-        if (ttsReady) tts?.language = Locale("fa", "IR")
+        if (ttsReady) tts?.language = Locale("tr", "TR")
     }
 
     private fun showProviderSettings() {
@@ -103,7 +108,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         box.addView(modelInput)
         box.addView(keyInput)
         AlertDialog.Builder(this)
-            .setTitle("اتصال هوش مصنوعی")
+            .setTitle("Yapay zekâ bağlantısı")
             .setView(box)
             .setNegativeButton("لغو", null)
             .setPositiveButton("ذخیره و اتصال") { _, _ ->
@@ -126,8 +131,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun startSpeech() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fa-IR")
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "فرمانت را بگو")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "tr-TR")
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Komutunu söyle")
         }
         try { startActivityForResult(intent, requestSpeech) }
         catch (_: Exception) { show("سرویس تشخیص گفتار روی گوشی در دسترس نیست.") }
@@ -148,9 +153,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (q.isBlank()) { show("فرمان خالی است."); return }
         when {
             q.contains("ساعت") || q == "time" ->
-                show("ساعت " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()))
+                show("ساعت " + SimpleDateFormat("hh:mm a", Locale("tr", "TR")).format(Date()))
             q.contains("تاریخ") || q.contains("امروز") ->
-                show("تاریخ " + SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Date()))
+                show("تاریخ " + SimpleDateFormat("dd MMMM yyyy", Locale("tr", "TR")).format(Date()))
             q.contains("چراغ") && (q.contains("روشن") || q.contains("خاموش") || q.contains("باز")) ->
                 setTorch(!q.contains("خاموش"))
             q.startsWith("یادداشت ") || q.startsWith("یادداشت:") -> {
