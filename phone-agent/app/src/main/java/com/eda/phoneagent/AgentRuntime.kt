@@ -24,7 +24,7 @@ internal class AgentRuntime(private val context: Context) {
             val parsed = parseJsonObject(response)
             if (parsed == null) return response
             when (parsed.optString("type")) {
-                "final" -> return parsed.optString("answer").ifBlank { "مدل پاسخ خالی فرستاد." }
+                "final" -> return parsed.optString("answer").ifBlank { "Model boş yanıt gönderdi." }
                 "tool_call" -> {
                     val name = parsed.optString("tool")
                     val args = parsed.optJSONObject("arguments") ?: JSONObject()
@@ -41,7 +41,7 @@ internal class AgentRuntime(private val context: Context) {
             "Tool-call limit reached. Return JSON only: {\"type\":\"final\",\"answer\":\"...\"}."))
         val last = callModel(endpoint, model, apiKey, messages)
         return try {
-            JSONObject(last).optString("answer").ifBlank { "برای جلوگیری از اجرای بی‌پایان، کار را پس از $MAX_STEPS مرحله متوقف کردم." }
+            JSONObject(last).optString("answer").ifBlank { "Sonsuz döngüyü önlemek için görevi $MAX_STEPS adımdan sonra durdurdum." }
         } catch (_: Exception) {
             "برای جلوگیری از اجرای بی‌پایان، کار را پس از $MAX_STEPS مرحله متوقف کردم."
         }
@@ -64,22 +64,22 @@ internal class AgentRuntime(private val context: Context) {
             "get_date" -> SimpleDateFormat("dd MMMM yyyy", Locale("tr", "TR")).format(Date())
             "save_note" -> {
                 val note = args.optString("text").trim()
-                if (note.isBlank()) "خطا: متن یادداشت خالی است."
+                if (note.isBlank()) "Hata: Not metni boş."
                 else {
                     synchronized(noteLock) {
                         val old = prefs.getString("notes", "").orEmpty()
                         prefs.edit().putString("notes", (old + "\n• " + note).takeLast(20000)).commit()
                     }
-                    "یادداشت روی گوشی ذخیره شد."
+                    "Not telefona kaydedildi."
                 }
             }
             "search_notes" -> {
                 val query = args.optString("query").trim()
                 val notes = prefs.getString("notes", "").orEmpty()
-                if (notes.isBlank()) "هیچ یادداشتی ذخیره نشده."
+                if (notes.isBlank()) "Henüz kaydedilmiş not yok."
                 else if (query.isBlank()) notes.takeLast(5000)
                 else notes.lines().filter { it.contains(query, ignoreCase = true) }
-                    .takeLast(20).joinToString("\n").ifBlank { "یادداشتی با این عبارت پیدا نشد." }
+                    .takeLast(20).joinToString("\n").ifBlank { "Bu ifadeyle eşleşen not bulunamadı." }
             }
             else -> "خطا: این ابزار مجاز نیست."
         }
@@ -103,12 +103,12 @@ internal class AgentRuntime(private val context: Context) {
             val code = connection.responseCode
             val stream = if (code in 200..299) connection.inputStream else connection.errorStream
             val text = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
-            if (code !in 200..299) return "اتصال مدل ناموفق بود (HTTP $code). آدرس، مدل، کلید و اینترنت را بررسی کن."
+            if (code !in 200..299) return "Model bağlantısı başarısız (HTTP $code). Adresi, modeli, API anahtarını ve interneti kontrol et."
             return JSONObject(text).getJSONArray("choices").getJSONObject(0)
                 .getJSONObject("message").optString("content").trim()
                 .ifBlank { "مدل پاسخ خالی فرستاد." }
         } catch (e: Exception) {
-            return "اتصال برقرار نشد. اینترنت و آدرس API را بررسی کن. جزئیات: ${e.javaClass.simpleName}"
+            return "Bağlantı kurulamadı. İnterneti ve API adresini kontrol et. Ayrıntı: ${e.javaClass.simpleName}"
         } finally {
             connection?.disconnect()
         }
