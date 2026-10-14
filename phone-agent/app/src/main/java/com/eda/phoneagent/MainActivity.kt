@@ -176,6 +176,74 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
     }
 
+
+    private fun saveDiary(entry: String) {
+        if (entry.isBlank()) { show("Günlük metnini söyle."); return }
+        val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+        val old = prefs.getString("diary", "").orEmpty()
+        val stamp = SimpleDateFormat("dd MMM yyyy hh:mm a", Locale("tr", "TR")).format(Date())
+        prefs.edit().putString("diary", (old + "\n[" + stamp + "] " + entry).takeLast(30000)).apply()
+        show("Günlüğe kaydettim.")
+    }
+
+    private fun showDiary() {
+        val diary = getSharedPreferences("eda_agent", MODE_PRIVATE).getString("diary", "").orEmpty()
+        show(if (diary.isBlank()) "Henüz günlük kaydı yok." else diary.takeLast(5000))
+    }
+
+    private fun scheduleReminder(value: String) {
+        val parts = value.split(" ", limit = 2)
+        if (parts.size < 2 || !parts[0].matches(Regex("\\d{1,2}:\\d{2}"))) {
+            show("Örnek: hatırlat 19:30 su iç"); return
+        }
+        val hm = parts[0].split(":")
+        val hour = hm[0].toIntOrNull() ?: -1
+        val minute = hm[1].toIntOrNull() ?: -1
+        if (hour !in 0..23 || minute !in 0..59) { show("Saat geçersiz. Örnek: 19:30"); return }
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 7003)
+        }
+        val cal = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, hour); set(java.util.Calendar.MINUTE, minute)
+            set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+            if (timeInMillis <= System.currentTimeMillis()) add(java.util.Calendar.DAY_OF_YEAR, 1)
+        }
+        val id = (System.currentTimeMillis() % Int.MAX_VALUE).toInt()
+        val intent = Intent(this, ReminderReceiver::class.java).putExtra("message", parts[1]).putExtra("id", id)
+        val pending = PendingIntent.getBroadcast(this, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val alarm = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) alarm.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pending)
+            else alarm.set(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pending)
+            show("Hatırlatıcı kuruldu: " + SimpleDateFormat("hh:mm a", Locale("tr", "TR")).format(cal.time) + " · " + parts[1])
+        } catch (_: Exception) { show("Hatırlatıcı kurulamadı; bildirim izinlerini kontrol et.") }
+    }
+
+    private fun showBattery() {
+        val manager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+        val level = manager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        val state = registerReceiver(null, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val plugged = state?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+        show("Pil: %$level · " + if (plugged != 0) "Şarj oluyor." else "Şarjda değil.")
+    }
+
+    private fun calculate(expression: String) {
+        try {
+            val result = SafeCalculator.eval(expression)
+            show("Sonuç: " + if (result % 1.0 == 0.0) result.toLong().toString() else result.toString())
+        } catch (e: Exception) { show("Hesaplanamadı: " + (e.message ?: "geçersiz işlem")) }
+    }
+
+    private fun shareNote(note: String) {
+        if (note.isBlank()) { show("Örnek: notu paylaş alışveriş listesi"); return }
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "Eda notu")
+            putExtra(Intent.EXTRA_TEXT, note)
+        }
+        startActivity(Intent.createChooser(send, "Notu Samsung Notes veya başka uygulamayla paylaş"))
+    }
+
     private fun askModel(prompt: String) {
         if (busy) { show("یک درخواست در حال اجراست؛ کمی صبر کن."); return }
         val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
