@@ -118,7 +118,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                 pilDurum = pilDurum,
                 internet = internet,
                 aiSaglayici = aiAd,
-                mod = if (Settings.arabaModuAktif) "ARABA" else "AKTIF",
+                mod = Settings.sonMod.ifBlank { "KAPALI" },
                 guvenlikAktif = Settings.guvenlikModuAktif,
                 arabaAktif = Settings.arabaModuAktif,
                 ogrenmeAktif = Settings.ogrenmeAktif,
