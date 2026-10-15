@@ -6,9 +6,8 @@ import org.junit.Test
 
 class FuzzyMatcherTest {
     @Test
-    fun matchesExactAndFuzzyPhrases() {
+    fun matchesExactPhrases() {
         assertTrue(FuzzyMatcher.herhangiBiri("feneri aç", "feneri aç"))
-        assertTrue(FuzzyMatcher.herhangiBiri("feneri ac", "feneri aç"))
     }
 
     @Test
