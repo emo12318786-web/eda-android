@@ -10,6 +10,8 @@ import com.deniz.eda.data.MemoryStore
 import com.deniz.eda.data.ReminderStore
 import java.util.Calendar
 import com.deniz.eda.utils.OllamaLocator
+import com.deniz.eda.utils.ExtraCommands
+import com.deniz.eda.utils.FlashlightUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
@@ -44,6 +46,15 @@ Kullanıcı şu tür sorular sorarsa, sadece <TOOL>ADI</TOOL> yaz:
 - "ne öğrendin?" → <TOOL>GET_LEARNED</TOOL>
 - "saat kaç?" → <TOOL>GET_TIME</TOOL>
 - "bugünün tarihi" → <TOOL>GET_DATE</TOOL>
+- Kullanıcı açıkça feneri aç/kapat derse → <TOOL>FLASHLIGHT_ON</TOOL> / <TOOL>FLASHLIGHT_OFF</TOOL>
+- Kullanıcı açıkça bip sesini aç/kapat derse → <TOOL>BEEP_ON</TOOL> / <TOOL>BEEP_OFF</TOOL>
+- Kullanıcı müziği başlat/durdur/sonraki/önceki derse → <TOOL>MEDIA_PLAY</TOOL> / <TOOL>MEDIA_PAUSE</TOOL> / <TOOL>MEDIA_NEXT</TOOL> / <TOOL>MEDIA_PREVIOUS</TOOL>
+- Kullanıcı telefon ayarlarını veya TTS ayarlarını aç derse → <TOOL>OPEN_SETTINGS</TOOL> / <TOOL>OPEN_TTS_SETTINGS</TOOL>
+- Kullanıcı kamera aç/fotoğraf çek derse (kamera uygulamasını açar, gizlice fotoğraf çekmez) → <TOOL>OPEN_CAMERA</TOOL>
+- Kullanıcı telefonumu bul derse → <TOOL>FIND_PHONE</TOOL>; sesi durdur derse → <TOOL>STOP_FIND_PHONE</TOOL>
+- Kullanıcı telefonunu kilitle derse → <TOOL>LOCK_PHONE</TOOL>
+- Kullanıcı sistem testi isterse → <TOOL>RUN_SYSTEM_TEST</TOOL>
+- Öğrenme modunu açıkça aç/kapat derse → <TOOL>LEARNING_ON</TOOL> / <TOOL>LEARNING_OFF</TOOL>
 - Kullanıcı açıkça "hafızana kaydet/hatırla" derse → <TOOL>SAVE_MEMORY: kaydedilecek metin</TOOL>
 - Kullanıcı açıkça "günlüğüme yaz" derse → <TOOL>ADD_DIARY: günlük metni</TOOL>
 - Kullanıcı belirli saatli hatırlatma isterse → <TOOL>ADD_REMINDER|SAAT|DAKİKA|hatırlatma metni</TOOL>
@@ -86,6 +97,23 @@ Sen: Merhaba ${Settings.kullaniciAdi}, iyiyim. Sen nasılsın?
                     "Not günlüğe kaydedildi."
                 } ?: "Günlüğe yazılacak metin boş."
                 "ADD_REMINDER" -> addReminder(context, arguments)
+                "FLASHLIGHT_ON" -> if (FlashlightUtils.ac(context)) "Fener açıldı." else "Fener açılamadı; cihaz izni veya flaş uygun olmayabilir."
+                "FLASHLIGHT_OFF" -> if (FlashlightUtils.kapat(context)) "Fener kapatıldı." else "Fener kapatılamadı."
+                "BEEP_ON" -> { Settings.beepAktif = true; "Bip sesi açıldı." }
+                "BEEP_OFF" -> { Settings.beepAktif = false; "Bip sesi kapatıldı." }
+                "MEDIA_PLAY" -> ExtraCommands.muzikBaslat(context, Settings.kullaniciAdi)
+                "MEDIA_PAUSE" -> ExtraCommands.muzikDurdur(context, Settings.kullaniciAdi)
+                "MEDIA_NEXT" -> ExtraCommands.muzikSonraki(context, Settings.kullaniciAdi)
+                "MEDIA_PREVIOUS" -> ExtraCommands.muzikOnceki(context, Settings.kullaniciAdi)
+                "OPEN_SETTINGS" -> ExtraCommands.ayarlariAc(context, Settings.kullaniciAdi)
+                "OPEN_TTS_SETTINGS" -> ExtraCommands.sesMotoruDegistir(context, Settings.kullaniciAdi)
+                "OPEN_CAMERA" -> ExtraCommands.fotografCek(context, Settings.kullaniciAdi)
+                "FIND_PHONE" -> ExtraCommands.telefonuBul(context, Settings.kullaniciAdi)
+                "STOP_FIND_PHONE" -> ExtraCommands.telefonuBulDurdur(Settings.kullaniciAdi)
+                "LOCK_PHONE" -> ExtraCommands.telefonuKilitle(context, Settings.kullaniciAdi)
+                "RUN_SYSTEM_TEST" -> ExtraCommands.sistemTest(context, Settings.kullaniciAdi)
+                "LEARNING_ON" -> { Settings.ogrenmeAktif = true; "Öğrenme modu açıldı." }
+                "LEARNING_OFF" -> { Settings.ogrenmeAktif = false; "Öğrenme modu kapatıldı." }
                 else -> "Bilinmeyen araç: $name"
             }
         } catch (e: Exception) {
