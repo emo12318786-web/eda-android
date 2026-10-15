@@ -110,7 +110,7 @@ KURALLAR:
                     maxTokens = 180
                 )
                 if (!local.isNullOrBlank()) {
-                    android.util.Log.i("AiRouter", "Native Gemma offline response returned")
+                    android.util.Log.i("AiRouter", "AI_RESPONSE_SUCCESS provider=Native-Gemma model=local-gemma task=DEEP chars=${local.trim().length}")
                     return@withContext local.trim()
                 }
                 android.util.Log.i("AiRouter", "Native Gemma unavailable/no GGUF; trying configured providers")
@@ -120,7 +120,7 @@ KURALLAR:
                 android.util.Log.e("AiRouter", "Native Gemma failed; trying configured providers", e)
             }
         } else {
-            android.util.Log.i("AiRouter", "Native Gemma skipped; selected provider=$selectedProvider")
+            android.util.Log.i("AiRouter", "AI_PROVIDER_SELECTED provider=$selectedProvider route=online-first")
         }
 
         for (s in saglayicilar(ctx)) {
@@ -129,7 +129,7 @@ KURALLAR:
                 android.util.Log.w("AiRouter", "SKIP ${s.ad}: API key boş")
                 continue
             }
-            android.util.Log.i("AiRouter", "Denenecek sağlayıcı: ${s.ad}, model=${s.model}, url=${s.baseUrl}")
+            android.util.Log.i("AiRouter", "AI_PROVIDER_ATTEMPT provider=${s.ad} model=${s.model}")
             try {
                 val api = OpenAiCompatibleApi.olustur(s.baseUrl)
                 // ═══ ابزارها رو به prompt اضافه کن ═══
@@ -165,7 +165,7 @@ KURALLAR:
                         android.util.Log.w("AiRouter", "EMPTY_RESPONSE provider=${s.ad} http=${yanit.code()}")
                         break
                     }
-                    android.util.Log.d("AiRouter", "✅ ${s.ad} agent step=$aracAdimi")
+                    android.util.Log.d("AiRouter", "AI_RESPONSE_CHUNK provider=${s.ad} model=${s.model} agentStep=$aracAdimi chars=${cevap.length}")
                     val match = Regex("<TOOL>\\s*([A-Z_]+)(?:\\s*[:|]\\s*(.*?))?\\s*</TOOL>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)).find(cevap)
                     if (match == null || context == null || aracAdimi >= 3) {
                         sonCevap = cevap.replace(Regex("<TOOL>.*?</TOOL>", RegexOption.DOT_MATCHES_ALL), "").trim()
@@ -195,12 +195,14 @@ KURALLAR:
                     aracAdimi++
                 }
                 if (!sonCevap.isNullOrBlank()) {
+                    android.util.Log.i("AiRouter", "AI_RESPONSE_SUCCESS provider=${s.ad} model=${s.model} agentSteps=$aracAdimi chars=${sonCevap.length}")
                     val kayitliAd = Settings.kullaniciAdi.trim()
                     return@withContext sonCevap
                         .replace(Regex("(?i)denizcim"), kayitliAd.ifBlank { "" })
                         .replace(Regex("\\s{2,}"), " ")
                         .trim()
                 }
+                android.util.Log.w("AiRouter", "AI_PROVIDER_NO_FINAL_ANSWER provider=${s.ad} model=${s.model}; trying next provider")
                 // Sağlayıcı başarısızsa sıradaki yapılandırılmış sağlayıcıya geç.
             } catch (e: CancellationException) {
                 throw e
