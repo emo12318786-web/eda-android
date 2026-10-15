@@ -65,6 +65,19 @@ object CommandProcessor {
 
     private fun v(m: String, vararg k: String) = FuzzyMatcher.herhangiBiri(m, *k)
 
+    // Critical intents such as location must not use fuzzy single-word matching:
+    // Turkish "konuş" (talk) can be misheard as "konum" (location).
+    private fun hasExactIntent(m: String, vararg phrases: String): Boolean {
+        val normalized = m.lowercase(Locale.ROOT)
+            .replace(Regex("[^a-zçğıöşü\\s]"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        return phrases.any { phrase ->
+            val p = phrase.lowercase(Locale.ROOT).trim()
+            Regex("(^|\\\\s)" + Regex.escape(p) + "($|\\\\s)").containsMatchIn(normalized)
+        }
+    }
+
     // Saat ve dakikayi sozcuklere cevir (TTS "14:30" okuyamadigi icin)
     private fun saatToKelime(saat: Int): String = when (saat) {
         0 -> "gece yarısı on iki"
@@ -493,7 +506,7 @@ object CommandProcessor {
             }
 
             // Konum - aktif konum ister
-            v(metin, "konum", "neredeyim", "nerdeyim") -> {
+            hasExactIntent(metin, "konum", "neredeyim", "nerdeyim", "konumum nerede") -> {
                 val metinCevap = LocationUtils.konumMetni(context, hitap)
                 KomutSonucu.Cevap(metinCevap)
             }
