@@ -29,7 +29,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import com.deniz.eda.core.Settings
 import com.deniz.eda.service.EdaForegroundService
 
 private val VoidBlack = Color(0xFF080A12)
@@ -100,12 +99,13 @@ class DashboardActivity : ComponentActivity() {
 private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Unit, onShareLog: () -> Unit) {
     val state by viewModel.state.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
-    val active = Settings.sonMod == "AKTIF"
-    val sleeping = Settings.sonMod == "UYKU"
+    // Use observable dashboard state; Compose cannot observe mutable Settings directly.
+    val active = state.mod == "AKTIF"
+    val sleeping = state.mod == "UYKU"
 
     LaunchedEffect(Unit) {
         while (true) {
-            delay(30_000)
+            delay(3_000)
             viewModel.yenile()
         }
     }
