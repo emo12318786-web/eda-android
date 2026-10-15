@@ -140,7 +140,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun aktifAiSaglayici(): String {
-        val secim = Settings.aiProvider.ifBlank { "pollinations" }.lowercase()
+        val secim = Settings.aiProvider.ifBlank { "ollama" }.lowercase()
         val sirali = mutableListOf<String>()
         when (secim) {
             "groq" -> {
@@ -173,6 +173,6 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private fun loadAiProvider() {
         Settings.aiProvider = getApplication<Application>()
             .getSharedPreferences("eda_prefs", Context.MODE_PRIVATE)
-            .getString("ai_provider", "pollinations") ?: "pollinations"
+            .getString("ai_provider", "ollama") ?: "ollama"
     }
 }
