@@ -10,7 +10,7 @@ Purpose: document what has been inspected and what still requires verification. 
 | Main dashboard | Compose dashboard in `ui/dashboard/DashboardActivity.kt`; shows battery, internet, memory, reminders, provider status, logs | Not itself an Agent tool | No |
 | Start / sleep / stop | Dashboard sends service actions; existing `MainActivity.kt` also controls the foreground service | Actions are direct UI/service actions, not general Agent tools | No |
 | AI providers | Dashboard can select Groq, Pollinations, Ollama; view model checks their status | Read/check tools exist; provider selection is UI-driven | No |
-| Memory / diary / reminders / learning | Local stores and counters are referenced in source; SystemTools exposes read tools | Read-only retrieval tools in current allowlist | No |
+| Memory / diary / reminders / learning | Local stores and counters are referenced in source; SystemTools exposes read tools | Read tools plus explicit user-triggered memory/diary/reminder writes and safe device-action tools (flashlight, beep, media keys, settings/TTS settings, camera launch, find/stop finding phone, lock phone, system test, learning toggle) | No |
 | Voice and wake word | Main activity requests microphone permission; service owns background behavior | No proof that all voice actions are Agent tools | No |
 | Security / car mode | Settings flags exist; dashboard currently explains these as voice-command features rather than exposing full controls | Not verified as Agent tools | No |
 | Settings | Existing SettingsActivity retains user name and provider keys; more settings live elsewhere in project | Not verified as Agent tools | No |
@@ -19,7 +19,7 @@ Purpose: document what has been inspected and what still requires verification. 
 
 ## Important implementation caveats
 
-1. The current Agent is not a universal autonomous phone operator. The inspected `AiRouter.kt` tool allowlist is mostly read-only: connectivity/provider checks, battery, mode, system summary, memory/diary/reminders/learned items, time and date.
+1. The current Agent is not a universal autonomous phone operator. The `AiRouter.kt` tool allowlist includes connectivity/provider checks, battery, mode, system summary, memory/diary/reminders/learned items, time/date, explicit memory/diary/reminder writes, flashlight/beep, media keys, opening Settings/TTS settings/camera, finding/stopping the phone sound, locking the phone, system test and learning toggle. SMS sending, location sharing, security sensor lifecycle and car mode are not exposed as Agent tools.
 2. `SystemTools.kt` has helpers for data retrieval. A helper existing in source does not mean the Agent can call it; the router must explicitly parse and allow the tool.
 3. Dashboard actions and voice-command actions are separate paths. Do not advertise an Agent action as complete unless its route is connected and verified.
 4. The redesigned dashboard refreshes its data while it remains in composition. This is a UI refresh, not a guarantee that every background service or provider is healthy.
