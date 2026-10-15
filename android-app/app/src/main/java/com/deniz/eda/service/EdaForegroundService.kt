@@ -574,7 +574,14 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         // bloklamiyor.
         val baslangicZaman = System.currentTimeMillis()
         serviceScope.launch {
-            val sonuc = CommandProcessor.isle(this@EdaForegroundService, metin)
+            val sonuc = try {
+                CommandProcessor.isle(this@EdaForegroundService, metin)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("EdaService", "Command processing failed; keep voice loop alive", e)
+                KomutSonucu.Cevap("Bir an sorun yaşadım ${Settings.kullaniciAdi}. Tekrar söyler misin?")
+            }
 
             // ═══ ثبت لاگ در فایل (بدون Room DB) ═══
             try {
@@ -681,7 +688,11 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         })
         val params = Bundle()
         android.util.Log.i("EDA-TTS", "TTS metin: $temizMetin")
-        tts.speak(temizMetin, TextToSpeech.QUEUE_FLUSH, params, id)
+        val speakResult = tts.speak(temizMetin, TextToSpeech.QUEUE_FLUSH, params, id)
+        if (speakResult == TextToSpeech.ERROR) {
+            android.util.Log.e("EDA-TTS", "TTS speak() failed; restarting listener")
+            serviceScope.launch(Dispatchers.Main) { tamamlaninca?.invoke() }
+        }
     }
 
     override fun onDestroy() {
