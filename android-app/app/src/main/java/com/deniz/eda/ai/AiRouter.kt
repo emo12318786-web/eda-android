@@ -3,6 +3,7 @@ package com.deniz.eda.ai
 import android.content.Context
 import com.deniz.eda.utils.OllamaLocator
 import com.deniz.eda.core.Settings
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -88,7 +89,11 @@ KURALLAR:
         val ctx = context ?: return@withContext null
         for (s in saglayicilar(ctx)) {
             val anahtar = s.apiKey()
-            if (s.needsKey && anahtar.isBlank()) continue
+            if (s.needsKey && anahtar.isBlank()) {
+                android.util.Log.w("AiRouter", "SKIP ${s.ad}: API key boş")
+                continue
+            }
+            android.util.Log.i("AiRouter", "Denenecek sağlayıcı: ${s.ad}, model=${s.model}, url=${s.baseUrl}")
             try {
                 val api = OpenAiCompatibleApi.olustur(s.baseUrl)
                 // ═══ ابزارها رو به prompt اضافه کن ═══
@@ -113,11 +118,17 @@ KURALLAR:
                     )
                     val yanit = api.sohbetTamamla("Bearer $anahtar", istek)
                     if (!yanit.isSuccessful) {
-                        android.util.Log.w("AiRouter", "⚠️ ${s.ad}: HTTP ${yanit.code()}")
+                        val hataGovdesi = try {
+                            yanit.errorBody()?.string()?.take(500).orEmpty()
+                        } catch (_: Exception) { "" }
+                        android.util.Log.w("AiRouter", "HTTP_FAIL provider=${s.ad} code=${yanit.code()} body=$hataGovdesi")
                         break
                     }
                     val cevap = yanit.body()?.choices?.firstOrNull()?.message?.content?.trim()
-                    if (cevap.isNullOrBlank()) break
+                    if (cevap.isNullOrBlank()) {
+                        android.util.Log.w("AiRouter", "EMPTY_RESPONSE provider=${s.ad} http=${yanit.code()}")
+                        break
+                    }
                     android.util.Log.d("AiRouter", "✅ ${s.ad} agent step=$aracAdimi")
                     val match = Regex("<TOOL>\\s*([A-Z_]+)(?:\\s*[:|]\\s*(.*?))?\\s*</TOOL>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)).find(cevap)
                     if (match == null || context == null || aracAdimi >= 3) {
@@ -155,8 +166,14 @@ KURALLAR:
                         .trim()
                 }
                 // Sağlayıcı başarısızsa sıradaki yapılandırılmış sağlayıcıya geç.
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                android.util.Log.e("AiRouter", "❌ ${s.ad}: ${e.message}")
+                android.util.Log.e(
+                    "AiRouter",
+                    "PROVIDER_EXCEPTION provider=${s.ad} type=${e.javaClass.simpleName} message=${e.message}",
+                    e
+                )
             }
         }
         null
