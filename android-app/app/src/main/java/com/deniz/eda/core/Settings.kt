@@ -12,8 +12,10 @@ import android.content.SharedPreferences
  * ile ayni sadelikte.
  */
 object Settings {
-    /** Aktif AI saglayici: "groq", "pollinations", "ollama" */
-    var aiProvider: String = "pollinations"
+    /** Aktif AI sağlayıcısı; tüm ekranlar ve servisler aynı kalıcı ayarı kullanır. */
+    var aiProvider: String
+        get() = getString("ai_provider", "pollinations")
+        set(value) = setString("ai_provider", value.lowercase())
 
 
     private const val PREFS_NAME = "eda_settings"
