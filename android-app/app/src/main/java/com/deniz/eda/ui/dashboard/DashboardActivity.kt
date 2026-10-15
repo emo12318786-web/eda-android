@@ -114,12 +114,23 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                // EDA monogram: luminous double-tone ring and signature dot.
                 Box(
-                    Modifier.size(48.dp).background(
-                        Brush.linearGradient(listOf(Violet, Color(0xFF6554E8), Cyan)), CircleShape
+                    Modifier.size(54.dp).background(
+                        Brush.linearGradient(listOf(Color(0xFF292047), Color(0xFF102B35))), CircleShape
                     ),
                     contentAlignment = Alignment.Center
-                ) { Text("E", color = VoidBlack, fontSize = 27.sp, fontWeight = FontWeight.Black) }
+                ) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize().padding(2.dp),
+                        shape = CircleShape,
+                        color = Color.Transparent,
+                        border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(Violet, Cyan)))
+                    ) {}
+                    Text("E", color = Color.White, fontSize = 29.sp, fontWeight = FontWeight.Black)
+                    Box(Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 8.dp)
+                        .size(6.dp).background(Cyan, CircleShape))
+                }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text("EDA", fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
