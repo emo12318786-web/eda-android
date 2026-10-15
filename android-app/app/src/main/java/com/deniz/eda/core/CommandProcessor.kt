@@ -876,22 +876,31 @@ object CommandProcessor {
 else -> {
                 // Basit sosyal ifadeler ağ sağlayıcısına bağlı kalmasın.
                 // Böylece bağlantı kesilince selamlaşma ve destek isteği de çalışır.
-                val sosyal = metin.lowercase(Locale.ROOT)
-                    .replace(Regex("[^a-zçğıöşü\\s]"), " ")
+                val sosyal = java.text.Normalizer.normalize(metin.lowercase(Locale.ROOT), java.text.Normalizer.Form.NFD)
+                    .replace(Regex("\\p{M}+"), "")
+                    .replace('ı', 'i')
+                    .replace(Regex("[^a-z\\s]"), " ")
                     .replace(Regex("\\s+"), " ")
                     .trim()
                 when {
-                    sosyal in setOf("merhaba", "selam", "eda merhaba", "hey eda", "günaydın", "gunaydin") ->
+                    sosyal in setOf("merhaba", "selam", "eda merhaba", "hey eda", "gunaydin") ->
                         KomutSonucu.Cevap("Merhaba $hitap, buradayım. Nasılsın?")
-                    sosyal in setOf("iyi misin", "nasılsın", "nasilsin", "ne haber", "iyi misin eda") ->
+                    sosyal in setOf("iyi misin", "nasilsin", "ne haber", "iyi misin eda") ->
                         KomutSonucu.Cevap("İyiyim $hitap, buradayım. Sen nasılsın?")
-                    sosyal.contains("geri döndüm") || sosyal.contains("geri dondum") ->
+                    sosyal.contains("geri dondum") ->
                         KomutSonucu.Cevap("Hoş geldin $hitap, seni dinliyorum.")
-                    (sosyal.contains("yorgun") || sosyal.contains("yoruldum") ||
-                        sosyal.contains("kafam çok sıkılmış") || sosyal.contains("kafam cok sikilmis")) &&
-                        (sosyal.contains("benimle konuş") || sosyal.contains("benimle konus") ||
-                            sosyal.contains("sohbet")) ->
-                        KomutSonucu.Cevap("Buradayım $hitap. Bugün seni en çok ne yordu? İstersen anlat, dinliyorum.")
+                    listOf("dizim agri", "dizim cok agri", "agriyor", "agrim var", "basim agri",
+                        "belim agri", "ayagim agri", "kolum agri", "sancim var", "aci cekiyorum")
+                        .any { sosyal.contains(it) } ->
+                        KomutSonucu.Cevap("Geçmiş olsun $hitap. Ağrın şiddetliyse, dizinde belirgin şişlik varsa veya yürümekte zorlanıyorsan tıbbi yardım al. Ne zamandır ağrıyor?")
+                    listOf("kafam cok bozulmus", "kafam bozuk", "moralim bozuk", "canim sikkin",
+                        "halim cok iyi degil", "halim iyi degil", "iyi degilim",
+                        "kendimi kotu hissediyorum", "keyfim yok", "uzgunum", "moralim yok")
+                        .any { sosyal.contains(it) } ->
+                        KomutSonucu.Cevap("Buradayım $hitap, seni dinliyorum. İstersen anlat; bugün seni en çok ne zorladı?")
+                    listOf("yoruldum", "yorgunum", "yorgun", "cok calistim", "bitkinim", "tukendim")
+                        .any { sosyal.contains(it) } ->
+                        KomutSonucu.Cevap("Bugün epey yorulmuşsun $hitap. Biraz soluklanalım; istersen anlat, seni dinliyorum. En çok ne yordu?")
                     else -> {
                         val aiCevap = AiRouter.sor(metinHam, context = context)
                         if (aiCevap != null) KomutSonucu.Cevap(aiCevap)
