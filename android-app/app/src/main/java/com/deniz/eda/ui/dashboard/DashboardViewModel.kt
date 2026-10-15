@@ -57,7 +57,6 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private val db = EdaDatabase.get(app)
 
     fun yenile() {
-        loadAiProvider()
         viewModelScope.launch {
             kotlinx.coroutines.delay(100)
             val ctx = getApplication<Application>()
@@ -165,10 +164,5 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     fun setAiProvider(provider: String) {
         Settings.aiProvider = provider
         yenile()
-    }
-
-    private fun loadAiProvider() {
-        // Settings is the single source of truth shared with the foreground service.
-        Settings.aiProvider = Settings.aiProvider
     }
 }
