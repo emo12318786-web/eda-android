@@ -1,5 +1,7 @@
 package com.deniz.eda.ui.dashboard
 
+import com.deniz.eda.core.Settings
+
 import android.content.Intent
 import android.Manifest
 import android.content.pm.PackageManager
