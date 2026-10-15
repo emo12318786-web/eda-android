@@ -6,6 +6,29 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
+    <!-- EDA orbital emblem: cyan/violet orbit and three signal nodes -->
+    <path
+        android:pathData="M54,12 A42,42 0,1 1 53.9,12"
+        android:fillColor="#00000000"
+        android:strokeColor="#FF36D9F5"
+        android:strokeWidth="1.8"
+        android:strokeAlpha="0.9" />
+    <path
+        android:pathData="M23,32 C15,43 15,65 27,78"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFBB86FC"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M80,28 C91,40 92,62 81,76"
+        android:fillColor="#00000000"
+        android:strokeColor="#FF36D9F5"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round" />
+    <path android:pathData="M20,26 A3,3 0,1 1 20,25.9" android:fillColor="#FF36D9F5" />
+    <path android:pathData="M87,78 A3,3 0,1 1 87,77.9" android:fillColor="#FFBB86FC" />
+    <path android:pathData="M77,19 A2,2 0,1 1 77,18.9" android:fillColor="#FFFFFFFF" />
+
     <!-- E -->
     <path android:pathData="M28,38 L28,72 L46,72 L46,67 L33,67 L33,57 L43,57 L43,52 L33,52 L33,43 L46,43 L46,38 Z">
         <aapt:attr name="android:fillColor">
