@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import com.deniz.eda.core.Settings
 import com.deniz.eda.service.EdaForegroundService
 
@@ -81,6 +82,13 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
     var selectedTab by remember { mutableStateOf(0) }
     val active = Settings.sonMod == "AKTIF"
     val sleeping = Settings.sonMod == "UYKU"
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(30_000)
+            viewModel.yenile()
+        }
+    }
     val statusColor = when {
         active -> Good
         sleeping -> Warn
@@ -115,7 +123,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text("EDA", fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
-                    Text("KİŞİSEL YAPAY ZEKÂ • V5", fontSize = 9.sp, color = Muted, letterSpacing = 1.4.sp)
+                    Text("KİŞİSEL ASİSTAN • V5", fontSize = 9.sp, color = Muted, letterSpacing = 1.4.sp)
                 }
                 Surface(shape = RoundedCornerShape(50), color = statusColor.copy(alpha = 0.12f),
                     border = BorderStroke(1.dp, statusColor.copy(alpha = 0.5f))) {
@@ -130,7 +138,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
 
             if (selectedTab == 0) {
                 HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
-                SectionHeader("CANLI GÖSTERGE", "Cihazın nabzı")
+                SectionHeader("CANLI DURUM", "Telefon ve Eda’nın durumu")
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     MetricCard("BATARYA", "⚡", "${state.pilYuzde}%", state.pilDurum,
                         if (state.pilYuzde <= 20) Bad else Good, Modifier.weight(1f))
@@ -143,26 +151,26 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 }
                 SectionHeader("YAPAY ZEKÂ", "Öncelikli sağlayıcı")
                 ProviderPanel(state.aiSaglayici, onAction)
-                SectionHeader("EDA'NIN İZLERİ", "Son hareketler")
+                SectionHeader("SON HAREKETLER", "Eda’nın son kayıtları")
                 LogsPanel(state.sonLoglar)
             } else if (selectedTab == 1) {
-                HeroMini("KONTROL ODASI", "Eda'nın modunu tek dokunuşla yönet.")
+                HeroMini("KONTROL", "Eda’nın çalışma durumunu buradan yönet.")
                 SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
-                ControlTile("▶", "Aktif dinleme", "Eda komutlarını dinler ve yanıtlar", Good) { onAction("ACTION_AKTIF") }
-                ControlTile("☾", "Uykuya geç", "Derin uyku modu: mikrofon kapatılır", Cyan) { onAction("ACTION_UYKU") }
+                ControlTile("▶", "Eda’yı başlat", "Eda’yı dinlemeye hazır hâle getir", Good) { onAction("ACTION_AKTIF") }
+                ControlTile("☾", "Uyku moduna al", "Uyandırma kelimesiyle yeniden فعالleşir", Cyan) { onAction("ACTION_UYKU") }
                 ControlTile("■", "Eda'yı durdur", "Arka plan servisini kapat", Bad) { onAction("ACTION_STOP") }
                 SectionHeader("ÖZEL MODLAR", "Sesli komutla güvenli kontrol")
                 InfoNotice("🚘  Araba modu", "Eda'ya “araba modunu aç” diyebilirsin. Bu panel mevcut durumu gösterir.")
                 InfoNotice("🛡  Güvenlik modu", "Eda'ya “güvenlik modunu aç” diyerek mevcut güvenlik işlevini kullan.")
                 InfoNotice("🎙  Uyanma kelimesi", "Aktif dinleme sırasında “Eda” diyerek konuşmayı başlat.")
             } else {
-                HeroMini("SİSTEM MERKEZİ", "Bağlantıları ve yerel kayıtlarını gör.")
-                SectionHeader("SAĞLAYICI DURUMLARI", "Mevcut kontroller")
+                HeroMini("SİSTEM DURUMU", "Bağlantıları ve kayıtlarını buradan kontrol et.")
+                SectionHeader("YAPAY ZEKÂ BAĞLANTILARI", "Son bağlantı kontrolünün sonucu")
                 StatusLine("🌐 İnternet", if (state.internetStatus) "Bağlı" else "Bağlı değil", state.internetStatus)
                 StatusLine("🦙 Ollama · ${state.aiModel}", state.ollamaStatus, state.ollamaStatus.contains("açık", true) || state.ollamaStatus.contains("çalışıyor", true))
                 StatusLine("⚡ Groq", state.groqStatus, state.groqStatus.contains("bağlı", true) && !state.groqStatus.contains("yok", true))
                 StatusLine("🌸 Pollinations", state.pollinationsStatus, state.pollinationsStatus.contains("açık", true) || state.pollinationsStatus.contains("çalışıyor", true))
-                SectionHeader("YEREL VERİLER", "Telefonunda tutulan kayıtlar")
+                SectionHeader("KAYITLARIN", "Bu telefonda saklanan bilgiler")
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıt", Violet, Modifier.weight(1f))
                     MetricCard("GÜNLÜK", "▤", state.gunlukSayi.toString(), "kayıt", Cyan, Modifier.weight(1f))
@@ -173,12 +181,12 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 }
                 SectionHeader("ARAÇLAR", "Bakım")
                 Button(onClick = { viewModel.yenile() }, modifier = Modifier.fillMaxWidth().height(52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻   Bilgileri yenile") }
+                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻   Durumu yeniden kontrol et") }
                 Button(onClick = onShareLog, modifier = Modifier.fillMaxWidth().height(52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("⇧   Sistem kayıtlarını paylaş") }
+                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("⇧   Tanılama kayıtlarını paylaş") }
                 LogsPanel(state.sonLoglar)
             }
-            Text("EDA • HER ZAMAN YANINDA", Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 14.dp),
+            Text("EDA • YARDIMA HAZIR", Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 14.dp),
                 color = Muted, fontSize = 9.sp, letterSpacing = 2.sp, textAlign = TextAlign.Center)
         }
     }
