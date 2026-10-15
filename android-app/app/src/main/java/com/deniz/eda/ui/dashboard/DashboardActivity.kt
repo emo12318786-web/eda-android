@@ -1,6 +1,10 @@
 package com.deniz.eda.ui.dashboard
 
 import android.content.Intent
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -39,6 +43,13 @@ private val Warn = Color(0xFFFFC36E)
 private val Bad = Color(0xFFFF788B)
 
 class DashboardActivity : ComponentActivity() {
+    private var pendingStartAction: String? = null
+    private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val action = pendingStartAction
+        pendingStartAction = null
+        if (granted && action != null) sendAction(action)
+        else if (!granted) android.widget.Toast.makeText(this, "Eda için mikrofon izni gerekli.", android.widget.Toast.LENGTH_LONG).show()
+    }
     private val viewModel: DashboardViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
