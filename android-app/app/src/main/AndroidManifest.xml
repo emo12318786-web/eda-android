@@ -1,6 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <queries>
+        <package android:name="com.android.chrome" />
+        <package android:name="com.google.android.youtube" />
+        <package android:name="com.google.android.apps.maps" />
+        <package android:name="com.sec.android.app.camera" />
+        <package android:name="com.android.camera2" />
+        <package android:name="com.android.settings" />
+        <package android:name="com.whatsapp" />
+        <package android:name="org.telegram.messenger" />
+        <package android:name="org.thunderdog.challegram" />
+        <package android:name="com.samsung.android.dialer" />
+        <package android:name="com.google.android.dialer" />
+        <package android:name="com.android.dialer" />
+        <package android:name="com.samsung.android.messaging" />
+        <package android:name="com.google.android.apps.messaging" />
+    </queries>
+
     <!-- Ses dinleme (uyanma kelimesi + komutlar) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- AI saglayicilarina (Groq/DeepSeek/OpenRouter) ve hava/dolar/altin icin -->
