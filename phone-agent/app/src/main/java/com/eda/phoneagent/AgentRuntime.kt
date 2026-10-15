@@ -1,6 +1,12 @@
 package com.eda.phoneagent
 
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.wifi.WifiManager
+import android.os.BatteryManager
+import android.os.Build
+import android.provider.Settings
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -10,8 +16,8 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Bounded, allowlisted agent loop. The model may request only named local tools;
- * it cannot provide arbitrary code, URLs, shell commands, or Android intents.
+ * Bounded, allowlisted agent loop. The model can request named local tools only.
+ * It cannot provide arbitrary code, shell commands, package names, or Android intents.
  */
 internal class AgentRuntime(private val context: Context) {
     fun answer(prompt: String, endpoint: String, model: String, apiKey: String): String {
@@ -36,7 +42,6 @@ internal class AgentRuntime(private val context: Context) {
                 else -> return response
             }
         }
-        // Give the model one final chance to summarize, without allowing more tools.
         messages.put(JSONObject().put("role", "user").put("content",
             "Tool-call limit reached. Return JSON only: {\"type\":\"final\",\"answer\":\"...\"}."))
         val last = callModel(endpoint, model, apiKey, messages)
@@ -60,8 +65,21 @@ internal class AgentRuntime(private val context: Context) {
     private fun runTool(name: String, args: JSONObject): String {
         val prefs = context.getSharedPreferences("eda_agent", Context.MODE_PRIVATE)
         return when (name) {
-            "get_time" -> SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+            "get_time" -> SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
             "get_date" -> SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Date())
+            "get_battery" -> batteryStatus()
+            "calculate" -> try {
+                val expression = args.optString("expression").trim()
+                if (expression.isBlank() || expression.length > 100) "خطا: عبارت محاسبه معتبر نیست."
+                else {
+                    val value = SafeCalculator.eval(expression)
+                    "نتیجه: " + if (value == value.toLong().toDouble()) value.toLong().toString() else value.toString()
+                }
+            } catch (_: Exception) { "محاسبه انجام نشد؛ عبارت ریاضی را بررسی کن." }
+            "open_app" -> openAllowedApp(args.optString("app"))
+            "open_wifi_settings" -> openSystemPanel("wifi")
+            "open_sound_settings" -> openSystemPanel("sound")
+            "open_display_settings" -> openSystemPanel("display")
             "save_note" -> {
                 val note = args.optString("text").trim()
                 if (note.isBlank()) "خطا: متن یادداشت خالی است."
@@ -83,6 +101,66 @@ internal class AgentRuntime(private val context: Context) {
             }
             else -> "خطا: این ابزار مجاز نیست."
         }
+    }
+
+    private fun batteryStatus(): String {
+        val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            ?: return "وضعیت باتری خوانده نشد."
+        val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+        val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100).coerceAtLeast(1)
+        val percent = if (level >= 0) (level * 100 / scale) else -1
+        val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+        val charging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+            status == BatteryManager.BATTERY_STATUS_FULL
+        if (percent < 0) return "درصد باتری خوانده نشد."
+        return "شارژ باتری $percent از ۱۰۰ درصد است؛ " +
+            if (status == BatteryManager.BATTERY_STATUS_FULL) "باتری کاملاً پر است."
+            else if (charging) "گوشی در حال شارژ است." else "گوشی به شارژر وصل نیست."
+    }
+
+    private fun openSystemPanel(kind: String): String {
+        val intent = when (kind) {
+            "wifi" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) Intent(Settings.Panel.ACTION_WIFI)
+                else Intent(Settings.ACTION_WIFI_SETTINGS)
+            "sound" -> Intent(Settings.ACTION_SOUND_SETTINGS)
+            "display" -> Intent(Settings.ACTION_DISPLAY_SETTINGS)
+            else -> return "این پنل مجاز نیست."
+        }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        return try {
+            context.startActivity(intent)
+            when (kind) {
+                "wifi" -> "پنل وای‌فای باز شد. اندروید اجازهٔ خاموش‌کردن بی‌اجازهٔ وای‌فای را نمی‌دهد؛ از پنل آن را تغییر بده."
+                "sound" -> "تنظیمات صدا باز شد."
+                else -> "تنظیمات نمایشگر باز شد."
+            }
+        } catch (_: Exception) { "بازکردن تنظیمات ممکن نشد." }
+    }
+
+    private fun openAllowedApp(raw: String): String {
+        val app = raw.trim().lowercase(Locale.ROOT)
+        val packages = when (app) {
+            "chrome", "browser", "مرورگر", "کروم" -> listOf("com.android.chrome", "com.google.android.browser")
+            "youtube", "یوتیوب" -> listOf("com.google.android.youtube")
+            "maps", "map", "نقشه", "گوگل مپس" -> listOf("com.google.android.apps.maps")
+            "camera", "دوربین" -> listOf("com.sec.android.app.camera", "com.android.camera2", "com.google.android.GoogleCamera")
+            "settings", "تنظیمات" -> listOf("com.android.settings")
+            "whatsapp", "واتساپ" -> listOf("com.whatsapp")
+            "telegram", "تلگرام" -> listOf("org.telegram.messenger", "org.thunderdog.challegram")
+            "phone", "تلفن", "تماس" -> listOf("com.samsung.android.dialer", "com.google.android.dialer", "com.android.dialer")
+            "messages", "پیامک", "پیام‌ها" -> listOf("com.google.android.apps.messaging", "com.samsung.android.messaging")
+            else -> return "این برنامه در فهرست امن نیست. می‌توانی از صفحهٔ برنامه‌ها آن را دستی باز کنی."
+        }
+        for (packageName in packages) {
+            val launch = context.packageManager.getLaunchIntentForPackage(packageName)
+            if (launch != null) {
+                return try {
+                    launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(launch)
+                    "برنامه باز شد: $app"
+                } catch (_: Exception) { "بازکردن برنامه ممکن نشد." }
+            }
+        }
+        return "برنامهٔ «$app» روی گوشی پیدا نشد."
     }
 
     private fun callModel(endpoint: String, model: String, apiKey: String, messages: JSONArray): String {
@@ -115,8 +193,19 @@ internal class AgentRuntime(private val context: Context) {
     }
 
     companion object {
-        private const val MAX_STEPS = 3
+        private const val MAX_STEPS = 4
         private val noteLock = Any()
-        private const val SYSTEM_PROMPT = """You are Eda, a kind and concise Persian-speaking phone assistant. You may use only these local tools: get_time (no arguments), get_date (no arguments), save_note with arguments {"text":"..."} only when the user clearly asks to remember/save something, and search_notes with arguments {"query":"..."} when the user asks about their saved notes. Never claim a tool ran before its result is returned. Never invent tools or phone actions. Do not request or expose secrets. Respond with exactly one JSON object and no markdown: {"type":"tool_call","tool":"get_time|get_date|save_note|search_notes","arguments":{...}} when a tool is necessary, or {"type":"final","answer":"your answer"} otherwise. You cannot directly control the flashlight or other device settings from this agent loop. Answer in the user's language."""
+        private const val SYSTEM_PROMPT = """You are Eda, a warm, concise Persian-speaking phone assistant. Understand the user's intent and use a local tool when a real device action or live fact is requested. Available tools:
+- get_time: current local time, no arguments.
+- get_date: current date, no arguments.
+- get_battery: current battery percentage and charging state, no arguments.
+- calculate: safely calculate a basic arithmetic expression, arguments {"expression":"12*(3+4)"}.
+- open_app: open only a supported app by its friendly name, arguments {"app":"youtube"}; supported names include chrome, youtube, maps, camera, settings, whatsapp, telegram, phone, messages.
+- open_wifi_settings: open Android's Wi-Fi panel; Android may require the user to toggle Wi-Fi manually.
+- open_sound_settings: open Android sound settings.
+- open_display_settings: open Android display settings.
+- save_note with {"text":"..."} only when the user clearly asks to remember/save something.
+- search_notes with {"query":"..."} when the user asks about saved notes.
+Never claim an action succeeded before the tool result. Never invent tools, open arbitrary packages, run shell/code, send messages, or change sensitive settings silently. A request to send a message must not be treated as merely opening an app. Ask a short clarification if the requested app/action is ambiguous. Respond in the user's language, naturally and briefly. Return exactly one JSON object, no markdown: {"type":"tool_call","tool":"TOOL_NAME","arguments":{...}} when a tool is necessary, or {"type":"final","answer":"..."} otherwise."""
     }
 }
