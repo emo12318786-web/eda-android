@@ -25,11 +25,20 @@ object MemoryStore {
 
     fun goster(context: Context): String {
         val dizi = JsonFileStore.okuDizi(context, DOSYA)
-        if (dizi.length() == 0) return "Hafızamda bir şey yok."
-        val gosterilecek = sonNTaneAl(dizi, 10)
+        // Sohbet, son soru/cevap ve otomatik kelime sayacı kalıcı kişisel hafıza değildir.
+        val gosterilecek = JSONArray()
+        for (i in 0 until dizi.length()) {
+            val kayit = dizi.optJSONObject(i) ?: continue
+            val kategori = kayit.optString("kategori", "genel")
+            if (kategori !in setOf("sohbet", "son_soru", "son_cevap", "kelime")) {
+                gosterilecek.put(kayit)
+            }
+        }
+        if (gosterilecek.length() == 0) return "Hafızamda özellikle kaydettiğin bir bilgi yok."
+        val baslangic = maxOf(0, gosterilecek.length() - 10)
         val satirlar = mutableListOf("Hafızamda:")
-        for (i in 0 until gosterilecek.length()) {
-            satirlar.add("${i + 1}. ${gosterilecek.getJSONObject(i).optString("metin")}")
+        for (i in baslangic until gosterilecek.length()) {
+            satirlar.add("${satirlar.size}. ${gosterilecek.getJSONObject(i).optString("metin")}")
         }
         return satirlar.joinToString("\n")
     }
