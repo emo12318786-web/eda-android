@@ -19,7 +19,7 @@ class SettingsActivity : AppCompatActivity() {
         // ═══ Header ═══
         findViewById<TextView>(R.id.geriButon).setOnClickListener { finish() }
 
-        // ═══ فیلدها ═══
+        // Eda’nın sana hitap edeceği isim bu alandan değiştirilebilir.
         val kullaniciAdiInput = findViewById<EditText>(R.id.kullaniciAdiInput)
         val groqInput = findViewById<EditText>(R.id.groqInput)
         val navasanInput = findViewById<EditText>(R.id.navasanInput)
