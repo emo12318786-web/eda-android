@@ -44,20 +44,23 @@ Kullanıcı şu tür sorular sorarsa, sadece <TOOL>ADI</TOOL> yaz:
 - "ne öğrendin?" → <TOOL>GET_LEARNED</TOOL>
 - "saat kaç?" → <TOOL>GET_TIME</TOOL>
 - "bugünün tarihi" → <TOOL>GET_DATE</TOOL>
+- Kullanıcı açıkça "hafızana kaydet/hatırla" derse → <TOOL>SAVE_MEMORY: kaydedilecek metin</TOOL>
+- Kullanıcı açıkça "günlüğüme yaz" derse → <TOOL>ADD_DIARY: günlük metni</TOOL>
+- Kullanıcı belirli saatli hatırlatma isterse → <TOOL>ADD_REMINDER|SAAT|DAKİKA|hatırlatma metni</TOOL>
 
 ÖRNEK:
 Kullanıcı: "internete erişimin var mı?"
 Sen: <TOOL>CHECK_INTERNET</TOOL>
 
 Kullanıcı: "merhaba nasılsın?"
-Sen: Merhaba deniz, iyiyim sen nasılsın?
+Sen: Merhaba ${Settings.kullaniciAdi}, iyiyim. Sen nasılsın?
         """.trimIndent()
     }
 
     /**
      * ابزار X رو اجرا کن و نتیجه رو برگردون
      */
-    suspend fun runTool(name: String, context: Context): String {
+    suspend fun runTool(name: String, context: Context, arguments: String = ""): String {
         return try {
             when (name) {
                 "CHECK_INTERNET" -> checkInternetText(context)
@@ -74,11 +77,33 @@ Sen: Merhaba deniz, iyiyim sen nasılsın?
                 "GET_LEARNED" -> learnedText(context)
                 "GET_TIME" -> timeText()
                 "GET_DATE" -> dateText()
+                "SAVE_MEMORY" -> arguments.trim().takeIf { it.isNotBlank() }?.let {
+                    MemoryStore.ekle(context, it, "agent")
+                    "Bilgi hafızaya kaydedildi."
+                } ?: "Hafızaya kaydedilecek metin boş."
+                "ADD_DIARY" -> arguments.trim().takeIf { it.isNotBlank() }?.let {
+                    DiaryStore.ekle(context, it)
+                    "Not günlüğe kaydedildi."
+                } ?: "Günlüğe yazılacak metin boş."
+                "ADD_REMINDER" -> addReminder(context, arguments)
                 else -> "Bilinmeyen araç: $name"
             }
         } catch (e: Exception) {
             "Araç hatası ($name): ${e.message}"
         }
+    }
+
+    private fun addReminder(context: Context, raw: String): String {
+        val parts = raw.split("|", limit = 4)
+        if (parts.size != 4) return "Hatırlatma için saat, dakika ve metin gerekli."
+        val hour = parts[1].trim().toIntOrNull()
+        val minute = parts[2].trim().toIntOrNull()
+        val text = parts[3].trim()
+        if (hour == null || hour !in 0..23 || minute == null || minute !in 0..59 || text.isBlank()) {
+            return "Hatırlatma bilgileri geçersiz. Saati 0–23, dakikayı 0–59 aralığında ver."
+        }
+        val reminder = ReminderStore.ekle(context, text, hour, minute)
+        return "Hatırlatma kaydedildi: %02d:%02d — %s".format(java.util.Locale.ROOT, reminder.saat, reminder.dakika, reminder.metin)
     }
 
     // ═══════════════════════════════════════
