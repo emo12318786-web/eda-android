@@ -604,22 +604,21 @@ object CommandProcessor {
 
             v(metin, "kapat", "kapa", "kapt") -> KomutSonucu.KapatOnayIste
 
-            // Saat - sozcuklerle soyle
+            // Saat - net dijital biçim
             v(metin, "saat", "sat", "sad") -> {
                 val simdi = Calendar.getInstance()
-                val saatInt = simdi.get(Calendar.HOUR_OF_DAY)
-                val dakikaInt = simdi.get(Calendar.MINUTE)
-                val saatKelime = saatToKelime(saatInt)
-                val dakikaKelime = dakikaToKelime(dakikaInt)
-                val cevap = if (dakikaKelime.isBlank()) {
-                    "Saat $saatKelime $hitap."
-                } else {
-                    "Saat $saatKelime $dakikaKelime $hitap."
-                }
+                val cevap = String.format(
+                    Locale.ROOT,
+                    "Saat %02d:%02d $hitap.",
+                    simdi.get(Calendar.HOUR_OF_DAY),
+                    simdi.get(Calendar.MINUTE)
+                )
                 KomutSonucu.Cevap(cevap)
             }
 
-            v(metin, "tarih", "tarik", "bugün", "bugun", "hangi gün", "hangi gun", "bugün ne") -> {
+            (v(metin, "tarih", "tarik", "hangi gün", "hangi gun", "bugün ne", "bugun ne") ||
+                metin.trim().equals("bugün", ignoreCase = true) ||
+                metin.trim().equals("bugun", ignoreCase = true)) -> {
                 val (tarih, gunAdi) = JalaliCalendar.bugununSemsiTarihi()
                 KomutSonucu.Cevap("Bugün $tarih, $gunAdi $hitap.")
             }
