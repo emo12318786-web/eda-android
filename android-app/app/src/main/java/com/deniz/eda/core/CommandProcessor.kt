@@ -82,7 +82,7 @@ object CommandProcessor {
             "bulunduğum yer neresi", "bulundugum yer neresi",
             "konumumu göster", "konumumu goster")
         return explicitQuestions.any { phrase ->
-            Regex("(^|\\\\s)" + Regex.escape(phrase) + "($|\\\\s)").containsMatchIn(normalized)
+            Regex("(^|\\s)" + Regex.escape(phrase) + "($|\\s)").containsMatchIn(normalized)
         }
     }
 
