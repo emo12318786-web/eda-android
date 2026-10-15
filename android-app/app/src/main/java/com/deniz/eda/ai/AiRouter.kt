@@ -102,7 +102,8 @@ KURALLAR:
         // fully in-process and does not use Termux, Ollama, or network access.
         try {
             val local = nativeSession(ctx).generate(
-                task = if (kullaniciSorusu.length > 140 || Regex("(?i)detaylı|detayli|analiz et|karşılaştır|karsilastir|uzun cevap").containsMatchIn(kullaniciSorusu)) GemmaSessionManager.Task.DEEP else GemmaSessionManager.Task.LIGHT,
+                // EDA bu sürümde yalnızca Gemma 2 2B kullanır; Gemma 3 slotuna yönlendirme yapma.
+                task = GemmaSessionManager.Task.DEEP,
                 prompt = sistemMesaji + "\n\nKullanıcı: " + kullaniciSorusu + "\nEda:",
                 maxTokens = 180
             )
