@@ -163,16 +163,12 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setAiProvider(provider: String) {
-        Settings.aiProvider = provider.lowercase()
-        getApplication<Application>()
-            .getSharedPreferences("eda_prefs", Context.MODE_PRIVATE)
-            .edit().putString("ai_provider", Settings.aiProvider).apply()
+        Settings.aiProvider = provider
         yenile()
     }
 
     private fun loadAiProvider() {
-        Settings.aiProvider = getApplication<Application>()
-            .getSharedPreferences("eda_prefs", Context.MODE_PRIVATE)
-            .getString("ai_provider", "ollama") ?: "ollama"
+        // Settings is the single source of truth shared with the foreground service.
+        Settings.aiProvider = Settings.aiProvider
     }
 }
