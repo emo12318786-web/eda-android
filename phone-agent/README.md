@@ -1,34 +1,66 @@
-# Eda Phone Agent V0.2
+# EDA V107 Agent - Android port
 
-این برنامه به‌صورت جداگانه زیر پوشهٔ `phone-agent/` ساخته شده تا کد فعلی EDA/Termux دست‌نخورده بماند.
+Bu dal, EDA V107 Android/Termux kaynaklarına dayanarak ayrı bir Android test uygulamasıdır. Eski EDA/Termux dosyaları değiştirilmez.
 
-## قابلیت‌های فعلی
-- ورود متن یا گفتار با سرویس تشخیص گفتار Android
-- پاسخ صوتی با موتور TTS گوشی
-- ساعت و تاریخ
-- چراغ‌قوه با درخواست مجوز Android
-- ذخیره و نمایش یادداشت محلی
-- اتصال به APIهای سازگار با OpenAI Chat Completions از طریق HTTPS
-- پشتیبانی اولیه از Ollama محلی با آدرس `http://127.0.0.1:11434/v1`؛ HTTP فقط برای loopback پذیرفته می‌شود و کلید برای مدل محلی لازم نیست
-- تنظیم آدرس API و نام مدل از داخل برنامه
+## Çalışan yerel özellikler
+- Türkçe arayüz; Android'in sistem konuşma tanıma servisine tr-TR isteği ve çevrimdışı tanıma tercihi
+- Android TextToSpeech ile Türkçe konuşma çıkışı (cihazdaki ses motoru ve Türkçe ses verisi destekliyorsa)
+- 12 saatlik saat ve Türkçe tarih
+- Ses/metin girişi ve fener aç/kapat
+- Eda uygulamasında kalıcı yerel notlar ve günlük
+- Android AlarmManager ile saatli hatırlatıcı ve bildirim
+- Pil yüzdesi/şarj durumu
+- Şehir adıyla canlı hava durumu (internet gerekir; örnek: `hava durumu Tebriz`)
+- Güvenli aritmetik hesaplama
+- Notu Android paylaşım menüsüyle Samsung Notes veya başka uygulamaya gönderme
+- Basit araba modu tercihi
+- Geliştirilmiş EDA kontrol merkezi: pil, not defteri, günlük, hatırlatıcı, ses/medya, konum, kur/piyasa, öğrenilmiş komutlar, AI ayarları ve uygulama izinleri
+- Yerel komut alias'ları için sınırlı öğrenme: yalnızca güvenli ve izin verilen komutlar eşleştirilir
+- Son bilinen konumu okuma (izin gerekir; canlı takip değildir)
+- Müzik ses düzeyini değiştirme ve sistem müzik uygulamasını açma
+- USD/IRR için çevrimiçi referans kur sorgusu; İran serbest piyasa fiyatı garantisi yoktur
+- Altın fiyatını elle kaydetme; canlı altın kaynağı bağlanmamıştır
+- Sınırlı AI Agent: yalnızca izinli zaman/tarih ve not araçları, en fazla üç araç adımı
+- HTTPS OpenAI-uyumlu endpoint veya aynı cihazdaki Ollama endpoint'i
+- API anahtarı yalnızca uygulama belleğinde tutulur
 
-## اتصال مدل
-از داخل برنامه روی «تنظیم اتصال مدل هوش مصنوعی» بزن:
-1. آدرس پایهٔ ارائه‌دهنده را وارد کن، مثلاً `https://api.openai.com/v1`؛ برای Ollama محلی `http://127.0.0.1:11434/v1` را وارد کن و مطمئن شو سرور Ollama روی همان گوشی اجراست.
-2. نام دقیق مدل را وارد کن.
-3. کلید API را وارد کن و ذخیره را بزن. برای Ollama محلی فیلد کلید را خالی بگذار. در مدل محلی، مدل باید از قبل در Ollama دانلود شده باشد.
+## Örnek komutlar
+- `yardım` / `komutlar`
+- saat kaç / bugün tarih
+- hava durumu Tebriz (güncel hava, internet gerekir)
+- feneri aç / feneri kapat
+- not al alışveriş listesi / notlarım
+- günlük bugün arabayı tamir ettim / günlüğümü göster
+- hatırlat 19:30 su iç
+- pil durumu
+- hesapla 12*(5+3)
+- notu paylaş alışveriş listesi / notlarımı paylaş
 
-کلید API عمداً روی دیسک ذخیره نمی‌شود؛ با بسته‌شدن فرایند برنامه باید دوباره وارد شود. آدرس و نام مدل در تنظیمات محلی ذخیره می‌شوند. از کلید اشتراکی یا کلیدی که اجازهٔ افشای آن را نداری استفاده نکن.
+Hatırlatıcı saatini 24 saat biçiminde gir; Eda saati 12 saat biçiminde gösterir. Android 13+ için bildirim izni gerekir ve bazı üretici pil ayarları hatırlatmaları geciktirebilir. Notlar/günlükler Eda'nın özel depolamasında saklanır; Samsung Notes'un özel veritabanına doğrudan yazılmaz. Paylaşım menüsü kullanıcının onayını ister.
 
-## ساخت APK آزمایشی
-پوشهٔ `phone-agent` را در Android Studio باز کن و Build > Build APK را اجرا کن. GitHub Actions نیز برای ساخت debug APK پیکربندی شده و باید نتیجهٔ واقعی اجرای workflow بررسی شود؛ تا وقتی artifact ساخته نشده، فایل APK آماده اعلام نمی‌شود.
+## Tamamen çevrimdışı kullanım
+Yerel komutlar (saat, tarih, fener, notlar, günlük, hesaplama, pil) internet ve AI API gerektirmez. Sesli giriş/çıkışın çevrimdışı olması, Android'deki Google konuşma hizmeti ve indirilen Türkçe çevrimdışı dil/ses paketlerine bağlıdır. Kod, çevrimdışı tanımayı tercih eder ancak Android/Google hizmeti bu tercihi yok sayabilir veya dili indirilmemişse ağ isteği yapabilir. Bu nedenle her telefonda %100 çevrimdışı ses garantisi verilemez; metin komutları her zaman alternatif هستند.
 
-## محدودیت‌هایی که هنوز باید تکمیل و آزمایش شوند
-- هنوز به هستهٔ `agent/agent_core.py` وصل نشده؛ برنامهٔ اندرویدی فعلاً فرمان‌های محدود محلی را اجرا می‌کند و پرسش‌های دیگر را به مدل می‌فرستد.
-- یک چرخهٔ Agent محدود و allowlist‌شده اضافه شده است: مدل می‌تواند ساعت/تاریخ را بخواند و با درخواست روشن کاربر یادداشت ذخیره یا یادداشت‌ها را جست‌وجو کند؛ حداکثر سه فراخوانی ابزار در هر درخواست مجاز است. اجرای کد دلخواه، فرمان پوسته و ابزارهای خارج از فهرست مجاز نیست. این رفتار هنوز باید با مدل واقعی آزمایش شود.
-- wake word، سرویس پس‌زمینه، حالت خواب کم‌مصرف و اتصال کامل به کد قبلی EDA وجود ندارد.
-- پاسخ گفتاری، تشخیص گفتار فارسی، چراغ‌قوه و API باید روی Samsung Galaxy A71 واقعی آزمایش شوند.
-- این خروجی debug برای تست است، نه APK انتشار امضاشده.
+برای فعال‌کردن تشخیص گفتار آفلاین در Samsung:
+Google uygulaması / تنظیمات Android → Voice / Speech recognition → Offline speech recognition → Turkish dil paketini indir (menü adları Android sürümüne göre değişebilir). TTS için Text-to-speech output ayarlarından Google Speech Services ve Türkçe ses verisini kontrol et.
 
-## حریم خصوصی
-یادداشت‌ها و آدرس/مدل در فضای خصوصی برنامه ذخیره می‌شوند. متن‌هایی که برای پاسخ‌گویی به API آنلاین فرستاده می‌شوند از گوشی خارج می‌شوند؛ اطلاعات خصوصی را به ارائه‌دهنده‌ای که به آن اعتماد نداری نفرست.
+## Ollama yerel model
+- Endpoint: http://127.0.0.1:11434/v1
+- Model adı: Ollama'da yüklü gerçek model adı
+- API anahtarı: boş
+
+این اتصال فقط وقتی کار می‌کند که Ollama واقعاً روی همین دستگاه و در دسترس اجرا شود. Termux روی اندروید به‌طور پیش‌فرض API سرور Ollama را خودکار در اختیار اپ قرار نمی‌دهد؛ ابتدا سرور و مدل را جداگانه راه‌اندازی کن. مدل‌های ابری به HTTPS و اینترنت نیاز دارند.
+
+## قابلیت‌های EDA V107 که هنوز در این پورت پیاده‌سازی یا تأیید نشده‌اند
+- Wake word دائمی «Eda» و چرخهٔ خواب/بیداری کم‌مصرف
+- سرویس پس‌زمینهٔ پایدار و اعلام شارژ دوره‌ای
+- انتقال و سازگاری کامل فایل‌های حافظه/یادگیری EDA قدیمی
+- اجرای خودکار همهٔ فرمان‌های یادگرفته‌شده
+- بیدارباش دائمی «Eda» و سرویس میکروفون پس‌زمینهٔ کم‌مصرف؛ عمداً ادعای اجرای دائمی یا کم‌مصرف نمی‌شود
+- انتقال کامل همهٔ ابزارهای Termux:API، SMS و کنترل رسانهٔ پیشرفته (نسخهٔ فعلی فقط کنترل صدا و بازکردن برنامهٔ موسیقی دارد)
+- قفل/پاک‌کردن از راه دور گوشی و ردیابی زنده؛ این نسخه فقط آخرین موقعیت ذخیره‌شده را می‌خواند
+- قیمت زندهٔ طلا و نرخ بازار آزاد ایران؛ منبع پایدار و تأییدشده‌ای متصل نشده است
+- تست واقعی روی Galaxy A71 و اندازه‌گیری مصرف باتری
+
+## Build
+GitHub Actions workflow با نام Eda Phone Agent Android build باید با موفقیت تمام شود و artifact به نام eda-phone-agent-debug موجود باشد تا APK debug آمادهٔ دریافت محسوب شود. این فایل release امضاشده نیست. تا قبل از دیدن نتیجهٔ موفق CI، این شاخه را APK آمادهٔ نصب اعلام نکن.

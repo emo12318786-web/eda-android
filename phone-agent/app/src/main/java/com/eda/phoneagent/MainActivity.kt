@@ -2,15 +2,28 @@ package com.eda.phoneagent
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
+import android.os.BatteryManager
+import android.os.Build
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationManager
+import android.media.AudioManager
+import android.provider.Settings
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.os.Bundle
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import android.view.ViewGroup
+import android.view.Gravity
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -41,45 +54,345 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.statusBarColor = Color.rgb(76, 49, 177)
+        window.navigationBarColor = Color.rgb(13, 7, 29)
+        window.decorView.systemUiVisibility = 0
         tts = TextToSpeech(this, this)
-        val root = LinearLayout(this).apply {
+
+        val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+        val page = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(24, 24, 24, 24)
+            setPadding(dp(22), dp(24), dp(22), dp(18))
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(Color.rgb(8, 5, 22), Color.rgb(24, 12, 48), Color.rgb(19, 10, 39))
+            )
         }
-        root.addView(TextView(this).apply {
-            text = "Eda Phone Agent · V0.2"
-            textSize = 24f
-        })
-        output = TextView(this).apply {
-            text = "سلام! من اَدا هستم. فرمانت را بنویس یا صحبت کن.\nابزارهای محلی فعال‌اند؛ برای پاسخ هوشمند، تنظیمات مدل را وارد کن."
-            textSize = 16f
-            setPadding(0, 14, 0, 14)
+
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
         }
-        root.addView(output, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        input = EditText(this).apply { hint = "فرمان یا پرسشت را بنویس" }
-        root.addView(input)
-        root.addView(Button(this).apply {
-            text = "🎙 گفتن فرمان"
-            setOnClickListener { startSpeech() }
+        val brandColumn = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        brandColumn.addView(TextView(this).apply {
+            text = "E · D · A"
+            textSize = 30f
+            letterSpacing = 0.18f
+            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+            setTextColor(Color.WHITE)
         })
-        root.addView(Button(this).apply {
-            text = "اجرا / پرسش از هوش مصنوعی"
-            setOnClickListener { handleCommand(input.text.toString()) }
+        brandColumn.addView(TextView(this).apply {
+            text = "✦  Eda hazır · Dokununca dinler"
+            textSize = 14f
+            setTextColor(Color.rgb(210, 202, 244))
+            setPadding(0, dp(4), 0, 0)
         })
-        root.addView(Button(this).apply {
-            text = "تنظیم اتصال مدل هوش مصنوعی"
+        header.addView(brandColumn)
+        val settings = Button(this).apply {
+            text = "⚙"
+            textSize = 25f
+            setTextColor(Color.WHITE)
+            background = rounded(Color.rgb(37, 27, 70), Color.rgb(116, 86, 232), dp(28), dp(2))
+            minWidth = dp(58); minimumWidth = dp(58); minHeight = dp(58)
+            setPadding(0, 0, 0, 0)
             setOnClickListener { showProviderSettings() }
+        }
+        header.addView(settings, LinearLayout.LayoutParams(dp(62), dp(62)))
+        page.addView(header)
+        addGap(page, 28)
+
+        val statusCard = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(18), dp(18), dp(18), dp(18))
+            background = rounded(Color.rgb(25, 20, 51), Color.rgb(54, 42, 95), dp(25), dp(1))
+        }
+        statusCard.addView(TextView(this).apply {
+            text = "■"
+            textSize = 19f
+            setTextColor(Color.rgb(91, 164, 255))
+            setPadding(0, 0, dp(14), 0)
         })
-        root.addView(Button(this).apply {
-            text = "بلندگو: تکرار پاسخ"
-            setOnClickListener { speak(output.text.toString()) }
+        statusCard.addView(TextView(this).apply {
+            text = "Durum"
+            textSize = 16f
+            setTextColor(Color.WHITE)
+        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        statusCard.addView(TextView(this).apply {
+            text = "Hazır"
+            textSize = 16f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.WHITE)
         })
-        setContentView(ScrollView(this).apply { addView(root) })
+        page.addView(statusCard, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(76)))
+        addGap(page, 18)
+
+        output = TextView(this).apply {
+            text = "Merhaba! Ben Eda. Benimle Türkçe konuşabilir veya yazabilirsin.\nSaat, tarih, fener, notlar, günlük, hatırlatıcı ve hesaplama çevrimdışı çalışır. Serbest sohbet ve canlı hava durumu için bir yapay zekâ modeli gerekir."
+            textSize = 15f
+            setTextColor(Color.rgb(235, 231, 248))
+            setPadding(dp(4), dp(4), dp(4), dp(12))
+            setTextIsSelectable(true)
+        }
+        page.addView(output)
+        input = EditText(this).apply {
+            hint = "Komutunu yaz veya konuş"
+            setHintTextColor(Color.rgb(177, 167, 209))
+            setTextColor(Color.WHITE)
+            textSize = 17f
+            isSingleLine = false
+            maxLines = 3
+            setPadding(dp(10), dp(10), dp(10), dp(10))
+            background = rounded(Color.rgb(22, 16, 44), Color.rgb(87, 68, 141), dp(12), dp(1))
+        }
+        page.addView(input, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        addGap(page, 14)
+
+        page.addView(actionButton("▶  EDA'YI BAŞLAT", true) {
+            if (input.text.isNullOrBlank()) startSpeech() else handleCommand(input.text.toString())
+        }, buttonParams())
+        addGap(page, 12)
+        page.addView(actionButton("🎙  KOMUT SÖYLE", true) { startSpeech() }, buttonParams())
+        addGap(page, 12)
+        page.addView(actionButton("▦  KONTROL PANELİ", true) { showControlPanel() }, buttonParams())
+        addGap(page, 12)
+        page.addView(actionButton("🔊  YANITI SESLENDİR", false) { speak(output.text.toString()) }, buttonParams())
+        addGap(page, 14)
+        page.addView(actionButton("ÇALIŞTIR / YAPAY ZEKÂYA SOR", false) {
+            handleCommand(input.text.toString())
+        }, buttonParams())
+
+        val footer = TextView(this).apply {
+            text = "EDA V107 · Agent"
+            textSize = 12f
+            gravity = Gravity.CENTER
+            setTextColor(Color.rgb(169, 158, 201))
+            setPadding(0, dp(28), 0, dp(8))
+        }
+        page.addView(footer)
+        setContentView(ScrollView(this).apply {
+            isFillViewport = true
+            clipToPadding = false
+            setBackgroundColor(Color.rgb(13, 7, 29))
+            addView(page)
+        })
     }
+
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density + 0.5f).toInt()
+
+    private fun rounded(fill: Int, stroke: Int, radius: Int, strokeWidth: Int): GradientDrawable =
+        GradientDrawable().apply {
+            setColor(fill)
+            cornerRadius = radius.toFloat()
+            setStroke(strokeWidth, stroke)
+        }
+
+    private fun addGap(parent: LinearLayout, height: Int) {
+        parent.addView(android.view.View(this), LinearLayout.LayoutParams(1, dp(height)))
+    }
+
+    private fun buttonParams() = LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT, dp(66)
+    )
+
+    private fun actionButton(label: String, primary: Boolean, action: () -> Unit): Button =
+        Button(this).apply {
+            text = label
+            textSize = 14f
+            letterSpacing = 0.035f
+            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+            setTextColor(Color.WHITE)
+            background = if (primary)
+                rounded(Color.rgb(105, 73, 222), Color.rgb(127, 103, 245), dp(22), dp(1))
+            else rounded(Color.rgb(34, 25, 64), Color.rgb(76, 59, 126), dp(20), dp(1))
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            isAllCaps = false
+            setOnClickListener { action() }
+        }
+
+    private fun showControlPanel() {
+        val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(8), dp(16), dp(4)) }
+        panel.addView(TextView(this).apply {
+            text = "EDA V107 • KONTROL MERKEZİ\nYerel komutlar çevrimdışı çalışır. Mikrofon sürekli açık değildir."
+            textSize = 14f; setTextColor(Color.rgb(90, 78, 126)); setPadding(0, 0, 0, dp(10))
+        })
+        val actions: List<Pair<String, () -> Unit>> = listOf(
+            "🔋 Pil ve şarj" to { showBattery() },
+            "📝 Not defteri" to { showNotesDialog() },
+            "📔 Günlük" to { showDiary() },
+            "⏰ Yeni hatırlatıcı" to { promptReminder() },
+            "🎚 Ses ve medya" to { showMediaPanel() },
+            "📍 Konumum / telefonu bul" to { locatePhone() },
+            "💱 Kur ve piyasa" to { showMarket() },
+            "🧠 Öğrenilmiş komutlar" to { showLearnedCommands() },
+            "🤖 Yapay zekâ bağlantısı" to { showProviderSettings() },
+            "⚙ İzinler ve uygulama ayarları" to { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName"))) },
+            "❔ Yardım ve komutlar" to { handleCommand("yardım") }
+        )
+        actions.forEach { (label, action) ->
+            panel.addView(Button(this).apply {
+                text = label; isAllCaps = false; textSize = 14f; setTextColor(Color.WHITE)
+                background = rounded(Color.rgb(34, 25, 64), Color.rgb(76, 59, 126), dp(14), dp(1))
+                setOnClickListener { action() }
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(49)))
+            addGap(panel, 6)
+        }
+        AlertDialog.Builder(this).setTitle("E · D · A / Kontrol Paneli")
+            .setView(ScrollView(this).apply { addView(panel) })
+            .setNegativeButton("Kapat", null).show()
+    }
+
+    private fun promptReminder() {
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(8), dp(18), 0) }
+        val time = EditText(this).apply { hint = "Saat (24 saat): 19:30" }
+        val message = EditText(this).apply { hint = "Hatırlatma: su iç" }
+        box.addView(time); box.addView(message)
+        AlertDialog.Builder(this).setTitle("Yeni hatırlatıcı").setView(box)
+            .setNegativeButton("İptal", null)
+            .setPositiveButton("Kur") { _, _ -> scheduleReminder(time.text.toString().trim() + " " + message.text.toString().trim()) }
+            .show()
+    }
+
+    private fun showNotesDialog() {
+        val notes = getSharedPreferences("eda_agent", MODE_PRIVATE).getString("notes", "").orEmpty()
+        AlertDialog.Builder(this).setTitle("EDA · Notlar")
+            .setMessage(if (notes.isBlank()) "Henüz not yok. Komut: not al alışveriş listesi" else notes)
+            .setPositiveButton("Not ekle") { _, _ -> promptNote() }
+            .setNeutralButton("Samsung Notes ile paylaş") { _, _ -> shareAllNotes() }
+            .setNegativeButton("Kapat", null).show()
+    }
+
+    private fun promptNote() {
+        val edit = EditText(this).apply { hint = "Notunu buraya yaz"; minLines = 2 }
+        AlertDialog.Builder(this).setTitle("Yeni not").setView(edit)
+            .setNegativeButton("İptal", null)
+            .setPositiveButton("Kaydet") { _, _ ->
+                val note = edit.text.toString().trim()
+                if (note.isNotBlank()) {
+                    val p = getSharedPreferences("eda_agent", MODE_PRIVATE)
+                    p.edit().putString("notes", (p.getString("notes", "").orEmpty() + "\n• " + note).takeLast(20000)).apply()
+                    show("Not EDA'nın yerel not defterine kaydedildi.")
+                } else show("Not boş olduğu için kaydedilmedi.")
+            }.show()
+    }
+
+    private fun showMediaPanel() {
+        val audio = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(8), dp(18), 0) }
+        box.addView(TextView(this).apply { text = "Ses düzeyi"; setTextColor(Color.DKGRAY) })
+        box.addView(android.widget.SeekBar(this).apply {
+            max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+            progress = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
+            setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(s: android.widget.SeekBar?, value: Int, user: Boolean) { if (user) audio.setStreamVolume(AudioManager.STREAM_MUSIC, value, 0) }
+                override fun onStartTrackingTouch(s: android.widget.SeekBar?) {}
+                override fun onStopTrackingTouch(s: android.widget.SeekBar?) {}
+            })
+        })
+        box.addView(Button(this).apply { text = "Müzik uygulamasını aç"; isAllCaps = false; setOnClickListener {
+            val intent = Intent("android.intent.action.MUSIC_PLAYER")
+            try { startActivity(intent) } catch (_: Exception) { show("Müzik uygulaması bulunamadı.") }
+        } })
+        AlertDialog.Builder(this).setTitle("Ses ve medya").setView(box).setPositiveButton("Bitti", null).show()
+    }
+
+    private fun locatePhone() {
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+            checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 7004)
+            show("Konum izni gerekli. İzin verdikten sonra komutu yeniden kullan."); return
+        }
+        try {
+            val manager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val location: Location? = manager.getProviders(true).asSequence().mapNotNull { provider ->
+                try { manager.getLastKnownLocation(provider) } catch (_: SecurityException) { null }
+            }.maxByOrNull { it.time }
+            if (location == null) show("Son bilinen konum bulunamadı. Konum servisini açıp tekrar dene.")
+            else show("Son bilinen konum: " + String.format(Locale.US, "%.5f, %.5f", location.latitude, location.longitude) + ". این ردیابی زنده نیست؛ آخرین موقعیت ذخیره‌شدهٔ گوشی است.")
+        } catch (_: Exception) { show("Konum alınamadı. Sistem konum ayarlarını kontrol et.") }
+    }
+
+    private fun showMarket() {
+        AlertDialog.Builder(this).setTitle("EDA · Kur ve piyasa")
+            .setMessage("Dolar/IRR için çevrimiçi referans kaynağı denenir. Toman yaklaşık IRR / 10'dur. Güvenilir ücretsiz ve anahtarsız canlı altın kaynağı bağlı değil; Eda fiyat uydurmaz.")
+            .setPositiveButton("Dolar / İran riyali") { _, _ -> fetchUsdIrr() }
+            .setNeutralButton("Altın fiyatını elle kaydet") { _, _ -> promptGoldPrice() }
+            .setNegativeButton("Kapat", null).show()
+    }
+
+    private fun fetchUsdIrr() {
+        if (busy) { show("Bir istek sürüyor; bekle."); return }
+        busy = true; show("Kur bilgisi aranıyor…")
+        Thread {
+            val result = try {
+                val conn = (URL("https://open.er-api.com/v6/latest/USD").openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 8000; readTimeout = 10000; instanceFollowRedirects = false
+                }
+                try {
+                    val code = conn.responseCode
+                    if (code !in 200..299) error("HTTP $code")
+                    val json = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+                    val irr = json.getJSONObject("rates").getDouble("IRR")
+                    val updated = json.optString("time_last_update_utc", "نامشخص")
+                    "USD / IRR: " + String.format(Locale.US, "%.0f", irr) + " ریال برای هر دلار (تقریباً " + String.format(Locale.US, "%.0f", irr / 10) + " تومان). منبع: $updated. نرخ رسمی صرافی ایران نیست و ممکن است با بازار آزاد تفاوت زیادی داشته باشد."
+                } finally { conn.disconnect() }
+            } catch (_: Exception) { "Kur alınamadı. İnternet bağlantısını kontrol et; bu referans kaynak İran serbest piyasasını temsil etmeyebilir." }
+            runOnUiThread { busy = false; show(result) }
+        }.start()
+    }
+
+    private fun promptGoldPrice() {
+        val edit = EditText(this).apply { hint = "Gram altın fiyatı (toman)"; inputType = android.text.InputType.TYPE_CLASS_NUMBER }
+        AlertDialog.Builder(this).setTitle("ثبت دستی قیمت طلا").setView(edit)
+            .setNegativeButton("İptal", null).setPositiveButton("Kaydet") { _, _ ->
+                val price = edit.text.toString().trim()
+                if (price.toLongOrNull() == null) show("Geçerli bir fiyat gir.")
+                else {
+                    getSharedPreferences("eda_agent", MODE_PRIVATE).edit().putString("gold_price", price)
+                        .putString("gold_price_time", SimpleDateFormat("dd MMM yyyy hh:mm a", Locale("tr", "TR")).format(Date())).apply()
+                    show("Elle girilen altın fiyatı kaydedildi: $price toman. Bu canlı fiyat değildir.")
+                }
+            }.show()
+    }
+
+    private fun showLearnedCommands() {
+        val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+        val aliases = prefs.getString("learned_commands", "").orEmpty()
+        AlertDialog.Builder(this).setTitle("Öğrenilmiş komutlar")
+            .setMessage(if (aliases.isBlank()) "Henüz öğrenilmiş komut yok." else aliases)
+            .setPositiveButton("Komut öğret") { _, _ -> promptLearnCommand() }
+            .setNegativeButton("Kapat", null).show()
+    }
+
+    private fun promptLearnCommand() {
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(8), dp(18), 0) }
+        val phrase = EditText(this).apply { hint = "Özel ifade, ör. günaydın" }
+        val action = EditText(this).apply { hint = "İzin verilen komut, ör. saat kaç" }
+        box.addView(phrase); box.addView(action)
+        AlertDialog.Builder(this).setTitle("آموزش فرمان").setView(box)
+            .setNegativeButton("لغو", null).setPositiveButton("ذخیره") { _, _ ->
+                val p = phrase.text.toString().trim(); val a = action.text.toString().trim()
+                val allowed = setOf("ساعت چند است","ساعت kaç","امروز تاریخ","چراغ قوه را روشن کن","چراغ قوه را خاموش کن","باتری چند درصد است","یادداشت‌هایم","help","saat kaç","bugün tarih","feneri aç","feneri kapat","pil durumu","notlarım")
+                if (p.isBlank() || a.isBlank() || p.length > 80 || a.length > 120) show("İki alanı da kısa ve geçerli doldur.")
+                else if (a.lowercase(Locale.ROOT) !in allowed) show("Güvenlik için yalnızca izin verilen yerel komutlar öğretilebilir.")
+                else {
+                    val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+                    val json = try { JSONObject(prefs.getString("learned_map", "{}").orEmpty()) } catch (_: Exception) { JSONObject() }
+                    json.put(p.lowercase(Locale.ROOT), a)
+                    prefs.edit().putString("learned_map", json.toString()).putString("learned_commands", json.toString(2)).apply()
+                    show("Komut kaydedildi. «$p» ifadesini deneyebilirsin.")
+                }
+            }.show()
+    }
+
 
     override fun onInit(status: Int) {
         ttsReady = status == TextToSpeech.SUCCESS
-        if (ttsReady) tts?.language = Locale("fa", "IR")
+        if (ttsReady) tts?.language = Locale("tr", "TR")
     }
 
     private fun showProviderSettings() {
@@ -88,37 +401,37 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             setPadding(24, 12, 24, 4)
         }
         endpointInput = EditText(this).apply {
-            hint = "HTTPS یا لوکال: http://127.0.0.1:11434/v1"
+            hint = "HTTPS veya yerel Ollama: http://127.0.0.1:11434/v1"
             setText(getSharedPreferences("eda_agent", MODE_PRIVATE).getString("endpoint", "https://api.openai.com/v1"))
         }
         modelInput = EditText(this).apply {
-            hint = "نام مدل"
+            hint = "Model adı"
             setText(getSharedPreferences("eda_agent", MODE_PRIVATE).getString("model", "gpt-4o-mini"))
         }
-        keyInput = EditText(this).apply { hint = "کلید API (برای مدل محلی خالی بگذار)" }
+        keyInput = EditText(this).apply { hint = "API anahtarı (yerel modelde boş bırak)" }
         box.addView(TextView(this).apply {
-            text = "API سازگار با OpenAI/Ollama. HTTP فقط برای localhost/127.0.0.1 مجاز است. کلید آنلاین فقط در حافظه می‌ماند و برای مدل محلی لازم نیست."
+            text = "OpenAI uyumlu API / Ollama. HTTP yalnızca yerel localhost adreslerinde izinlidir. API anahtarı diske kaydedilmez."
         })
         box.addView(endpointInput)
         box.addView(modelInput)
         box.addView(keyInput)
         AlertDialog.Builder(this)
-            .setTitle("اتصال هوش مصنوعی")
+            .setTitle("Yapay zekâ bağlantısı")
             .setView(box)
-            .setNegativeButton("لغو", null)
-            .setPositiveButton("ذخیره و اتصال") { _, _ ->
+            .setNegativeButton("İptal", null)
+            .setPositiveButton("Kaydet ve bağlan") { _, _ ->
                 val endpoint = endpointInput.text.toString().trim().trimEnd('/')
                 val model = modelInput.text.toString().trim()
                 val key = keyInput.text.toString().trim()
                 if (!isAllowedEndpoint(endpoint) || model.isBlank()) {
-                    show("آدرس باید HTTPS باشد؛ HTTP فقط برای localhost یا 127.0.0.1 مجاز است. نام مدل هم لازم است.")
+                    show("Adres HTTPS olmalı; HTTP yalnızca localhost için izinli. Model adı gerekli.")
                 } else if (!endpoint.startsWith("http://") && key.isBlank()) {
-                    show("برای سرویس آنلاین کلید API لازم است؛ برای مدل محلی کلید را خالی بگذار.")
+                    show("Çevrim içi servis için API anahtarı gerekli; yerel modelde boş bırak.")
                 } else {
                     apiKey = key
                     getSharedPreferences("eda_agent", MODE_PRIVATE).edit()
                         .putString("endpoint", endpoint).putString("model", model).apply()
-                    show("تنظیمات ذخیره شد؛ کلید فقط تا بسته‌شدن برنامه در حافظه می‌ماند.")
+                    show("Ayarlar kaydedildi; API anahtarı yalnızca bellekte tutuluyor.")
                 }
             }.show()
     }
@@ -126,11 +439,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun startSpeech() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fa-IR")
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "فرمانت را بگو")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "tr-TR")
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Komutunu söyle")
         }
         try { startActivityForResult(intent, requestSpeech) }
-        catch (_: Exception) { show("سرویس تشخیص گفتار روی گوشی در دسترس نیست.") }
+        catch (_: Exception) { show("Telefonda konuşma tanıma servisi bulunamadı. Google uygulamasında çevrimdışı Türkçe dilini indir.") }
     }
 
     @Deprecated("Handled for compatibility with Android speech recognizer")
@@ -145,44 +459,208 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun handleCommand(raw: String) {
         val q = raw.trim().lowercase(Locale.ROOT)
-        if (q.isBlank()) { show("فرمان خالی است."); return }
+        if (q.isBlank()) { show("Komut boş."); return }
+        val learned = try {
+            JSONObject(getSharedPreferences("eda_agent", MODE_PRIVATE).getString("learned_map", "{}").orEmpty()).optString(q, "").takeIf { it.isNotBlank() }
+        } catch (_: Exception) { null }
+        if (learned != null && learned != q) { handleCommand(learned); return }
         when {
-            q.contains("ساعت") || q == "time" ->
-                show("ساعت " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()))
-            q.contains("تاریخ") || q.contains("امروز") ->
-                show("تاریخ " + SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Date()))
-            q.contains("چراغ") && (q.contains("روشن") || q.contains("خاموش") || q.contains("باز")) ->
-                setTorch(!q.contains("خاموش"))
+            q.contains("konumum") || q.contains("neredeyim") || q.contains("telefonumu bul") -> locatePhone()
+            q.contains("ses düzeyi") || q.contains("ses ayarı") || q.contains("müzik kontrol") || q.contains("volume") -> showMediaPanel()
+            q.contains("dolar") && (q.contains("kur") || q.contains("kaç") || q.contains("fiyat")) -> fetchUsdIrr()
+            q == "فرمان یاد بگیر" || q == "komut öğren" || q == "komut ogren" -> promptLearnCommand()
+            q == "yardım" || q == "yardim" || q == "komutlar" || q == "help" ->
+                show("Komutlar: saat kaç; bugün tarih; feneri aç/kapat; not al ...; notlarım; notlarımı paylaş; günlük ...; günlüğümü göster; hatırlat 19:30 su iç; pil durumu; hesapla 12*(5+3); hava durumu Tebriz; konumum; ses düzeyi; dolar kuru; komut öğren. Serbest sohbet için AI bağlantısı gerekir.")
+            q.contains("ساعت") || q.contains("saat") || q == "time" ->
+                show("Saat " + SimpleDateFormat("hh:mm a", Locale("tr", "TR")).format(Date()))
+            q.contains("تاریخ") || q.contains("امروز") || q.contains("tarih") || q.contains("bugün") ->
+                show("Tarih " + SimpleDateFormat("dd MMMM yyyy", Locale("tr", "TR")).format(Date()))
+            (q.contains("چراغ") && (q.contains("روشن") || q.contains("خاموش") || q.contains("باز"))) || (q.contains("fener") && (q.contains("aç") || q.contains("kapat")) ) ->
+                setTorch(!(q.contains("خاموش") || q.contains("kapat")))
             q.startsWith("یادداشت ") || q.startsWith("یادداشت:") -> {
                 val note = raw.substringAfter(if (q.startsWith("یادداشت:")) ":" else "یادداشت").trim()
-                if (note.isBlank()) show("متن یادداشت را هم بگو.")
+                if (note.isBlank()) show("Not metnini de söyle.")
                 else {
                     val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
                     val old = prefs.getString("notes", "").orEmpty()
                     prefs.edit().putString("notes", (old + "\n• " + note).takeLast(20000)).apply()
-                    show("یادداشت روی همین گوشی ذخیره شد.")
+                    show("Not Eda’nın yerel hafızasına kaydedildi.")
                 }
             }
-            q.contains("یادداشت‌ها") || q.contains("یادداشت ها") -> {
+            q.contains("یادداشت‌ها") || q.contains("یادداشت ها") || q.contains("notlarım") || q.contains("notlar") -> {
                 val notes = getSharedPreferences("eda_agent", MODE_PRIVATE).getString("notes", "").orEmpty()
-                show(if (notes.isBlank()) "هنوز یادداشتی ذخیره نشده." else notes)
+                show(if (notes.isBlank()) "Henüz not yok." else notes)
+            }
+            q.startsWith("not al ") || q.startsWith("not:") -> {
+                val note = raw.substringAfter(if (q.startsWith("not:")) ":" else "not al").trim()
+                if (note.isBlank()) show("Not metnini de söyle.")
+                else {
+                    val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+                    val oldNotes = prefs.getString("notes", "").orEmpty()
+                    prefs.edit().putString("notes", (oldNotes + "\n• " + note).takeLast(20000)).apply()
+                    show("Not Eda'nın yerel hafızasına kaydedildi.")
+                }
+            }
+            q.startsWith("günlük ") || q.startsWith("gunluk ") || q.startsWith("günlüğe yaz ") || q.startsWith("günlüğe kaydet ") -> saveDiary(raw.substringAfter(" ").trim())
+            q.contains("günlüğüm") || q.contains("gunlugum") || q.contains("günlükler") || q.contains("günlüğü göster") || q.contains("günlüğümü göster") -> showDiary()
+            q.startsWith("hatırlat ") || q.startsWith("hatirlat ") || q.startsWith("hatırlatıcı ") -> scheduleReminder(raw.substringAfter(" ").trim())
+            q.contains("pil kaç") || q.contains("pil durumu") || q.contains("batarya") || q.contains("pil yüzde") || q.contains("şarj durumu") || q.contains("battery") || q.contains("باتری") -> showBattery()
+            q.startsWith("hesapla ") || q.startsWith("hesap ") || q.startsWith("hesapla:") -> calculate(raw.substringAfter(" ").trim())
+            q == "notlarımı paylaş" || q == "notlarimi paylas" -> shareAllNotes()
+            q.startsWith("notu paylaş ") || q.startsWith("notu paylas ") || q.startsWith("notu paylaş:") -> shareNote(raw.substringAfter(" ").trim())
+            q == "hava durumu" || q == "hava nasıl" || q == "hava nasil" ->
+                show("Hangi şehir için hava durumunu istiyorsun? Örnek: hava durumu Tebriz")
+            q.startsWith("hava durumu ") -> fetchWeather(raw.substringAfter("hava durumu").trim())
+            q.contains("araba modu") -> {
+                val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+                val enabled = !prefs.getBoolean("car_mode", false)
+                prefs.edit().putBoolean("car_mode", enabled).apply()
+                show(if (enabled) "Araba modu açık. Sürüşte ekranla uğraşma." else "Araba modu kapalı.")
             }
             else -> askModel(raw)
         }
     }
 
+
+    private fun saveDiary(entry: String) {
+        if (entry.isBlank()) { show("Günlük metnini söyle."); return }
+        val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
+        val old = prefs.getString("diary", "").orEmpty()
+        val stamp = SimpleDateFormat("dd MMM yyyy hh:mm a", Locale("tr", "TR")).format(Date())
+        prefs.edit().putString("diary", (old + "\n[" + stamp + "] " + entry).takeLast(30000)).apply()
+        show("Günlüğe kaydettim.")
+    }
+
+    private fun showDiary() {
+        val diary = getSharedPreferences("eda_agent", MODE_PRIVATE).getString("diary", "").orEmpty()
+        show(if (diary.isBlank()) "Henüz günlük kaydı yok." else diary.takeLast(5000))
+    }
+
+    private fun scheduleReminder(value: String) {
+        val parts = value.split(" ", limit = 2)
+        if (parts.size < 2 || !parts[0].matches(Regex("\\d{1,2}:\\d{2}"))) {
+            show("Örnek: hatırlat 19:30 su iç"); return
+        }
+        val hm = parts[0].split(":")
+        val hour = hm[0].toIntOrNull() ?: -1
+        val minute = hm[1].toIntOrNull() ?: -1
+        if (hour !in 0..23 || minute !in 0..59) { show("Saat geçersiz. Örnek: 19:30"); return }
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 7003)
+        }
+        val cal = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, hour); set(java.util.Calendar.MINUTE, minute)
+            set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+            if (timeInMillis <= System.currentTimeMillis()) add(java.util.Calendar.DAY_OF_YEAR, 1)
+        }
+        val id = (System.currentTimeMillis() % Int.MAX_VALUE).toInt()
+        val intent = Intent(this, ReminderReceiver::class.java).putExtra("message", parts[1]).putExtra("id", id)
+        val pending = PendingIntent.getBroadcast(this, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val alarm = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) alarm.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pending)
+            else alarm.set(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pending)
+            show("Hatırlatıcı kuruldu: " + SimpleDateFormat("hh:mm a", Locale("tr", "TR")).format(cal.time) + " · " + parts[1])
+        } catch (_: Exception) { show("Hatırlatıcı kurulamadı; bildirim izinlerini kontrol et.") }
+    }
+
+
+    private fun fetchWeather(city: String) {
+        if (city.isBlank()) { show("Şehir adı yaz. Örnek: hava durumu Tebriz"); return }
+        if (busy) { show("Bir istek sürüyor; lütfen bekle."); return }
+        busy = true
+        show("$city için güncel hava durumu aranıyor…")
+        Thread {
+            val result = try {
+                fun getJson(url: String): JSONObject {
+                    val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                        connectTimeout = 10000; readTimeout = 12000; instanceFollowRedirects = false
+                        setRequestProperty("Accept", "application/json")
+                    }
+                    try {
+                        val code = conn.responseCode
+                        val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+                        val body = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+                        if (code !in 200..299) error("HTTP $code")
+                        return JSONObject(body)
+                    } finally { conn.disconnect() }
+                }
+                val encodedCity = java.net.URLEncoder.encode(city, "UTF-8")
+                val geo = getJson("https://geocoding-api.open-meteo.com/v1/search?name=$encodedCity&count=1&language=tr&format=json")
+                val place = geo.optJSONArray("results")?.optJSONObject(0) ?: error("Şehir bulunamadı")
+                val lat = place.getDouble("latitude")
+                val lon = place.getDouble("longitude")
+                val name = place.optString("name", city)
+                val country = place.optString("country", "")
+                val wx = getJson("https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&timezone=auto")
+                val current = wx.getJSONObject("current")
+                val code = current.optInt("weather_code", -1)
+                val desc = when (code) {
+                    0 -> "Açık"; 1 -> "Çoğunlukla açık"; 2 -> "Parçalı bulutlu"; 3 -> "Kapalı"
+                    45, 48 -> "Sisli"; 51, 53, 55 -> "Çisenti"; 56, 57 -> "Dondurucu çisenti"
+                    61, 63, 65 -> "Yağmurlu"; 66, 67 -> "Dondurucu yağmur"
+                    71, 73, 75, 77 -> "Karlı"; 80, 81, 82 -> "Sağanak yağış"
+                    85, 86 -> "Kar sağanağı"; 95 -> "Gök gürültülü fırtına"; 96, 99 -> "Dolu ihtimalli fırtına"
+                    else -> "Hava durumu"
+                }
+                val placeName = if (country.isBlank()) name else "$name, $country"
+                "$placeName güncel hava: $desc. Sıcaklık ${current.optDouble("temperature_2m")}°C, hissedilen ${current.optDouble("apparent_temperature")}°C, nem %${current.optInt("relative_humidity_2m")}, rüzgâr ${current.optDouble("wind_speed_10m")} km/sa. Veriler internetten alındı."
+            } catch (e: Exception) {
+                "Hava durumu alınamadı. İnternet bağlantısını ve şehir adını kontrol et. Ayrıntı: ${e.message ?: e.javaClass.simpleName}"
+            }
+            runOnUiThread { busy = false; show(result) }
+        }.start()
+    }
+
+    private fun showBattery() {
+        val manager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+        val level = manager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        val state = registerReceiver(null, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val plugged = state?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+        show("Pil: %$level · " + if (plugged != 0) "Şarj oluyor." else "Şarjda değil.")
+    }
+
+    private fun calculate(expression: String) {
+        try {
+            val result = SafeCalculator.eval(expression)
+            show("Sonuç: " + if (result % 1.0 == 0.0) result.toLong().toString() else result.toString())
+        } catch (e: Exception) { show("Hesaplanamadı: " + (e.message ?: "geçersiz işlem")) }
+    }
+
+    private fun shareNote(note: String) {
+        if (note.isBlank()) { show("Örnek: notu paylaş alışveriş listesi"); return }
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "Eda notu")
+            putExtra(Intent.EXTRA_TEXT, note)
+        }
+        startActivity(Intent.createChooser(send, "Notu Samsung Notes veya başka uygulamayla paylaş"))
+    }
+
+
+    private fun shareAllNotes() {
+        val notes = getSharedPreferences("eda_agent", MODE_PRIVATE).getString("notes", "").orEmpty()
+        if (notes.isBlank()) { show("Henüz kaydedilmiş not yok."); return }
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "Eda notlarım")
+            putExtra(Intent.EXTRA_TEXT, notes)
+        }
+        startActivity(Intent.createChooser(send, "Notları Samsung Notes veya başka uygulamayla paylaş"))
+    }
+
     private fun askModel(prompt: String) {
-        if (busy) { show("یک درخواست در حال اجراست؛ کمی صبر کن."); return }
+        if (busy) { show("Bir istek sürüyor; lütfen bekle."); return }
         val prefs = getSharedPreferences("eda_agent", MODE_PRIVATE)
         val endpoint = prefs.getString("endpoint", "https://api.openai.com/v1").orEmpty().trimEnd('/')
         val model = prefs.getString("model", "gpt-4o-mini").orEmpty()
         val key = apiKey
         if (!isAllowedEndpoint(endpoint) || (!endpoint.startsWith("http://") && key.isBlank())) {
-            show("برای پرسش آزاد، اتصال مدل را تنظیم کن. مدل محلی می‌تواند بدون کلید باشد؛ فرمان‌های محلی بدون مدل هم کار می‌کنند.")
+            show("Serbest sohbet veya canlı hava durumu için Yapay Zekâ bağlantısını ayarla. Yerel komutlar model olmadan da çevrimdışı çalışır.")
             return
         }
         busy = true
-        show("دارم فکر می‌کنم…")
+        show("Düşünüyorum…")
         Thread {
             val result = AgentRuntime(applicationContext).answer(prompt, endpoint, model, key)
             runOnUiThread { busy = false; show(result) }
@@ -211,10 +689,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             val cameraId = manager.cameraIdList.firstOrNull {
                 manager.getCameraCharacteristics(it).get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
             }
-            if (cameraId == null) { show("این گوشی چراغ‌قوهٔ قابل‌کنترل پیدا نکرد."); return }
+            if (cameraId == null) { show("Bu telefonda kontrol edilebilir fener bulunamadı."); return }
             manager.setTorchMode(cameraId, enable)
-            show(if (enable) "چراغ‌قوه روشن شد." else "چراغ‌قوه خاموش شد.")
-        } catch (e: Exception) { show("چراغ‌قوه اجرا نشد: " + (e.message ?: "خطای نامشخص")) }
+            show(if (enable) "Fener açıldı." else "Fener kapatıldı.")
+        } catch (e: Exception) { show("Fener çalıştırılamadı: " + (e.message ?: "bilinmeyen hata")) }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, results: IntArray) {
@@ -223,7 +701,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             val action = pendingTorch
             pendingTorch = null
             if (results.isNotEmpty() && results[0] == PackageManager.PERMISSION_GRANTED && action != null) setTorch(action)
-            else show("بدون اجازهٔ دوربین، کنترل چراغ‌قوه ممکن نیست.")
+            else show("Kamera izni olmadan fener kontrol edilemez.")
         }
     }
 
