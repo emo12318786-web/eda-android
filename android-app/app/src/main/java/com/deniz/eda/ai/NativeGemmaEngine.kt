@@ -18,18 +18,26 @@ class NativeGemmaEngine {
     var state: State = State.UNAVAILABLE
         private set
 
+    @Volatile
+    private var runtimeLoaded = false
+
     private var loadedModelPath: String? = null
 
-    fun isRuntimeBundled(): Boolean = try {
-        System.loadLibrary("eda_llama")
-        state = State.READY
-        true
-    } catch (_: UnsatisfiedLinkError) {
-        state = State.UNAVAILABLE
-        false
-    } catch (_: SecurityException) {
-        state = State.UNAVAILABLE
-        false
+    @Synchronized
+    fun isRuntimeBundled(): Boolean {
+        if (runtimeLoaded) return true
+        return try {
+            System.loadLibrary("eda_llama")
+            runtimeLoaded = true
+            if (state == State.UNAVAILABLE) state = State.READY
+            true
+        } catch (_: UnsatisfiedLinkError) {
+            state = State.UNAVAILABLE
+            false
+        } catch (_: SecurityException) {
+            state = State.UNAVAILABLE
+            false
+        }
     }
 
     /**
@@ -50,6 +58,7 @@ class NativeGemmaEngine {
             ok
         } catch (_: UnsatisfiedLinkError) {
             state = State.UNAVAILABLE
+            loadedModelPath = null
             false
         }
     }
@@ -69,10 +78,23 @@ class NativeGemmaEngine {
     @Synchronized
     fun unload() {
         if (state == State.MODEL_LOADED && isRuntimeBundled()) {
-            try { nativeUnloadModel() } catch (_: UnsatisfiedLinkError) { }
+            try {
+                nativeUnloadModel()
+            } catch (_: UnsatisfiedLinkError) {
+                state = State.UNAVAILABLE
+                runtimeLoaded = false
+            }
         }
         loadedModelPath = null
-        state = if (isRuntimeBundled()) State.READY else State.UNAVAILABLE
+        if (state != State.UNAVAILABLE && state != State.CLOSED) {
+            state = State.READY
+        }
+    }
+
+    @Synchronized
+    fun close() {
+        unload()
+        state = State.CLOSED
     }
 
     private external fun nativeLoadModel(path: String): Boolean
