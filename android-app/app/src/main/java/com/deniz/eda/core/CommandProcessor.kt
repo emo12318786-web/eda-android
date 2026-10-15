@@ -874,9 +874,30 @@ object CommandProcessor {
             }
 
 else -> {
-                val aiCevap = AiRouter.sor(metinHam, context = context)
-                if (aiCevap != null) KomutSonucu.Cevap(aiCevap)
-                else KomutSonucu.Cevap("Şu an cevap veremiyorum $hitap, ama dinliyorum.")
+                // Basit sosyal ifadeler ağ sağlayıcısına bağlı kalmasın.
+                // Böylece bağlantı kesilince selamlaşma ve destek isteği de çalışır.
+                val sosyal = metin.lowercase(Locale.ROOT)
+                    .replace(Regex("[^a-zçğıöşü\\s]"), " ")
+                    .replace(Regex("\\s+"), " ")
+                    .trim()
+                when {
+                    sosyal in setOf("merhaba", "selam", "eda merhaba", "hey eda", "günaydın", "gunaydin") ->
+                        KomutSonucu.Cevap("Merhaba $hitap, buradayım. Nasılsın?")
+                    sosyal in setOf("iyi misin", "nasılsın", "nasilsin", "ne haber", "iyi misin eda") ->
+                        KomutSonucu.Cevap("İyiyim $hitap, buradayım. Sen nasılsın?")
+                    sosyal.contains("geri döndüm") || sosyal.contains("geri dondum") ->
+                        KomutSonucu.Cevap("Hoş geldin $hitap, seni dinliyorum.")
+                    (sosyal.contains("yorgun") || sosyal.contains("yoruldum") ||
+                        sosyal.contains("kafam çok sıkılmış") || sosyal.contains("kafam cok sikilmis")) &&
+                        (sosyal.contains("benimle konuş") || sosyal.contains("benimle konus") ||
+                            sosyal.contains("sohbet")) ->
+                        KomutSonucu.Cevap("Buradayım $hitap. Bugün seni en çok ne yordu? İstersen anlat, dinliyorum.")
+                    else -> {
+                        val aiCevap = AiRouter.sor(metinHam, context = context)
+                        if (aiCevap != null) KomutSonucu.Cevap(aiCevap)
+                        else KomutSonucu.Cevap("Şu an cevap veremiyorum $hitap, ama dinliyorum.")
+                    }
+                }
             }
         }
     }
