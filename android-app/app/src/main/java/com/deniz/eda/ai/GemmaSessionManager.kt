@@ -29,9 +29,19 @@ class GemmaSessionManager(context: Context) {
     @Volatile
     private var loadedSlot: GemmaModelStore.Slot? = null
 
+    /**
+     * Replacing a model currently in use must unload its native context first.
+     * Otherwise the runtime could keep a stale file mapping while the store
+     * reports that the newly imported model is active.
+     */
     @Synchronized
-    fun importModel(uri: Uri, slot: GemmaModelStore.Slot): GemmaModelStore.ModelInfo =
-        store.importGguf(appContext, uri, slot)
+    fun importModel(uri: Uri, slot: GemmaModelStore.Slot): GemmaModelStore.ModelInfo {
+        if (loadedSlot == slot) {
+            engine.unload()
+            loadedSlot = null
+        }
+        return store.importGguf(appContext, uri, slot)
+    }
 
     @Synchronized
     fun status(): Status {
