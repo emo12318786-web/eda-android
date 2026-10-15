@@ -103,7 +103,7 @@ KURALLAR:
         try {
             val local = nativeSession(ctx).generate(
                 task = GemmaSessionManager.Task.LIGHT,
-                prompt = sistemMesaji + "\\n\\nKullanıcı: " + kullaniciSorusu + "\\nEda:",
+                prompt = sistemMesaji + "\n\nKullanıcı: " + kullaniciSorusu + "\nEda:",
                 maxTokens = 180
             )
             if (!local.isNullOrBlank()) {
