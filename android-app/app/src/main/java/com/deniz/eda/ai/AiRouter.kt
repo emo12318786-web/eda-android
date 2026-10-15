@@ -10,6 +10,16 @@ import java.util.Locale
 
 object AiRouter {
 
+    @Volatile
+    private var nativeGemmaSession: GemmaSessionManager? = null
+
+    private fun nativeSession(context: Context): GemmaSessionManager =
+        nativeGemmaSession ?: synchronized(this) {
+            nativeGemmaSession ?: GemmaSessionManager(context.applicationContext).also {
+                nativeGemmaSession = it
+            }
+        }
+
     private data class Saglayici(
         val ad: String,
         val baseUrl: String,
@@ -87,6 +97,26 @@ KURALLAR:
         context: android.content.Context? = null
     ): String? = withContext(Dispatchers.IO) {
         val ctx = context ?: return@withContext null
+
+        // Prefer a model imported into EDA's private storage. This path runs
+        // fully in-process and does not use Termux, Ollama, or network access.
+        try {
+            val local = nativeSession(ctx).generate(
+                task = GemmaSessionManager.Task.LIGHT,
+                prompt = sistemMesaji + "\\n\\nKullanıcı: " + kullaniciSorusu + "\\nEda:",
+                maxTokens = 180
+            )
+            if (!local.isNullOrBlank()) {
+                android.util.Log.i("AiRouter", "Native Gemma offline response returned")
+                return@withContext local.trim()
+            }
+            android.util.Log.i("AiRouter", "Native Gemma unavailable/no GGUF; trying configured providers")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.e("AiRouter", "Native Gemma failed; trying online providers", e)
+        }
+
         for (s in saglayicilar(ctx)) {
             val anahtar = s.apiKey()
             if (s.needsKey && anahtar.isBlank()) {
