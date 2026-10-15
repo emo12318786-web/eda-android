@@ -15,9 +15,12 @@ object AffectionResponses {
     fun bul(metin: String, hitap: String): String? {
 
         // ═══ ۱. Teşekkür ═══
-        if (v(metin, "teşekkür", "tesekkur", "sağol", "sagol",
-              "memnun oldum", "eyvallah", "minnettarım", "minnettarim",
-              "çok sağol", "cok sagol", "ellerine sağlık", "ellerine saglik")) {
+        if (v(metin, "teşekkür", "tesekkur", "teşekkür ederim", "tesekkur ederim",
+              "teşekkürler", "tesekkurler", "çok teşekkür ederim", "cok tesekkur ederim",
+              "çok teşekkürler", "cok tesekkurler", "sağ ol", "sag ol", "sağolasın", "sagolasin",
+              "sağol", "sagol", "sağ olun", "sag olun", "memnun oldum", "eyvallah",
+              "minnettarım", "minnettarim", "çok sağol", "cok sagol",
+              "ellerine sağlık", "ellerine saglik")) {
             return listOf(
                 "Rica ederim $hitap.",
                 "Ne demek $hitap, her zaman.",
