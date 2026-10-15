@@ -67,6 +67,25 @@ object CommandProcessor {
 
     // Critical intents such as location must not use fuzzy single-word matching:
     // Turkish "konuş" (talk) can be misheard as "konum" (location).
+    // Avoid triggering location when speech recognition confuses "konuş" with "konum".
+    private fun hasExplicitLocationQuestion(m: String): Boolean {
+        val normalized = m.lowercase(Locale.ROOT)
+            .replace(Regex("[^a-zçğıöşü\\s]"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        val conversational = listOf("konuş", "konus", "benimle konuş", "benimle konus",
+            "yorgun", "hissediyorum", "çalıştım", "calistim", "çalışmaktan",
+            "calismaktan", "benimle sohbet", "sohbet et")
+        if (conversational.any { normalized.contains(it) }) return false
+        val explicitQuestions = listOf("neredeyim", "nerdeyim", "konumum nerede",
+            "konumum neresi", "şu an neredeyim", "su an neredeyim",
+            "bulunduğum yer neresi", "bulundugum yer neresi",
+            "konumumu göster", "konumumu goster")
+        return explicitQuestions.any { phrase ->
+            Regex("(^|\\\\s)" + Regex.escape(phrase) + "($|\\\\s)").containsMatchIn(normalized)
+        }
+    }
+
     private fun hasExactIntent(m: String, vararg phrases: String): Boolean {
         val normalized = m.lowercase(Locale.ROOT)
             .replace(Regex("[^a-zçğıöşü\\s]"), " ")
@@ -506,7 +525,7 @@ object CommandProcessor {
             }
 
             // Konum - aktif konum ister
-            hasExactIntent(metin, "konum", "neredeyim", "nerdeyim", "konumum nerede") -> {
+            hasExplicitLocationQuestion(metin) -> {
                 val metinCevap = LocationUtils.konumMetni(context, hitap)
                 KomutSonucu.Cevap(metinCevap)
             }
