@@ -187,12 +187,9 @@ object CommandProcessor {
         val hitap = Settings.kullaniciAdi
         var metin = metinHam.lowercase(Locale.getDefault()).trim()
 
-        // ═══ حافظه واقعی — ذخیره سؤال کاربر ═══
-        MemoryStore.ekle(context, metinHam, "sohbet")
-
-        // ═══ یادگیری خودکار ═══
+        // حافظه فقط برای اطلاعاتی است که کاربر عمداً می‌خواهد نگه داریم.
+        // گفت‌وگوی عادی و تکرار کلمات نباید به حافظهٔ ماندگار تبدیل شود.
         otomatikOgren(context, metinHam)
-        tekrarKontrol(context, metinHam)
 
         // ═══ خود-تصحیح: دوباره بررسی کن (قبل از ذخیره son_soru) ═══
         val mt = metin.replace(Regex("[^a-zçğıöşü\\s]"), " ").replace(Regex("\\s+"), " ").trim()
@@ -518,6 +515,32 @@ object CommandProcessor {
             v(metin, "dolar", "altın", "altin", "دلار", "طلا", "سکه", "sekke", "euro", "یورو", "تتر", "usdt", "bitcoin", "بیت", "ethereum", "اتریوم", "fiyat", "قیمت") ->
                 KomutSonucu.Cevap(CurrencyUtils.fiyatlariGetir(metin, hitap))
 
+
+            // Wi-Fi komutu, genel "kapat" eşleşmesinden önce işlenir.
+            // Android 10+ üçüncü taraf uygulamaların Wi-Fi'yi sessizce kapatmasına izin vermez;
+            // sistem Wi-Fi panelini açıp kullanıcıya kontrolü bırakıyoruz.
+            (v(metin, "wifi", "wi-fi") && v(metin, "kapat", "kapa", "aç", "ac", "açsana", "acsana")) -> {
+                val acildi = try {
+                    val hedef = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                        android.content.Intent(android.provider.Settings.Panel.ACTION_WIFI)
+                    } else {
+                        android.content.Intent(android.provider.Settings.ACTION_WIFI_SETTINGS)
+                    }
+                    hedef.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(hedef)
+                    true
+                } catch (e: Exception) {
+                    try {
+                        context.startActivity(android.content.Intent(android.provider.Settings.ACTION_WIFI_SETTINGS)
+                            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                        true
+                    } catch (ignored: Exception) { false }
+                }
+                KomutSonucu.Cevap(
+                    if (acildi) "Wi-Fi ayarlarını açtım. Android, uygulamaların Wi-Fi'yi doğrudan kapatmasına izin vermiyor; buradan kapatabilirsin $hitap."
+                    else "Wi-Fi ayarlarını açamadım $hitap. Telefon ayarlarından Wi-Fi bölümünü açıp kapatabilirsin."
+                )
+            }
 
             v(metin, "kapat", "kapa", "kapt") -> KomutSonucu.KapatOnayIste
 
