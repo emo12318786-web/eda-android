@@ -7,11 +7,14 @@ import com.deniz.eda.data.db.EdaDatabase
 import com.deniz.eda.utils.BatteryUtils
 import fi.iki.elonen.NanoHTTPD
 import kotlinx.coroutines.runBlocking
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import com.deniz.eda.utils.DigitUtils
 
 /**
