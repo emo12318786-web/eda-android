@@ -1,12 +1,17 @@
 package com.deniz.eda.ui.dashboard
 
 import android.content.Intent
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -38,6 +43,13 @@ private val Warn = Color(0xFFFFC36E)
 private val Bad = Color(0xFFFF788B)
 
 class DashboardActivity : ComponentActivity() {
+    private var pendingStartAction: String? = null
+    private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val action = pendingStartAction
+        pendingStartAction = null
+        if (granted && action != null) sendAction(action)
+        else if (!granted) android.widget.Toast.makeText(this, "Eda için mikrofon izni gerekli.", android.widget.Toast.LENGTH_LONG).show()
+    }
     private val viewModel: DashboardViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,6 +72,7 @@ class DashboardActivity : ComponentActivity() {
 
     private fun sendAction(action: String) {
         when (action) {
+            "ACTION_SETTINGS" -> { startActivity(Intent(this, com.deniz.eda.ui.SettingsActivity::class.java)); return }
             "ACTION_AI_GROQ" -> viewModel.setAiProvider("groq")
             "ACTION_AI_POLLINATIONS" -> viewModel.setAiProvider("pollinations")
             "ACTION_AI_OLLAMA" -> viewModel.setAiProvider("ollama")
@@ -136,6 +149,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     Text("EDA", fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
                     Text("KİŞİSEL ASİSTAN • V5", fontSize = 9.sp, color = Muted, letterSpacing = 1.4.sp)
                 }
+                Text("⚙", modifier = Modifier.clickable { onAction("ACTION_SETTINGS") }.padding(8.dp), color = Violet, fontSize = 24.sp)
                 Surface(shape = RoundedCornerShape(50), color = statusColor.copy(alpha = 0.12f),
                     border = BorderStroke(1.dp, statusColor.copy(alpha = 0.5f))) {
                     Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {

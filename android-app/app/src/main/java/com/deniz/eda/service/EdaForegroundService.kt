@@ -62,6 +62,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private var hatirlatmaJob: Job? = null
     private var dinlemeAktif = false
     private var ttsHazir = false
+    private var retryJob: Job? = null
+    private var retryAttempt = 0
 
     // FAZ 2: guvenlik modu - hareket algilanirsa TTS ile yuksek uyari verir.
     private val securityMode by lazy {
@@ -218,7 +220,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
                 android.util.Log.d("EdaService", "AKTIF moda geçildi")
                 healthMonitorBaslat()
-                konus("Aktif modda çalışıyorum deniz.") { baslatDinleme() }
+                konus("Aktif modda çalışıyorum, ${Settings.kullaniciAdi}.") { baslatDinleme() }
             }
             
             "ACTION_UYKU" -> {
@@ -235,7 +237,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 speechRecognizer = null
                 bildirimGuncelle("💤 Uyku — Mikrofon kapalı")
                 android.util.Log.d("EdaService", "UYKU moda geçildi")
-                konus("Uyku moduna geçiyorum deniz.") { }
+                konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") { }
             }
             
             "ACTION_SPEAK" -> {
@@ -430,8 +432,24 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     }
 
     private fun yenidenDenemeyiPlanla() {
-        serviceScope.launch {
-            delay(if (mod == Mod.UYKU) Settings.uykuBeklemeAraligiMs else 300L)
+        // Tek bir yeniden-deneme işi tut: yinelenen callbacks hızlı bir retry
+        // döngüsü ve ERROR_RECOGNIZER_BUSY oluşturmasın.
+        if (retryJob?.isActive == true) return
+        val bekleme = if (mod == Mod.UYKU) {
+            Settings.uykuBeklemeAraligiMs.coerceAtLeast(1500L)
+        } else {
+            (700L * (1L shl retryAttempt.coerceIn(0, 3))).coerceAtMost(6000L)
+        }
+        retryAttempt = (retryAttempt + 1).coerceAtMost(4)
+        retryJob = serviceScope.launch {
+            delay(bekleme)
+            retryJob = null
+            if (mod == Mod.AKTIF && speechRecognizer == null &&
+                SpeechRecognizer.isRecognitionAvailable(this@EdaForegroundService)) {
+                speechRecognizer = createBestRecognizer()?.apply {
+                    setRecognitionListener(recognitionListener)
+                }
+            }
             baslatDinleme()
         }
     }
@@ -458,6 +476,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         override fun onResults(results: Bundle?) {
             dinlemeAktif = false
             ardisikHataSayisi = 0
+            retryAttempt = 0
             val list = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
             
             if (list.isNullOrEmpty()) {
@@ -485,9 +504,17 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             dinlemeAktif = false
             ardisikHataSayisi++
             android.util.Log.e("EdaService", "SpeechRecognizer hata kodu: $error (${hataAdi(error)}) ardisik=$ardisikHataSayisi")
-            if (ardisikHataSayisi >= 3 && !sttFallbackAktif) {
+            if (ardisikHataSayisi >= 5 && !sttFallbackAktif &&
+                (error == SpeechRecognizer.ERROR_CLIENT ||
+                 error == SpeechRecognizer.ERROR_TOO_MANY_REQUESTS ||
+                 error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY)) {
                 sttFallbackAktif = true
-                android.util.Log.w("EdaService", "Fallback aktif - SttActivity kullanilacak")
+                android.util.Log.w("EdaService", "Repeated recognizer failures; fallback activated")
+            }
+            if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY ||
+                error == SpeechRecognizer.ERROR_SERVER_DISCONNECTED) {
+                try { speechRecognizer?.cancel(); speechRecognizer?.destroy() } catch (_: Exception) {}
+                speechRecognizer = null
             }
             if (error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ||
                 error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED
@@ -605,7 +632,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                             mod = Mod.AKTIF
                             sonMod = "AKTIF"; Settings.sonMod = "AKTIF"
                             bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
-                            konus("Geri döndüm deniz, dinliyorum.") {
+                            konus("Geri döndüm, ${Settings.kullaniciAdi}, dinliyorum.") {
                                 baslatDinleme()
                             }
                         }
@@ -666,6 +693,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         pilJob?.cancel()
         hatirlatmaJob?.cancel()
         securityMode.durdur()
+        retryJob?.cancel()
         serviceScope.cancel()
         speechRecognizer?.destroy()
         if (ttsHazir) tts.shutdown()
