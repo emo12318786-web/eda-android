@@ -148,9 +148,30 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (q.isBlank()) { show("فرمان خالی است."); return }
         when {
             q.contains("ساعت") || q == "time" ->
-                show("ساعت " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()))
+                show("ساعت " + SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date()))
             q.contains("تاریخ") || q.contains("امروز") ->
                 show("تاریخ " + SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Date()))
+            (q.contains("باتری") || q.contains("شارژ گوشی") || q.contains("درصد شارژ")) ->
+                show(batteryStatus())
+            (q.contains("وای فای") || q.contains("وای‌فای") || q.contains("wifi") || q.contains("wi-fi")) &&
+                (q.contains("خاموش") || q.contains("روشن") || q.contains("قطع") || q.contains("وصل")) ->
+                openSystemSettings("wifi")
+            q.contains("تنظیمات صدا") || q.contains("صدای گوشی") ->
+                openSystemSettings("sound")
+            q.contains("تنظیمات نمایشگر") || q.contains("روشنایی") || q.contains("نور صفحه") ->
+                openSystemSettings("display")
+            q.contains("باز کن") && (q.contains("یوتیوب") || q.contains("youtube")) ->
+                openAllowedApp("youtube")
+            q.contains("باز کن") && (q.contains("مرورگر") || q.contains("کروم") || q.contains("chrome")) ->
+                openAllowedApp("chrome")
+            q.contains("باز کن") && (q.contains("نقشه") || q.contains("maps")) ->
+                openAllowedApp("maps")
+            q.contains("باز کن") && (q.contains("تلگرام") || q.contains("telegram")) ->
+                openAllowedApp("telegram")
+            q.contains("باز کن") && (q.contains("واتساپ") || q.contains("whatsapp")) ->
+                openAllowedApp("whatsapp")
+            q.contains("باز کن") && (q.contains("دوربین") || q.contains("camera")) ->
+                openAllowedApp("camera")
             q.contains("چراغ") && (q.contains("روشن") || q.contains("خاموش") || q.contains("باز")) ->
                 setTorch(!q.contains("خاموش"))
             q.startsWith("یادداشت ") || q.startsWith("یادداشت:") -> {
@@ -198,6 +219,60 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 else -> false
             }
         } catch (_: Exception) { false }
+    }
+
+    private fun batteryStatus(): String {
+        val intent = registerReceiver(null, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            ?: return "وضعیت باتری خوانده نشد."
+        val level = intent.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1)
+        val scale = intent.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, 100).coerceAtLeast(1)
+        val status = intent.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1)
+        if (level < 0) return "درصد باتری خوانده نشد."
+        val percent = level * 100 / scale
+        val charging = status == android.os.BatteryManager.BATTERY_STATUS_CHARGING ||
+            status == android.os.BatteryManager.BATTERY_STATUS_FULL
+        return "شارژ باتری $percent از ۱۰۰ درصد است؛ " +
+            if (status == android.os.BatteryManager.BATTERY_STATUS_FULL) "باتری کاملاً پر است."
+            else if (charging) "گوشی در حال شارژ است." else "گوشی به شارژر وصل نیست."
+    }
+
+    private fun openSystemSettings(kind: String) {
+        val intent = when (kind) {
+            "wifi" -> if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q)
+                Intent(Settings.Panel.ACTION_WIFI) else Intent(Settings.ACTION_WIFI_SETTINGS)
+            "sound" -> Intent(Settings.ACTION_SOUND_SETTINGS)
+            "display" -> Intent(Settings.ACTION_DISPLAY_SETTINGS)
+            else -> { show("این تنظیمات پشتیبانی نمی‌شود."); return }
+        }
+        try {
+            startActivity(intent)
+            show(when (kind) {
+                "wifi" -> "پنل وای‌فای باز شد. اندروید ممکن است خاموش/روشن‌کردن را به تأیید خودت بسپارد."
+                "sound" -> "تنظیمات صدا باز شد."
+                else -> "تنظیمات نمایشگر باز شد."
+            })
+        } catch (_: Exception) { show("بازکردن تنظیمات ممکن نشد.") }
+    }
+
+    private fun openAllowedApp(app: String) {
+        val packages = when (app) {
+            "chrome" -> listOf("com.android.chrome", "com.google.android.browser")
+            "youtube" -> listOf("com.google.android.youtube")
+            "maps" -> listOf("com.google.android.apps.maps")
+            "camera" -> listOf("com.sec.android.app.camera", "com.android.camera2", "com.google.android.GoogleCamera")
+            "whatsapp" -> listOf("com.whatsapp")
+            "telegram" -> listOf("org.telegram.messenger", "org.thunderdog.challegram")
+            else -> emptyList()
+        }
+        for (pkg in packages) {
+            val launch = packageManager.getLaunchIntentForPackage(pkg)
+            if (launch != null) {
+                try { startActivity(launch); show("برنامه باز شد: $app") }
+                catch (_: Exception) { show("بازکردن برنامه ممکن نشد.") }
+                return
+            }
+        }
+        show("این برنامه روی گوشی پیدا نشد یا نصب نیست.")
     }
 
     private fun setTorch(enable: Boolean) {
