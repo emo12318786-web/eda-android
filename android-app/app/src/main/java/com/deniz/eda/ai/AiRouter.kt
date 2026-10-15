@@ -98,24 +98,29 @@ KURALLAR:
     ): String? = withContext(Dispatchers.IO) {
         val ctx = context ?: return@withContext null
 
-        // Prefer a model imported into EDA's private storage. This path runs
-        // fully in-process and does not use Termux, Ollama, or network access.
-        try {
-            val local = nativeSession(ctx).generate(
-                // EDA bu sürümde yalnızca Gemma 2 2B kullanır; Gemma 3 slotuna yönlendirme yapma.
-                task = GemmaSessionManager.Task.DEEP,
-                prompt = sistemMesaji + "\n\nKullanıcı: " + kullaniciSorusu + "\nEda:",
-                maxTokens = 180
-            )
-            if (!local.isNullOrBlank()) {
-                android.util.Log.i("AiRouter", "Native Gemma offline response returned")
-                return@withContext local.trim()
+        // Honor the selected provider. Never run native Gemma first when the user
+        // explicitly selected an online provider: native inference can stall on
+        // long prompts and prevent the configured online route from being reached.
+        val selectedProvider = Settings.aiProvider.ifBlank { "ollama" }.lowercase(Locale.ROOT)
+        if (selectedProvider == "ollama") {
+            try {
+                val local = nativeSession(ctx).generate(
+                    task = GemmaSessionManager.Task.DEEP,
+                    prompt = sistemMesaji + "\n\nKullanıcı: " + kullaniciSorusu + "\nEda:",
+                    maxTokens = 180
+                )
+                if (!local.isNullOrBlank()) {
+                    android.util.Log.i("AiRouter", "Native Gemma offline response returned")
+                    return@withContext local.trim()
+                }
+                android.util.Log.i("AiRouter", "Native Gemma unavailable/no GGUF; trying configured providers")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("AiRouter", "Native Gemma failed; trying configured providers", e)
             }
-            android.util.Log.i("AiRouter", "Native Gemma unavailable/no GGUF; trying configured providers")
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            android.util.Log.e("AiRouter", "Native Gemma failed; trying online providers", e)
+        } else {
+            android.util.Log.i("AiRouter", "Native Gemma skipped; selected provider=$selectedProvider")
         }
 
         for (s in saglayicilar(ctx)) {
