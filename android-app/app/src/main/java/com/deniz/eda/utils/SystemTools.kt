@@ -1,6 +1,9 @@
 package com.deniz.eda.utils
 
 import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings as AndroidSettings
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.deniz.eda.core.Settings
@@ -47,6 +50,8 @@ Kullanıcı şu tür sorular sorarsa, sadece <TOOL>ADI</TOOL> yaz:
 - "saat kaç?" → <TOOL>GET_TIME</TOOL>
 - "bugünün tarihi" → <TOOL>GET_DATE</TOOL>
 - Kullanıcı açıkça feneri aç/kapat derse → <TOOL>FLASHLIGHT_ON</TOOL> / <TOOL>FLASHLIGHT_OFF</TOOL>
+- Kullanıcı YouTube, Chrome, WhatsApp, Telegram, Haritalar, Telefon, Mesajlar veya Kamera aç derse → <TOOL>OPEN_APP: uygulama</TOOL>
+- Kullanıcı Wi-Fi, ses veya ekran ayarlarını aç derse → <TOOL>OPEN_WIFI_SETTINGS</TOOL> / <TOOL>OPEN_SOUND_SETTINGS</TOOL> / <TOOL>OPEN_DISPLAY_SETTINGS</TOOL>
 - Kullanıcı açıkça bip sesini aç/kapat derse → <TOOL>BEEP_ON</TOOL> / <TOOL>BEEP_OFF</TOOL>
 - Kullanıcı müziği başlat/durdur/sonraki/önceki derse → <TOOL>MEDIA_PLAY</TOOL> / <TOOL>MEDIA_PAUSE</TOOL> / <TOOL>MEDIA_NEXT</TOOL> / <TOOL>MEDIA_PREVIOUS</TOOL>
 - Kullanıcı telefon ayarlarını veya TTS ayarlarını aç derse → <TOOL>OPEN_SETTINGS</TOOL> / <TOOL>OPEN_TTS_SETTINGS</TOOL>
@@ -88,6 +93,10 @@ Sen: Merhaba ${Settings.kullaniciAdi}, iyiyim. Sen nasılsın?
                 "GET_LEARNED" -> learnedText(context)
                 "GET_TIME" -> timeText()
                 "GET_DATE" -> dateText()
+                "OPEN_APP" -> openAllowedApp(context, arguments)
+                "OPEN_WIFI_SETTINGS" -> openSettingsPanel(context, "wifi")
+                "OPEN_SOUND_SETTINGS" -> openSettingsPanel(context, "sound")
+                "OPEN_DISPLAY_SETTINGS" -> openSettingsPanel(context, "display")
                 "SAVE_MEMORY" -> arguments.trim().takeIf { it.isNotBlank() }?.let {
                     MemoryStore.ekle(context, it, "agent")
                     "Bilgi hafızaya kaydedildi."
@@ -119,6 +128,49 @@ Sen: Merhaba ${Settings.kullaniciAdi}, iyiyim. Sen nasılsın?
         } catch (e: Exception) {
             "Araç hatası ($name): ${e.message}"
         }
+    }
+
+    private fun openSettingsPanel(context: Context, kind: String): String {
+        val intent = when (kind) {
+            "wifi" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) Intent(AndroidSettings.Panel.ACTION_WIFI)
+                else Intent(AndroidSettings.ACTION_WIFI_SETTINGS)
+            "sound" -> Intent(AndroidSettings.ACTION_SOUND_SETTINGS)
+            "display" -> Intent(AndroidSettings.ACTION_DISPLAY_SETTINGS)
+            else -> return "Bu ayar paneli desteklenmiyor."
+        }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        return try {
+            context.startActivity(intent)
+            when (kind) {
+                "wifi" -> "Wi-Fi ayarları açıldı. Android bu sürümde Wi-Fi'yi doğrudan kapatmaya izin vermeyebilir; gerekirse panelden değiştir."
+                "sound" -> "Ses ayarları açıldı."
+                else -> "Ekran ayarları açıldı."
+            }
+        } catch (_: Exception) { "Ayarlar açılamadı." }
+    }
+
+    private fun openAllowedApp(context: Context, raw: String): String {
+        val app = raw.trim().lowercase(java.util.Locale.ROOT)
+        val packages = when (app) {
+            "chrome", "browser", "tarayıcı", "کروم" -> listOf("com.android.chrome")
+            "youtube", "یوتیوب" -> listOf("com.google.android.youtube")
+            "maps", "map", "haritalar", "نقشه" -> listOf("com.google.android.apps.maps")
+            "camera", "kamera", "دوربین" -> listOf("com.sec.android.app.camera", "com.android.camera2")
+            "settings", "ayarlar", "تنظیمات" -> listOf("com.android.settings")
+            "whatsapp", "واتساپ" -> listOf("com.whatsapp")
+            "telegram", "تلگرام" -> listOf("org.telegram.messenger", "org.thunderdog.challegram")
+            "phone", "telefon", "تماس" -> listOf("com.samsung.android.dialer", "com.google.android.dialer", "com.android.dialer")
+            "messages", "mesajlar", "پیام‌ها" -> listOf("com.samsung.android.messaging", "com.google.android.apps.messaging")
+            else -> return "Bu uygulama güvenli açma listesinde yok."
+        }
+        for (pkg in packages) {
+            val launch = context.packageManager.getLaunchIntentForPackage(pkg) ?: continue
+            return try {
+                launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(launch)
+                "Uygulama açıldı: $app"
+            } catch (_: Exception) { "Uygulama açılamadı." }
+        }
+        return "İstenen uygulama telefonda bulunamadı."
     }
 
     private fun addReminder(context: Context, raw: String): String {
