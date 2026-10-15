@@ -85,13 +85,22 @@ class PanelServer(
                     .readTimeout(1200, TimeUnit.MILLISECONDS)
                     .callTimeout(1800, TimeUnit.MILLISECONDS)
                     .build()
-                val request = Request.Builder().url("$baseUrl/v1/models").get().build()
-                client.newCall(request).execute().use { response ->
-                    JSONObject().apply {
-                        put("connected", response.isSuccessful)
-                        put("url", baseUrl)
-                        put("message", if (response.isSuccessful) "Termux Ollama bağlı" else "Ollama yanıt verdi ama hata kodu: ${response.code}")
-                    }
+                // Check Ollama's native API first, then the OpenAI-compatible endpoint.
+                val nativeRequest = Request.Builder().url("$baseUrl/api/tags").get().build()
+                val nativeResponse = client.newCall(nativeRequest).execute()
+                val nativeCode = nativeResponse.code
+                val nativeOk = nativeResponse.isSuccessful
+                nativeResponse.close()
+                val openAiOk = if (nativeOk) {
+                    true
+                } else {
+                    val openAiRequest = Request.Builder().url("$baseUrl/v1/models").get().build()
+                    client.newCall(openAiRequest).execute().use { it.isSuccessful }
+                }
+                JSONObject().apply {
+                    put("connected", nativeOk || openAiOk)
+                    put("url", baseUrl)
+                    put("message", if (nativeOk || openAiOk) "Termux Ollama bağlı" else "Ollama yanıt vermedi (API kodu: $nativeCode)")
                 }
             }
         } catch (e: Exception) {
