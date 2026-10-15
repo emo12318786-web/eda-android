@@ -93,7 +93,7 @@ class SettingsActivity : AppCompatActivity() {
             val deep = if (status.deepModelReady) "var" else "yok"
             val runtime = if (status.runtimeAvailable) "hazır" else "APK'da motor bulunamadı"
             findViewById<TextView>(R.id.gemmaDurum).text =
-                "Yerel motor: $runtime\\nGemma 3 1B GGUF: $light\\nGemma 2 2B GGUF: $deep"
+                "Yerel motor: $runtime\nGemma 3 1B GGUF: $light\nGemma 2 2B GGUF: $deep"
         }
     }
 }
