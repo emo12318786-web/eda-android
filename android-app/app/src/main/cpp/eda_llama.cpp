@@ -115,7 +115,7 @@ Java_com_deniz_eda_ai_NativeGemmaEngine_nativeGenerate(JNIEnv *env, jobject, jst
         char piece[256];
         int32_t n = llama_token_to_piece(g_vocab, token, piece, sizeof(piece), 0, true);
         if (n > 0) answer.append(piece, (size_t)n);
-        batch = llama_batch_get_one(&token, 1);
+        llama_batch batch = llama_batch_get_one(&token, 1);
         if (llama_decode(g_context, batch) != 0) {
             EDA_LOGE("Generation decode failed at token %d", i);
             break;
