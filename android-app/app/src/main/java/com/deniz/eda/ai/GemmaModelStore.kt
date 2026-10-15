@@ -9,9 +9,8 @@ import java.security.MessageDigest
 /**
  * Stores user-selected GGUF model files in EDA's private app directory.
  *
- * This is deliberately independent from Termux and Ollama. Importing a model
- * does not execute it; inference is provided by the native llama.cpp runtime
- * that must be bundled with the Android app in a subsequent integration step.
+ * Importing a model is independent from Termux and Ollama. This class only
+ * validates/stores model files; the native inference runtime is separate.
  */
 class GemmaModelStore(context: Context) {
     private val root = File(context.filesDir, "models").apply { mkdirs() }
@@ -32,23 +31,43 @@ class GemmaModelStore(context: Context) {
     fun importGguf(context: Context, uri: Uri, slot: Slot): ModelInfo {
         val temp = File(root, "${slot.fileName}.importing")
         val destination = File(root, slot.fileName)
+        val backup = File(root, "${slot.fileName}.previous")
+        temp.delete()
+        backup.delete()
+
         try {
             context.contentResolver.openInputStream(uri)?.use { input ->
                 FileOutputStream(temp).use { output -> input.copyTo(output) }
             } ?: error("Cannot open selected model file")
 
-            require(temp.length() > 1024 * 1024) { "Selected file is too small to be a GGUF model" }
+            require(temp.length() > 1024 * 1024) {
+                "Selected file is too small to be a GGUF model"
+            }
             require(temp.inputStream().buffered().use { stream ->
                 val magic = ByteArray(4)
-                stream.read(magic) == 4 && magic.contentEquals(byteArrayOf(0x47, 0x47, 0x55, 0x46))
+                stream.read(magic) == 4 &&
+                    magic.contentEquals(byteArrayOf(0x47, 0x47, 0x55, 0x46))
             }) { "Invalid model file: GGUF header not found" }
 
-            if (destination.exists()) destination.delete()
-            check(temp.renameTo(destination)) { "Could not finalize imported model" }
+            // Keep the last working model if finalizing the new import fails.
+            if (destination.exists()) {
+                check(destination.renameTo(backup)) {
+                    "Could not preserve the existing model before import"
+                }
+            }
+            if (!temp.renameTo(destination)) {
+                if (backup.exists()) backup.renameTo(destination)
+                error("Could not finalize imported model")
+            }
+            backup.delete()
             return info(slot, destination)
         } catch (error: Throwable) {
             temp.delete()
+            if (!destination.exists() && backup.exists()) backup.renameTo(destination)
             throw error
+        } finally {
+            // A backup is only disposable after a successful replacement.
+            if (destination.exists()) backup.delete()
         }
     }
 
@@ -57,7 +76,7 @@ class GemmaModelStore(context: Context) {
         return if (file.isFile && file.length() > 1024 * 1024) info(slot, file) else null
     }
 
-    fun hasBothModels(): Boolean = Slot.entries.all { info(it) != null }
+    fun hasBothModels(): Boolean = Slot.values().all { info(it) != null }
 
     fun delete(slot: Slot): Boolean = File(root, slot.fileName).delete()
 
