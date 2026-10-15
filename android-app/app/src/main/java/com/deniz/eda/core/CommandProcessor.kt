@@ -604,15 +604,18 @@ object CommandProcessor {
 
             v(metin, "kapat", "kapa", "kapt") -> KomutSonucu.KapatOnayIste
 
-            // Saat - net dijital biçim
+            // Saat - onceki 12 saatlik soyleyis biçimi korunur
             v(metin, "saat", "sat", "sad") -> {
                 val simdi = Calendar.getInstance()
-                val cevap = String.format(
-                    Locale.ROOT,
-                    "Saat %02d:%02d $hitap.",
-                    simdi.get(Calendar.HOUR_OF_DAY),
-                    simdi.get(Calendar.MINUTE)
-                )
+                val saatInt = simdi.get(Calendar.HOUR_OF_DAY)
+                val dakikaInt = simdi.get(Calendar.MINUTE)
+                val saatKelime = saatToKelime(saatInt)
+                val dakikaKelime = dakikaToKelime(dakikaInt)
+                val cevap = if (dakikaKelime.isBlank()) {
+                    "Saat $saatKelime $hitap."
+                } else {
+                    "Saat $saatKelime $dakikaKelime $hitap."
+                }
                 KomutSonucu.Cevap(cevap)
             }
 
