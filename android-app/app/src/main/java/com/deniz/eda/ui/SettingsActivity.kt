@@ -5,16 +5,63 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
+import com.deniz.eda.ai.GemmaModelStore
+import com.deniz.eda.ai.GemmaSessionManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.appcompat.app.AppCompatActivity
 import com.deniz.eda.R
 import com.deniz.eda.core.Settings
 
 class SettingsActivity : AppCompatActivity() {
 
+    private lateinit var gemmaSessions: GemmaSessionManager
+    private var pendingGemmaSlot: GemmaModelStore.Slot? = null
+
+    private val gemmaModelPicker = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        val slot = pendingGemmaSlot
+        if (uri == null || slot == null) return@registerForActivityResult
+        lifecycleScope.launch {
+            try {
+                val info = withContext(Dispatchers.IO) {
+                    gemmaSessions.importModel(uri, slot)
+                }
+                Toast.makeText(
+                    this@SettingsActivity,
+                    "${slot.name}: model içe aktarıldı (${info.sizeBytes / (1024 * 1024)} MB)",
+                    Toast.LENGTH_LONG
+                ).show()
+                refreshGemmaStatus()
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@SettingsActivity,
+                    "Model içe aktarılamadı: ${e.message ?: "bilinmeyen hata"}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
         Settings.init(this)
+        gemmaSessions = GemmaSessionManager(applicationContext)
+
+        findViewById<Button>(R.id.gemma3ModelImport).setOnClickListener {
+            pendingGemmaSlot = GemmaModelStore.Slot.FAST
+            gemmaModelPicker.launch(arrayOf("application/octet-stream", "*/*"))
+        }
+        findViewById<Button>(R.id.gemma2ModelImport).setOnClickListener {
+            pendingGemmaSlot = GemmaModelStore.Slot.DEEP
+            gemmaModelPicker.launch(arrayOf("application/octet-stream", "*/*"))
+        }
+        refreshGemmaStatus()
 
         // ═══ Header ═══
         findViewById<TextView>(R.id.geriButon).setOnClickListener { finish() }
@@ -36,6 +83,17 @@ class SettingsActivity : AppCompatActivity() {
 
             Toast.makeText(this, "✅ Ayarlar kaydedildi", Toast.LENGTH_SHORT).show()
             finish()
+        }
+    }
+    
+    private fun refreshGemmaStatus() {
+        lifecycleScope.launch {
+            val status = withContext(Dispatchers.IO) { gemmaSessions.status() }
+            val light = if (status.lightModelReady) "var" else "yok"
+            val deep = if (status.deepModelReady) "var" else "yok"
+            val runtime = if (status.runtimeAvailable) "hazır" else "APK'da motor bulunamadı"
+            findViewById<TextView>(R.id.gemmaDurum).text =
+                "Yerel motor: $runtime\\nGemma 3 1B GGUF: $light\\nGemma 2 2B GGUF: $deep"
         }
     }
 }
