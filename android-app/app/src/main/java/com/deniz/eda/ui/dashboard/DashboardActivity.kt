@@ -153,12 +153,12 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     MetricCard("BATARYA", "⚡", "${state.pilYuzde}%", state.pilDurum,
                         if (state.pilYuzde <= 20) Bad else Good, Modifier.weight(1f))
-                    MetricCard("BAĞLANTI", "⌁", if (state.internetStatus) "ÇEVRİM İÇİ" else "ÇEVRİM DIŞI",
-                        "İnternet kontrolü", if (state.internetStatus) Cyan else Warn, Modifier.weight(1f))
+                    MetricCard("BAĞLANTI", "⌁", if (state.internetStatus) "Bağlı" else "Bağlı değil",
+                        "Ağ bağlantısı", if (state.internetStatus) Cyan else Warn, Modifier.weight(1f))
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıt", Violet, Modifier.weight(1f))
-                    MetricCard("HATIRLATICI", "◷", state.hatirlatmaSayi.toString(), "bekleyen", Warn, Modifier.weight(1f))
+                    MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıtlı bilgi", Violet, Modifier.weight(1f))
+                    MetricCard("HATIRLATICI", "◷", state.hatirlatmaSayi.toString(), "bekleyen hatırlatma", Warn, Modifier.weight(1f))
                 }
                 SectionHeader("YAPAY ZEKÂ", "Öncelikli sağlayıcı")
                 ProviderPanel(state.aiSaglayici, onAction)
@@ -168,12 +168,12 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 HeroMini("KONTROL", "Eda’nın çalışma durumunu buradan yönet.")
                 SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
                 ControlTile("▶", "Eda’yı başlat", "Eda’yı dinlemeye hazır hâle getir", Good) { onAction("ACTION_AKTIF") }
-                ControlTile("☾", "Uyku moduna al", "Uyandırma kelimesiyle yeniden فعالleşir", Cyan) { onAction("ACTION_UYKU") }
+                ControlTile("☾", "Uyku moduna al", "Uyandırma kelimesiyle yeniden etkinleşir", Cyan) { onAction("ACTION_UYKU") }
                 ControlTile("■", "Eda'yı durdur", "Arka plan servisini kapat", Bad) { onAction("ACTION_STOP") }
                 SectionHeader("ÖZEL MODLAR", "Sesli komutla güvenli kontrol")
                 InfoNotice("🚘  Araba modu", "Eda'ya “araba modunu aç” diyebilirsin. Bu panel mevcut durumu gösterir.")
-                InfoNotice("🛡  Güvenlik modu", "Eda'ya “güvenlik modunu aç” diyerek mevcut güvenlik işlevini kullan.")
-                InfoNotice("🎙  Uyanma kelimesi", "Aktif dinleme sırasında “Eda” diyerek konuşmayı başlat.")
+                InfoNotice("🛡  Güvenlik modu", "Eda’ya “güvenlik modunu aç” diyerek etkinleştirebilirsin.")
+                InfoNotice("🎙  Sesli kullanım", "Eda aktifken “Eda” diye seslenip ardından isteğini söyle.")
             } else {
                 HeroMini("SİSTEM DURUMU", "Bağlantıları ve kayıtlarını buradan kontrol et.")
                 SectionHeader("YAPAY ZEKÂ BAĞLANTILARI", "Son bağlantı kontrolünün sonucu")
@@ -190,7 +190,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     MetricCard("HATIRLATMA", "◷", state.hatirlatmaSayi.toString(), "bekleyen", Warn, Modifier.weight(1f))
                     MetricCard("LOG", "≋", state.logSayi.toString(), "kayıt", Good, Modifier.weight(1f))
                 }
-                SectionHeader("ARAÇLAR", "Bakım")
+                SectionHeader("ARAÇLAR", "Sistem işlemleri")
                 Button(onClick = { viewModel.yenile() }, modifier = Modifier.fillMaxWidth().height(52.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻   Durumu yeniden kontrol et") }
                 Button(onClick = onShareLog, modifier = Modifier.fillMaxWidth().height(52.dp),
