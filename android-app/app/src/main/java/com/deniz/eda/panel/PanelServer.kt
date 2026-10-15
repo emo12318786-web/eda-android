@@ -66,6 +66,44 @@ class PanelServer(
                else com.deniz.eda.service.EdaForegroundService.sonMod
     }
     
+    @Volatile private var ollamaStatusCache: JSONObject? = null
+    @Volatile private var ollamaStatusCheckedAt: Long = 0L
+
+    private fun ollamaStatus(): JSONObject {
+        val now = System.currentTimeMillis()
+        val cached = ollamaStatusCache
+        if (cached != null && now - ollamaStatusCheckedAt < 5000L) return JSONObject(cached.toString())
+
+        val result = try {
+            runBlocking {
+                val baseUrl = com.deniz.eda.utils.OllamaLocator.bul(context)
+                val client = OkHttpClient.Builder()
+                    .connectTimeout(1200, TimeUnit.MILLISECONDS)
+                    .readTimeout(1200, TimeUnit.MILLISECONDS)
+                    .callTimeout(1800, TimeUnit.MILLISECONDS)
+                    .build()
+                val request = Request.Builder().url("$baseUrl/v1/models").get().build()
+                client.newCall(request).execute().use { response ->
+                    JSONObject().apply {
+                        put("connected", response.isSuccessful)
+                        put("url", baseUrl)
+                        put("message", if (response.isSuccessful) "Termux Ollama bağlı" else "Ollama yanıt verdi ama hata kodu: ${response.code}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            JSONObject().apply {
+                put("connected", false)
+                put("url", "")
+                put("message", "Termux Ollama bağlı değil")
+            }
+        }
+        ollamaStatusCache = JSONObject(result.toString())
+        ollamaStatusCheckedAt = now
+        Log.i(TAG, "Ollama connection status: connected=${result.optBoolean("connected")} url=${result.optString("url")}")
+        return result
+    }
+
     private fun serveStatus(): Response {
         return try {
             val pil = BatteryUtils.pilBilgisiAl(context)
@@ -93,7 +131,8 @@ class PanelServer(
                     put("log", logSayi)
                     put("hatirlatma", hatirlatmaSayi)
                 })
-                put("ai", Settings.aiSaglayici)
+                put("ai", Settings.aiProvider)
+                put("ollama", ollamaStatus())
                 put("gemma", Settings.gemmaModel ?: "gemma2:2b")
                 put("saat", DigitUtils.formatTime("HH:mm"))
                 put("tarih", SimpleDateFormat("dd MMM yyyy", Locale("tr", "TR")).format(Date()))
