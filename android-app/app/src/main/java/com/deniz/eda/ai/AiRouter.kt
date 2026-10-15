@@ -48,13 +48,13 @@ object AiRouter {
         )
         )
         // ═══ اولویت: انتخاب کاربر ═══
-        val secili = Settings.aiProvider.ifBlank { "pollinations" }.lowercase()
+        val secili = Settings.aiProvider.ifBlank { "ollama" }.lowercase()
         val oncelikli = tum.filter { it.ad.lowercase().contains(secili) || 
             (secili == "pollinations" && it.ad == "Pollinations") ||
             (secili == "groq" && it.ad == "Groq") ||
             (secili == "gemma" && it.ad.contains("Ollama"))
         }
-        val fallback = tum.filter { it !in oncelikli }.sortedBy { if (it.ad.contains("Ollama")) 1 else 0 }
+        val fallback = tum.filter { it !in oncelikli }.sortedBy { when { it.ad.contains("Ollama") -> 0; it.ad == "Pollinations" -> 1; else -> 2 } }
         return oncelikli + fallback
     }
 
