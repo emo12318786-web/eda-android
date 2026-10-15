@@ -336,6 +336,10 @@ body {
             <span class="status-label">🔌 Yapay Zeka</span>
             <span class="status-value" id="s-ai">...</span>
         </div>
+        <div class="status-row">
+            <span class="status-label">🖥️ Termux Ollama</span>
+            <span class="status-value" id="s-ollama">Kontrol ediliyor...</span>
+        </div>
     </div>
 
     <div class="grid">
@@ -463,13 +467,21 @@ function updateUI(data) {
     document.getElementById('s-gemma').textContent = gemmaNames[gemmaName] || gemmaName;
 
     // ═══ Yapay Zeka ═══
-    const aiName = data.ai || 'pollinations';
+    const aiName = (data.ai || 'ollama').toLowerCase();
     const aiNames = {
-        'pollinations': 'Pollinations',
-        'groq': 'Groq',
-        'gemma': 'Gemma (Offline)'
+        'pollinations': 'Pollinations (Online)',
+        'groq': 'Groq (Online)',
+        'gemma': 'Gemma (Offline)',
+        'ollama': 'Ollama / Gemma (Local)'
     };
     document.getElementById('s-ai').textContent = aiNames[aiName] || aiName;
+
+    // Real connectivity test from the Android app to the Termux Ollama API.
+    const ollamaEl = document.getElementById('s-ollama');
+    const ollama = data.ollama || {};
+    ollamaEl.textContent = ollama.connected ? '🟢 وصله — ' + (ollama.url || 'Ollama') : '🔴 وصله نیست';
+    ollamaEl.className = 'status-value ' + (ollama.connected ? 'mode-active' : 'mode-off');
+    ollamaEl.title = ollama.message || '';
 
     // ═══ Chip active state ═══
     document.querySelectorAll('.chip').forEach(c => {
@@ -494,9 +506,8 @@ async function action(name) {
     }
 }
 
-async // setWhisper kaldırıldı
 async function setGemma(value)   { await action('gemma-' + value.replace(':', '-')); }
-async function setAI(value)      { await action('ai-' + value); }
+async function setAI(value)      { await action('ai-' + (value === 'gemma' ? 'ollama' : value)); }
 
 // ─── Logs ───
 function openLogs() {
