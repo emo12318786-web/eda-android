@@ -102,7 +102,7 @@ KURALLAR:
         // fully in-process and does not use Termux, Ollama, or network access.
         try {
             val local = nativeSession(ctx).generate(
-                task = GemmaSessionManager.Task.LIGHT,
+                task = if (kullaniciSorusu.length > 140 || Regex("(?i)detaylı|detayli|analiz et|karşılaştır|karsilastir|uzun cevap").containsMatchIn(kullaniciSorusu)) GemmaSessionManager.Task.DEEP else GemmaSessionManager.Task.LIGHT,
                 prompt = sistemMesaji + "\n\nKullanıcı: " + kullaniciSorusu + "\nEda:",
                 maxTokens = 180
             )
