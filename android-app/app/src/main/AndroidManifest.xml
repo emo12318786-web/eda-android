@@ -54,10 +54,6 @@
             android:exported="true"
             android:label="@string/app_name">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-            <intent-filter>
                 <action android:name="android.intent.action.ASSIST" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
@@ -71,8 +67,13 @@
         <!-- Dashboard — eda.py dashboard() karsiligi -->
         <activity
             android:name=".ui.dashboard.DashboardActivity"
-            android:exported="false"
-            android:label="EDA Dashboard" />
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <!-- Control Panel — WebView + NanoHTTPD -->
         <activity
