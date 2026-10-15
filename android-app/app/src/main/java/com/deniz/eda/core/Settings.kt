@@ -46,7 +46,7 @@ object Settings {
         set(v) = setString("kullanici_adi", v)
 
     var aiSaglayici: String
-        get() = getString("ai_provider", "groq")
+        get() = getString("ai_provider", "ollama")
         set(v) = setString("ai_provider", v)
 
     var groqApiKey: String
