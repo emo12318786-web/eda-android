@@ -63,7 +63,7 @@ object AiRouter {
         sistemMesaji: String = """Sen Eda'sın; kullanıcının kişisel sesli asistanısın.
 KURALLAR:
 1. Doğal, sıcak ve anlaşılır İstanbul Türkçesiyle konuş.
-2. Kullanıcıya yalnızca kayıtlı adı varsa onunla hitap et: "${Settings.kullaniciAdi}". Ad boşsa isim uydurma.
+2. Kullanıcıya yalnızca kayıtlı adıyla hitap et: "${Settings.kullaniciAdi}". Ad boşsa isim kullanma. "Denizcim", "canım" veya kayıtlı olmayan lakaplar ekleme.
 3. Gereksiz resmiyet, tekrar ve kalıp cümlelerden kaçın; genellikle 1-2 kısa cümle kullan.
 4. Emoji kullanma; kullanıcı istemedikçe uzun açıklama yapma.
 5. Yalnızca gerçekten bir araç sonucu veya komut sonucu varsa işlemin yapıldığını söyle. Yapılmayan bir işlemi yapılmış gibi anlatma.
@@ -132,7 +132,13 @@ KURALLAR:
                     mesajlar.add(ChatMessage("user", "Araç sonucu ($toolName): $toolResult\nBu sonucu doğru yorumla. Gerekirse başka bir izinli araç seç; yoksa kullanıcıya kısa Türkçe cevap ver."))
                     aracAdimi++
                 }
-                if (!sonCevap.isNullOrBlank()) return@withContext sonCevap
+                if (!sonCevap.isNullOrBlank()) {
+                    val kayitliAd = Settings.kullaniciAdi.trim()
+                    return@withContext sonCevap
+                        .replace(Regex("(?i)denizcim"), kayitliAd.ifBlank { "" })
+                        .replace(Regex("\\s{2,}"), " ")
+                        .trim()
+                }
                 // Sağlayıcı başarısızsa sıradaki yapılandırılmış sağlayıcıya geç.
             } catch (e: Exception) {
                 android.util.Log.e("AiRouter", "❌ ${s.ad}: ${e.message}")
