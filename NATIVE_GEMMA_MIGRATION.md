@@ -17,13 +17,14 @@ The shipped Android app must run local Gemma inference inside the app process. T
 
 - `GemmaModelStore.kt` imports GGUF files into app-private storage, checks the GGUF magic header, and calculates SHA-256.
 - `NativeGemmaEngine.kt` defines a fail-closed JNI contract. It intentionally does not claim to infer until `libeda_llama.so` and matching JNI functions are actually packaged.
+- `GemmaSessionManager.kt` now owns lazy model selection and enforces one loaded model at a time. It imports models through the private model store, switches by unloading the prior model first, and does not start Ollama/Termux/network fallback. It is not yet connected to `AiRouter` because the native library is still absent.
 - This work remains on the draft PR branch; `main` and the existing installed app are unchanged.
 
 ## Next implementation sequence
 
 1. Pin a specific upstream llama.cpp revision and integrate its native CMake/JNI code. Decide deliberately whether to adapt the upstream Android library for EDA's existing minSdk/toolchain or raise those requirements; do not silently change minimum Android support.
 2. Package the `arm64-v8a` native library for the Galaxy A71 and expose safe load/unload/generate/cancel operations through one engine instance.
-3. Connect native inference to `AiRouter` without disturbing deterministic command/tool routing. Keep model loading lazy and load only one model at a time: Gemma 3 1B for lightweight intent/short responses and Gemma 2 2B for heavier dialogue when selected.
+3. Add unit/instrumentation coverage for model-store replacement, missing native library, lazy loading, and single-model switching; then connect native inference to `AiRouter` without disturbing deterministic command/tool routing. Keep model loading lazy and load only one model at a time: Gemma 3 1B for lightweight intent/short responses and Gemma 2 2B for heavier dialogue when selected.
 4. Keep network providers optional and never use them as an implicit substitute for an offline response. Remove the Ollama provider from the native-only route only after native inference is wired and tested.
 5. Add automated checks, build the APK, then install on the real Galaxy A71 and verify cold start, offline generation, model switching/unload, cancellation, memory, battery, and thermal behavior.
 
