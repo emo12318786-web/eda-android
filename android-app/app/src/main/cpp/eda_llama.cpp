@@ -36,10 +36,11 @@ Java_com_deniz_eda_ai_NativeGemmaEngine_nativeLoadModel(JNIEnv *env, jobject, js
     g_vocab = llama_model_get_vocab(g_model);
     llama_context_params cp = llama_context_default_params();
     cp.n_ctx = 2048;
-    cp.n_batch = 256;
+    // Keep each decode batch small; large prompts are processed in chunks below.
+    cp.n_batch = 128;
     cp.n_ubatch = 128;
-    cp.n_threads = 4;
-    cp.n_threads_batch = 4;
+    cp.n_threads = 2;
+    cp.n_threads_batch = 2;
     g_context = llama_init_from_model(g_model, cp);
     if (!g_context) {
         EDA_LOGE("Could not create llama context");
@@ -62,19 +63,51 @@ Java_com_deniz_eda_ai_NativeGemmaEngine_nativeGenerate(JNIEnv *env, jobject, jst
     env->ReleaseStringUTFChars(jprompt, raw);
 
     int32_t needed = llama_tokenize(g_vocab, prompt.c_str(), (int32_t) prompt.size(), nullptr, 0, true, true);
-    if (needed >= 0 || needed < -16384) return nullptr;
+    if (needed >= 0 || needed < -16384) {
+        EDA_LOGE("Prompt tokenization failed or prompt is too large");
+        return nullptr;
+    }
     std::vector<llama_token> tokens((size_t)-needed);
     int32_t tokenCount = llama_tokenize(g_vocab, prompt.c_str(), (int32_t) prompt.size(), tokens.data(), (int32_t)tokens.size(), true, true);
     if (tokenCount <= 0) return nullptr;
     tokens.resize((size_t)tokenCount);
+
+    const int limit = std::max(1, std::min((int)maxTokens, 256));
+    // Never let prompt + answer exceed the context window. Keep the tail so
+    // the user's latest question survives if the system prompt is very long.
+    const size_t maxPromptTokens = 2048u - (size_t)limit - 1u;
+    if (tokens.size() > maxPromptTokens) {
+        EDA_LOGE("Truncating oversized prompt from %zu to %zu tokens", tokens.size(), maxPromptTokens);
+        tokens.erase(tokens.begin(), tokens.end() - (ptrdiff_t)maxPromptTokens);
+    }
+
     llama_memory_clear(llama_get_memory(g_context), true);
     llama_sampler_reset(g_sampler);
 
-    llama_batch batch = llama_batch_get_one(tokens.data(), (int32_t)tokens.size());
-    if (llama_decode(g_context, batch) != 0) return nullptr;
+    // llama_batch_get_one() with the whole prompt can exceed n_batch and abort
+    // native inference. Decode in bounded batches with continuous positions.
+    const size_t chunkSize = 128;
+    for (size_t offset = 0; offset < tokens.size(); offset += chunkSize) {
+        const size_t count = std::min(chunkSize, tokens.size() - offset);
+        llama_batch batch = llama_batch_init((int32_t)count, 0, 1);
+        for (size_t i = 0; i < count; ++i) {
+            const size_t index = offset + i;
+            batch.token[i] = tokens[index];
+            batch.pos[i] = (llama_pos)index;
+            batch.n_seq_id[i] = 1;
+            batch.seq_id[i][0] = 0;
+            batch.logits[i] = (index == tokens.size() - 1);
+        }
+        batch.n_tokens = (int32_t)count;
+        const int decodeResult = llama_decode(g_context, batch);
+        llama_batch_free(batch);
+        if (decodeResult != 0) {
+            EDA_LOGE("Prompt decode failed at token %zu (total %zu)", offset, tokens.size());
+            return nullptr;
+        }
+    }
 
     std::string answer;
-    const int limit = std::max(1, std::min((int)maxTokens, 256));
     for (int i = 0; i < limit; ++i) {
         llama_token token = llama_sampler_sample(g_sampler, g_context, -1);
         llama_sampler_accept(g_sampler, token);
@@ -83,7 +116,10 @@ Java_com_deniz_eda_ai_NativeGemmaEngine_nativeGenerate(JNIEnv *env, jobject, jst
         int32_t n = llama_token_to_piece(g_vocab, token, piece, sizeof(piece), 0, true);
         if (n > 0) answer.append(piece, (size_t)n);
         batch = llama_batch_get_one(&token, 1);
-        if (llama_decode(g_context, batch) != 0) break;
+        if (llama_decode(g_context, batch) != 0) {
+            EDA_LOGE("Generation decode failed at token %d", i);
+            break;
+        }
     }
     if (answer.empty()) return nullptr;
     return env->NewStringUTF(answer.c_str());
