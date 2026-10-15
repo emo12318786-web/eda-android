@@ -134,6 +134,7 @@ class PanelServer(
 
     private fun serveAction(uri: String): Response {
         val action = uri.removePrefix("/api/")
+        var success = true
         val sonuc = when {
             action == "wake" -> {
                 val intent = android.content.Intent(context, com.deniz.eda.service.EdaForegroundService::class.java).apply {
@@ -149,7 +150,7 @@ class PanelServer(
                             context.startForegroundService(intent)
                         }
                     }
-                } catch (e: Exception) { Log.e(TAG, "wake: ${e.message}") }
+                } catch (e: Exception) { success = false; Log.e(TAG, "wake failed", e) }
                 "EDA aktif"
             }
             action == "sleep" -> {
@@ -164,7 +165,7 @@ class PanelServer(
                             context.startForegroundService(intent)
                         }
                     }
-                } catch (e: Exception) { Log.e(TAG, "sleep: ${e.message}") }
+                } catch (e: Exception) { success = false; Log.e(TAG, "sleep failed", e) }
                 "EDA uyku moduna alındı"
             }
             action == "stop" -> {
@@ -179,7 +180,7 @@ class PanelServer(
                             context.startForegroundService(intent)
                         }
                     }
-                } catch (e: Exception) { Log.e(TAG, "stop: ${e.message}") }
+                } catch (e: Exception) { success = false; Log.e(TAG, "stop failed", e) }
                 "EDA durduruldu"
             }
             action.startsWith("gemma-") -> {
@@ -204,14 +205,15 @@ class PanelServer(
                 Settings.arabaModuAktif = deger
                 "Araba modu: ${if (deger) "AKTIF" else "PASIF"}"
             }
-            else -> "Bilinmeyen: $action"
+            else -> { success = false; "Bilinmeyen: $action" }
         }
 
         val json = JSONObject().apply {
-            put("ok", true)
+            put("ok", success)
             put("mesaj", sonuc)
         }
 
-        return newFixedLengthResponse(Response.Status.OK, "application/json; charset=utf-8", json.toString())
+        val status = if (success) Response.Status.OK else Response.Status.INTERNAL_ERROR
+        return newFixedLengthResponse(status, "application/json; charset=utf-8", json.toString())
     }
 }
