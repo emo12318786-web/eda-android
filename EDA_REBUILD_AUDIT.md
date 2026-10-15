@@ -57,3 +57,33 @@ Scope: audit only; this document does not claim the app is production-ready.
 - In local-only mode, unavailable native inference gives a clear error; it must not silently use a cloud provider.
 - Dashboard ACTIVE/SLEEP/OFF state matches the actual foreground service.
 - Existing install remains available until the rebuilt APK passes these checks.
+
+
+## Re-audit update — 2026-10-15
+
+This pass uses `android-app/` as the only app source of truth. The 12-hour spoken clock, Solar Hijri spoken date, and existing sleep/rest state-machine behavior are protected constraints; do not refactor those while fixing unrelated issues.
+
+### Fixes committed in this pass
+- `AiRouter` now orders configured providers according to the selected provider instead of always forcing Ollama first.
+- The selected AI provider is now stored in the same `Settings` preferences source used by the foreground service, rather than a separate `eda_prefs` store.
+- The control-panel HTTP server is bound to `127.0.0.1`, matching `PanelActivity`'s localhost URL and preventing other devices on the Wi-Fi/LAN from directly invoking its unauthenticated control endpoints.
+- The spoken clock remains in its original 12-hour word-based form; the Jalali date path remains `JalaliCalendar.bugununSemsiTarihi()`.
+
+### Newly confirmed issues to address
+- **P0 — Native Gemma is still not runnable:** the JNI declarations exist, but no packaged `libeda_llama.so` / implementation is present; `AiRouter` still calls Ollama and cloud providers. Do not describe the app as standalone/offline Gemma yet.
+- **P0 — No offline-only provider policy:** current fallback iteration can send a prompt to Pollinations/Groq when local Ollama fails. Add an explicit local-only mode and prove that it never transmits user text to a cloud provider.
+- **P1 — Dashboard/provider state was split:** `DashboardViewModel` used `eda_prefs` while service settings used `eda_settings`. The code now uses `Settings.aiProvider` as the common source; verify provider persistence after process death.
+- **P1 — Control panel previously listened on all interfaces:** fixed to loopback. Also review action HTTP verbs and return values; state-changing operations currently use GET routes and can report success even when starting the service fails.
+- **P1 — Dashboard and control-panel dates are Gregorian:** spoken date is Jalali. Decide whether dashboard/panel date should also be Jalali, without changing the user's existing spoken date behavior.
+- **P1 — Room uses `fallbackToDestructiveMigration()`:** a schema version change can erase memories, diary, reminders, learning, and logs. Add explicit migrations before changing schema.
+- **P1 — Foreground service owns many responsibilities:** STT/TTS, retry loops, battery announcements, reminders, panel, security mode and health monitoring share one lifecycle. Add state-machine and lifecycle tests before changing sleep behavior.
+- **P1 — Intent classifier is still a large fuzzy-match chain:** add regression tests for conversational phrases, especially “Bugün çok çalıştım ve yorgunum, benimle konuş”, so it cannot be mistaken for a date/location/device command.
+- **P2 — Production source contains many backup files:** remove `.bak_*` / `.backup*` files from `src/main` after confirming no build/runtime references; keep their history in Git rather than packaging them with source resources.
+- **P2 — JSON stores write directly to final files:** make writes atomic and test recovery from malformed/partial JSON to reduce risk of losing reminders or memory after process interruption.
+- **P2 — Build workflow currently runs `assembleDebug` only:** add JVM unit tests and run `testDebugUnitTest` as a required CI step. A green APK build is not a device test.
+
+### Verification state
+- The 12-hour spoken-clock/Jalali-date commit built successfully in Actions run #53: https://github.com/emo12318786-web/eda-android/actions/runs/38772266146
+- Provider-order, provider-persistence, and localhost-binding fixes are newer than run #53. Actions runs #54–#56 were in progress at the time of this update; wait for a run targeting the latest branch head before claiming the latest source builds.
+- No Samsung Galaxy A71 physical-device test has been performed from this environment. Wake word, sleep/rest, battery use, microphone permission flow, native inference, and full feature acceptance remain unverified on hardware.
+- Keep all changes on `eda-v5-native-gemma-runtime`; do not merge the draft PR or replace the installed APK until CI and device acceptance checks pass.
