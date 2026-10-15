@@ -36,6 +36,9 @@ jobs:
         with:
           gradle-version: "8.7"
 
+      - name: Run Android unit tests
+        run: gradle -p android-app --no-daemon :app:testDebugUnitTest
+
       - name: Build Android app
         run: gradle -p android-app --no-daemon assembleDebug
 
