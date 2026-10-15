@@ -11,9 +11,18 @@ import java.security.MessageDigest
  *
  * Importing a model is independent from Termux and Ollama. This class only
  * validates/stores model files; the native inference runtime is separate.
+ * SHA-256 is cached by file length and modification time so status checks do
+ * not repeatedly read gigabytes from flash storage.
  */
 class GemmaModelStore(context: Context) {
     private val root = File(context.filesDir, "models").apply { mkdirs() }
+    private val digestCache = mutableMapOf<String, CachedDigest>()
+
+    private data class CachedDigest(
+        val length: Long,
+        val modified: Long,
+        val sha256: String
+    )
 
     enum class Slot(val fileName: String) {
         FAST("gemma3-1b.gguf"),
@@ -60,6 +69,7 @@ class GemmaModelStore(context: Context) {
                 error("Could not finalize imported model")
             }
             backup.delete()
+            digestCache.remove(destination.absolutePath)
             return info(slot, destination)
         } catch (error: Throwable) {
             temp.delete()
@@ -71,28 +81,48 @@ class GemmaModelStore(context: Context) {
         }
     }
 
+    @Synchronized
     fun info(slot: Slot): ModelInfo? {
         val file = File(root, slot.fileName)
         return if (file.isFile && file.length() > 1024 * 1024) info(slot, file) else null
     }
 
+    @Synchronized
     fun hasBothModels(): Boolean = Slot.values().all { info(it) != null }
 
-    fun delete(slot: Slot): Boolean = File(root, slot.fileName).delete()
+    @Synchronized
+    fun delete(slot: Slot): Boolean {
+        val file = File(root, slot.fileName)
+        digestCache.remove(file.absolutePath)
+        return file.delete()
+    }
 
+    @Synchronized
     private fun info(slot: Slot, file: File): ModelInfo =
         ModelInfo(slot, file, file.length(), sha256(file))
 
+    @Synchronized
     private fun sha256(file: File): String {
+        val key = file.absolutePath
+        val length = file.length()
+        val modified = file.lastModified()
+        val cached = digestCache[key]
+        if (cached != null && cached.length == length && cached.modified == modified) {
+            return cached.sha256
+        }
+
         val digest = MessageDigest.getInstance("SHA-256")
         file.inputStream().buffered().use { input ->
             val buffer = ByteArray(1024 * 1024)
             while (true) {
                 val read = input.read(buffer)
-                if (read <= 0) break
+                if (read < 0) break
+                if (read == 0) continue
                 digest.update(buffer, 0, read)
             }
         }
-        return digest.digest().joinToString("") { "%02x".format(it) }
+        val value = digest.digest().joinToString("") { "%02x".format(it) }
+        digestCache[key] = CachedDigest(length, modified, value)
+        return value
     }
 }
