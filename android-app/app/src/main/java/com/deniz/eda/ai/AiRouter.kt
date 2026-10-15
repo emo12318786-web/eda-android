@@ -85,7 +85,7 @@ KURALLAR:
                 // EDA V5 Agent: en fazla 3 salt-okunur araç adımı; sağlayıcıya göre
                 // değişmeyen allowlist SystemTools.runTool içinde uygulanır.
                 val mesajlar = mutableListOf(
-                    ChatMessage("system", sistemTam + "\n\nAGENT KURALLARI: En fazla 3 araç adımı kullan. Araç gerekiyorsa yalnızca <TOOL>ALLOWLIST_ADI</TOOL> yaz. Araç sonucunu görmeden işlem yapıldığını iddia etme. Bir araç sonucu geldiyse gerekirse bir sonraki aracı seç; aksi halde kısa Türkçe cevap ver. Telefonun ayarlarını, mesajları veya kişisel verileri değiştiren bir araç bu listede yoktur; bunları yapmış gibi davranma."),
+                    ChatMessage("system", sistemTam + "\n\nAGENT KURALLARI: En fazla 3 araç adımı kullan. Salt okunur araçları <TOOL>ARAÇ_ADI</TOOL> biçiminde çağır. Kullanıcı açıkça bir bilgiyi hafızaya kaydet derse <TOOL>SAVE_MEMORY: metin</TOOL>; günlüğe yaz derse <TOOL>ADD_DIARY: metin</TOOL>; belirli saatli hatırlatma isterse <TOOL>ADD_REMINDER|SAAT|DAKİKA|metin</TOOL> biçimini kullan. Kayıt araçlarını yalnızca kullanıcı açıkça istediğinde çalıştır. Araç sonucunu görmeden işlem yapıldığını iddia etme. Telefon ayarlarını, SMS göndermeyi veya donanımı kontrol ettiğini iddia etme; bu araçlar bunları yapmaz."),
                     ChatMessage("user", kullaniciSorusu)
                 )
                 var sonCevap: String? = null
@@ -105,7 +105,7 @@ KURALLAR:
                     val cevap = yanit.body()?.choices?.firstOrNull()?.message?.content?.trim()
                     if (cevap.isNullOrBlank()) break
                     android.util.Log.d("AiRouter", "✅ ${s.ad} agent step=$aracAdimi")
-                    val match = Regex("<TOOL>\\s*([A-Z_]+)\\s*</TOOL>", RegexOption.IGNORE_CASE).find(cevap)
+                    val match = Regex("<TOOL>\\s*([A-Z_]+)(?:\\s*[:|]\\s*(.*?))?\\s*</TOOL>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)).find(cevap)
                     if (match == null || context == null || aracAdimi >= 3) {
                         sonCevap = cevap.replace(Regex("<TOOL>.*?</TOOL>", RegexOption.DOT_MATCHES_ALL), "").trim()
                         break
@@ -114,13 +114,15 @@ KURALLAR:
                     val allowlist = setOf(
                         "CHECK_INTERNET", "CHECK_OLLAMA", "CHECK_GROQ",
                         "CHECK_POLLINATIONS", "GET_BATTERY", "GET_AI", "GET_MODE", "FULL_CHECK",
-                        "GET_MEMORY", "GET_DIARY", "GET_REMINDERS", "GET_LEARNED", "GET_TIME", "GET_DATE"
+                        "GET_MEMORY", "GET_DIARY", "GET_REMINDERS", "GET_LEARNED", "GET_TIME", "GET_DATE",
+                        "SAVE_MEMORY", "ADD_DIARY", "ADD_REMINDER"
                     )
                     if (toolName !in allowlist) {
                         sonCevap = "Bu araç EDA'da izinli değil."
                         break
                     }
-                    val toolResult = com.deniz.eda.utils.SystemTools.runTool(toolName, context)
+                    val toolArgs = match.groupValues.getOrNull(2).orEmpty().trim()
+                    val toolResult = com.deniz.eda.utils.SystemTools.runTool(toolName, context, toolArgs)
                     android.util.Log.i("AiRouter", "🔧 Agent tool=$toolName")
                     mesajlar.add(ChatMessage("assistant", cevap))
                     mesajlar.add(ChatMessage("user", "Araç sonucu ($toolName): $toolResult\nBu sonucu doğru yorumla. Gerekirse başka bir izinli araç seç; yoksa kullanıcıya kısa Türkçe cevap ver."))
