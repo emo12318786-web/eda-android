@@ -95,10 +95,10 @@ Sen: Merhaba ${Settings.kullaniciAdi}, iyiyim. Sen nasılsın?
 
     private fun addReminder(context: Context, raw: String): String {
         val parts = raw.split("|", limit = 4)
-        if (parts.size != 4) return "Hatırlatma için saat, dakika ve metin gerekli."
-        val hour = parts[1].trim().toIntOrNull()
-        val minute = parts[2].trim().toIntOrNull()
-        val text = parts[3].trim()
+        if (parts.size != 3) return "Hatırlatma için saat, dakika ve metin gerekli."
+        val hour = parts[0].trim().toIntOrNull()
+        val minute = parts[1].trim().toIntOrNull()
+        val text = parts[2].trim()
         if (hour == null || hour !in 0..23 || minute == null || minute !in 0..59 || text.isBlank()) {
             return "Hatırlatma bilgileri geçersiz. Saati 0–23, dakikayı 0–59 aralığında ver."
         }
