@@ -14,7 +14,7 @@ import android.content.SharedPreferences
 object Settings {
     /** Aktif AI sağlayıcısı; tüm ekranlar ve servisler aynı kalıcı ayarı kullanır. */
     var aiProvider: String
-        get() = getString("ai_provider", "pollinations")
+        get() = getString("ai_provider", "ollama")
         set(value) = setString("ai_provider", value.lowercase())
 
 
@@ -48,8 +48,8 @@ object Settings {
         set(v) = setString("kullanici_adi", v)
 
     var aiSaglayici: String
-        get() = getString("ai_provider", "ollama")
-        set(v) = setString("ai_provider", v)
+        get() = aiProvider
+        set(v) { aiProvider = v }
 
     var groqApiKey: String
         get() = getString("groq_api_key", "")
