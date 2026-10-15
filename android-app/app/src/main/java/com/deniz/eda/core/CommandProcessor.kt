@@ -292,8 +292,14 @@ object CommandProcessor {
             }
         }
 
-        // ═══ 19 بخش محبت‌آمیز (بدون AI) ═══
-        AffectionResponses.bul(metin, hitap)?.let { return KomutSonucu.Cevap(it) }
+        // Short social phrases can use lightweight canned responses. Longer, contextual
+        // sentences (especially feelings, explanations, and questions) must reach the AI
+        // router instead of being collapsed to a generic one-line template.
+        val wordCount = metin.split(Regex("\\s+")).count { it.isNotBlank() }
+        val isShortSocialUtterance = wordCount <= 5 && !metin.contains("?")
+        if (isShortSocialUtterance) {
+            AffectionResponses.bul(metin, hitap)?.let { return KomutSonucu.Cevap(it) }
+        }
 
         // ═══ Öğret Komutu ═══
         if (metin.startsWith("öğret ") || metin.startsWith("ogret ")) {
