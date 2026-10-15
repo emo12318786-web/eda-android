@@ -39,6 +39,13 @@ object BatteryUtils {
     /** Hitap eki (orn. "deniz") cagiran taraftan (CommandProcessor) parametre olarak alinir. */
     fun pilDurumuMetni(context: Context, hitap: String): String {
         val bilgi = pilBilgisiAl(context) ?: return "Pil bilgisi alınamadı $hitap."
-        return "Pil yüzde ${bilgi.yuzde}. Durum: ${bilgi.durum}."
+        val sarjDurumu = when (bilgi.durum) {
+            "sarj oluyor" -> "şarj oluyor"
+            "dolu" -> "şarj tamam, pil dolu"
+            "pilde" -> "şarjda değil"
+            "sarj olmuyor" -> "şarj olmuyor"
+            else -> "şarj durumu bilinmiyor"
+        }
+        return "Pil seviyesi yüzde ${bilgi.yuzde}, yani 100 üzerinden ${bilgi.yuzde}. ${sarjDurumu}."
     }
 }
