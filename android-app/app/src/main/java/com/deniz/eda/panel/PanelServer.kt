@@ -22,7 +22,7 @@ import com.deniz.eda.utils.DigitUtils
 class PanelServer(
     private val context: Context,
     port: Int = 8080
-) : NanoHTTPD(port) {
+) : NanoHTTPD("127.0.0.1", port) {
 
     companion object {
         private const val TAG = "PanelServer"
