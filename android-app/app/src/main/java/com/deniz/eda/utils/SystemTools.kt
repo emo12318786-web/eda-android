@@ -93,6 +93,10 @@ Sen: Merhaba ${Settings.kullaniciAdi}, iyiyim. Sen nasılsın?
                 "GET_LEARNED" -> learnedText(context)
                 "GET_TIME" -> timeText()
                 "GET_DATE" -> dateText()
+                "OPEN_APP" -> openAllowedApp(context, arguments)
+                "OPEN_WIFI_SETTINGS" -> openSettingsPanel(context, "wifi")
+                "OPEN_SOUND_SETTINGS" -> openSettingsPanel(context, "sound")
+                "OPEN_DISPLAY_SETTINGS" -> openSettingsPanel(context, "display")
                 "SAVE_MEMORY" -> arguments.trim().takeIf { it.isNotBlank() }?.let {
                     MemoryStore.ekle(context, it, "agent")
                     "Bilgi hafızaya kaydedildi."
