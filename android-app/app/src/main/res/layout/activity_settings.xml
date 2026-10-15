@@ -116,6 +116,55 @@
                 android:backgroundTint="@color/purple_start" />
         </LinearLayout>
 
+        <!-- CARD: Offline Gemma models -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_settings"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🧠  GEMMA ÇEVRİMDIŞI MODELLER"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/purple_end"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/gemmaDurum"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Model durumu kontrol ediliyor..."
+                android:textColor="@color/text_primary"
+                android:textSize="13sp"
+                android:layout_marginBottom="12dp" />
+
+            <Button
+                android:id="@+id/gemma3ModelImport"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Gemma 3 1B GGUF içe aktar" />
+
+            <Button
+                android:id="@+id/gemma2ModelImport"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Gemma 2 2B GGUF içe aktar"
+                android:layout_marginTop="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Not: Model dosyası GGUF biçiminde olmalı. Ollama'nın özel klasöründeki blob dosyaları otomatik olarak görünmez; dosyayı önce telefonun ortak depolamasına kopyala."
+                android:textColor="@color/text_muted"
+                android:textSize="12sp"
+                android:layout_marginTop="8dp" />
+        </LinearLayout>
+
         <!-- Kaydet butonu -->
         <Button
             android:id="@+id/kaydetButon"
