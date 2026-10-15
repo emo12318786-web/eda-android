@@ -47,13 +47,29 @@ object AiRouter {
             needsKey = true
         )
         )
-        // ═══ اولویت: انتخاب کاربر ═══
-        // Prefer local Gemma for ordinary conversation; cloud services are fallbacks.
-        return tum.sortedBy { when {
-            it.ad.contains("Ollama") -> 0
-            it.ad == "Pollinations" -> 1
-            else -> 2
-        } }
+        // Respect the provider selected in Settings/Dashboard. The old fixed sort
+        // always preferred Ollama, so changing the dashboard selection had no effect.
+        // Remaining providers are ordered as fallbacks after the selected provider.
+        val selected = Settings.aiProvider.ifBlank { "ollama" }.lowercase(Locale.ROOT)
+        return tum.sortedBy { provider ->
+            when (selected) {
+                "groq" -> when (provider.ad) {
+                    "Groq" -> 0
+                    "Pollinations" -> 1
+                    else -> 2
+                }
+                "pollinations" -> when (provider.ad) {
+                    "Pollinations" -> 0
+                    "Ollama-Gemma2" -> 1
+                    else -> 2
+                }
+                else -> when (provider.ad) {
+                    "Ollama-Gemma2" -> 0
+                    "Pollinations" -> 1
+                    else -> 2
+                }
+            }
+        }
     }
 
     suspend fun sor(
