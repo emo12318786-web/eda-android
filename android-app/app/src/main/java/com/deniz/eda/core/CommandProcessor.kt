@@ -226,6 +226,34 @@ object CommandProcessor {
             return KomutSonucu.Cevap("Hafızam temizlendi $hitap.")
         }
 
+        // ═══ Bixby-benzeri doğrudan telefon komutları (AI/internet gerekmez) ═══
+        val acmaIstegi = v(metin, "aç", "ac", "açsana", "acsana", "başlat", "baslat", "çalıştır", "calistir", "göster", "goster")
+        if (acmaIstegi) {
+            val uygulama = when {
+                v(metin, "youtube", "yutub") -> "youtube"
+                v(metin, "chrome", "krom", "tarayıcı", "tarayici", "browser") -> "chrome"
+                v(metin, "whatsapp", "واتساپ") -> "whatsapp"
+                v(metin, "telegram", "تلگرام") -> "telegram"
+                v(metin, "haritalar", "maps", "google maps", "نقشه") -> "maps"
+                v(metin, "kamera", "camera", "دوربین") -> "camera"
+                v(metin, "telefon", "arama ekranı", "arama ekrani") -> "phone"
+                v(metin, "mesajlar", "mesaj uygulaması", "mesaj uygulamasi") -> "messages"
+                else -> null
+            }
+            if (uygulama != null) {
+                return KomutSonucu.Cevap(SystemTools.runTool("OPEN_APP", context, uygulama))
+            }
+        }
+        if (v(metin, "wifi ayar", "wi-fi ayar", "wifi panel", "wi-fi panel")) {
+            return KomutSonucu.Cevap(SystemTools.runTool("OPEN_WIFI_SETTINGS", context))
+        }
+        if (v(metin, "ses ayar", "ses düzeyi", "ses duzeyi", "sound settings")) {
+            return KomutSonucu.Cevap(SystemTools.runTool("OPEN_SOUND_SETTINGS", context))
+        }
+        if (v(metin, "ekran ayar", "parlaklık ayar", "parlaklik ayar", "display settings")) {
+            return KomutSonucu.Cevap(SystemTools.runTool("OPEN_DISPLAY_SETTINGS", context))
+        }
+
         LearningStore.bul(context, metin)?.let { ogrenilen -> metin = ogrenilen }
 
         // ═══ Benim adım / ismim — AffectionResponses'tan ONCE ═══
