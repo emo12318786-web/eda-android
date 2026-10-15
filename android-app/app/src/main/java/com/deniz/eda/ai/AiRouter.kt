@@ -85,7 +85,7 @@ KURALLAR:
                 // EDA V5 Agent: en fazla 3 salt-okunur araç adımı; sağlayıcıya göre
                 // değişmeyen allowlist SystemTools.runTool içinde uygulanır.
                 val mesajlar = mutableListOf(
-                    ChatMessage("system", sistemTam + "\n\nAGENT KURALLARI: En fazla 3 araç adımı kullan. Salt okunur araçları <TOOL>ARAÇ_ADI</TOOL> biçiminde çağır. Kullanıcı açıkça bir bilgiyi hafızaya kaydet derse <TOOL>SAVE_MEMORY: metin</TOOL>; günlüğe yaz derse <TOOL>ADD_DIARY: metin</TOOL>; belirli saatli hatırlatma isterse <TOOL>ADD_REMINDER|SAAT|DAKİKA|metin</TOOL> biçimini kullan. Kayıt araçlarını yalnızca kullanıcı açıkça istediğinde çalıştır. Araç sonucunu görmeden işlem yapıldığını iddia etme. Telefon ayarlarını, SMS göndermeyi veya donanımı kontrol ettiğini iddia etme; bu araçlar bunları yapmaz."),
+                    ChatMessage("system", sistemTam + "\n\nAGENT KURALLARI: En fazla 3 araç adımı kullan. Salt okunur araçları <TOOL>ARAÇ_ADI</TOOL> biçiminde çağır. Kullanıcı açıkça bir bilgiyi hafızaya kaydet derse <TOOL>SAVE_MEMORY: metin</TOOL>; günlüğe yaz derse <TOOL>ADD_DIARY: metin</TOOL>; belirli saatli hatırlatma isterse <TOOL>ADD_REMINDER|SAAT|DAKİKA|metin</TOOL> biçimini kullan. Kayıt araçlarını ve telefon eylemlerini yalnızca kullanıcı açıkça istediğinde çalıştır. Araç sonucunu görmeden işlem yapıldığını iddia etme. SMS gönderme veya konum paylaşma araçları bu Agent içinde yoktur; bunları yaptığını söyleme. Kamera aracı yalnızca kamera uygulamasını açar. Güvenlik/car modunu yalnızca bayrak değiştirerek etkinleştirdiğini iddia etme."),
                     ChatMessage("user", kullaniciSorusu)
                 )
                 var sonCevap: String? = null
@@ -115,7 +115,11 @@ KURALLAR:
                         "CHECK_INTERNET", "CHECK_OLLAMA", "CHECK_GROQ",
                         "CHECK_POLLINATIONS", "GET_BATTERY", "GET_AI", "GET_MODE", "FULL_CHECK",
                         "GET_MEMORY", "GET_DIARY", "GET_REMINDERS", "GET_LEARNED", "GET_TIME", "GET_DATE",
-                        "SAVE_MEMORY", "ADD_DIARY", "ADD_REMINDER"
+                        "SAVE_MEMORY", "ADD_DIARY", "ADD_REMINDER",
+                        "FLASHLIGHT_ON", "FLASHLIGHT_OFF", "BEEP_ON", "BEEP_OFF",
+                        "MEDIA_PLAY", "MEDIA_PAUSE", "MEDIA_NEXT", "MEDIA_PREVIOUS",
+                        "OPEN_SETTINGS", "OPEN_TTS_SETTINGS", "OPEN_CAMERA", "FIND_PHONE",
+                        "STOP_FIND_PHONE", "LOCK_PHONE", "RUN_SYSTEM_TEST", "LEARNING_ON", "LEARNING_OFF"
                     )
                     if (toolName !in allowlist) {
                         sonCevap = "Bu araç EDA'da izinli değil."
