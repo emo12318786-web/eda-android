@@ -71,6 +71,13 @@ class DashboardActivity : ComponentActivity() {
     }
 
     private fun sendAction(action: String) {
+        // Request runtime microphone permission before any action that starts listening.
+        if ((action == "ACTION_AKTIF" || action == "ACTION_BASLAT") &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            pendingStartAction = action
+            micPermission.launch(Manifest.permission.RECORD_AUDIO)
+            return
+        }
         when (action) {
             "ACTION_SETTINGS" -> { startActivity(Intent(this, com.deniz.eda.ui.SettingsActivity::class.java)); return }
             "ACTION_AI_GROQ" -> viewModel.setAiProvider("groq")
