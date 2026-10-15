@@ -74,7 +74,7 @@ object CommandProcessor {
             .trim()
         return phrases.any { phrase ->
             val p = phrase.lowercase(Locale.ROOT).trim()
-            Regex("(^|\\\\s)" + Regex.escape(p) + "($|\\\\s)").containsMatchIn(normalized)
+            Regex("(^|\\s)" + Regex.escape(p) + "($|\\s)").containsMatchIn(normalized)
         }
     }
 
