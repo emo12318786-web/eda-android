@@ -21,7 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext\nimport androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -99,7 +99,7 @@ class DashboardActivity : ComponentActivity() {
 
 @Composable
 private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Unit, onShareLog: () -> Unit) {
-    val state by viewModel.state.collectAsState()
+    val context = LocalContext.current\n    val state by viewModel.state.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
     // Use observable dashboard state; Compose cannot observe mutable Settings directly.
     val active = state.mod == "AKTIF"
@@ -188,7 +188,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 SectionHeader("SON HAREKETLER", "Eda’nın son kayıtları")
                 LogsPanel(state.sonLoglar)
             } else if (selectedTab == 1) {
-                HeroMini("KONTROL", "Eda’nın çalışma durumunu buradan yönet.")
+                HeroMini("KONTROL", "Eda’nın çalışma durumunu buradan yönet.")\n                ControlTile("🔒", "Gemma 2.2B Modu", "Çevrimdışı sohbet • Türkçe ve Azerbaycan Türkçesi girişi", Violet) {\n                    context.startActivity(Intent(context, com.deniz.eda.ui.gemma.GemmaModeActivity::class.java))\n                }
                 SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
                 ControlTile("▶", "Eda’yı başlat", "Eda’yı dinlemeye hazır hâle getir", Good) { onAction("ACTION_AKTIF") }
                 ControlTile("☾", "Uyku moduna al", "Uyandırma kelimesiyle yeniden etkinleşir", Cyan) { onAction("ACTION_UYKU") }
