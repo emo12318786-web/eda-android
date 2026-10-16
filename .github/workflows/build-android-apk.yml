@@ -2,11 +2,15 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main, eda-v5-native-gemma-runtime ]
+    branches: [ main, eda-v5-native-gemma-runtime, eda-fix-long-prompt-crash ]
     paths:
       - "android-app/**"
       - ".github/workflows/**"
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -26,7 +30,7 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: 11076708
-          packages: 'platforms;android-35 build-tools;35.0.0 ndk;27.2.12479018 cmake;3.22.1'
+          packages: 'platforms;android-35 build-tools;35.0.0 ndk;26.1.10909125 cmake;3.22.1'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4

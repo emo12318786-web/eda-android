@@ -77,8 +77,13 @@ object OllamaLocator {
                 .connectTimeout(2, TimeUnit.SECONDS)
                 .readTimeout(2, TimeUnit.SECONDS)
                 .build()
-            val req = Request.Builder().url("$baseUrl/v1/models").build()
-            client.newCall(req).execute().use { resp -> resp.isSuccessful }
+            // Support Ollama's native API and its OpenAI-compatible API.
+            val nativeReq = Request.Builder().url("$baseUrl/api/tags").get().build()
+            val nativeOk = client.newCall(nativeReq).execute().use { it.isSuccessful }
+            if (nativeOk) true else {
+                val openAiReq = Request.Builder().url("$baseUrl/v1/models").get().build()
+                client.newCall(openAiReq).execute().use { it.isSuccessful }
+            }
         } catch (e: Exception) { false }
     }
 }

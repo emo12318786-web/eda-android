@@ -4,9 +4,8 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.speech.RecognizerIntent
-import androidx.appcompat.app.AppCompatActivity
 
-class SttActivity : AppCompatActivity() {
+class SttActivity : Activity() {
     companion object {
         const val ACTION_STT_RESULT = "com.deniz.eda.STT_RESULT"
         private const val REQ_CODE = 1001

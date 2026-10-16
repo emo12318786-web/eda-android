@@ -66,6 +66,37 @@ class PanelServer(
                else com.deniz.eda.service.EdaForegroundService.sonMod
     }
     
+    /**
+     * Reports EDA's in-process native Gemma runtime and private GGUF files.
+     * File presence is deliberately separate from runtime availability.
+     */
+    private fun gemmaRuntimeStatus(): JSONObject {
+        val live = com.deniz.eda.ai.AiRouter.nativeGemmaStatus(context)
+        val runtimeAvailable = live?.runtimeAvailable
+            ?: com.deniz.eda.ai.NativeGemmaEngine().isRuntimeBundled()
+        val modelsDir = java.io.File(context.filesDir, "models")
+        fun modelStatus(fileName: String, ready: Boolean?): JSONObject {
+            val file = java.io.File(modelsDir, fileName)
+            val present = ready ?: (file.isFile && file.length() > 1024L * 1024L)
+            return JSONObject().apply {
+                put("present", present)
+                put("sizeBytes", if (file.isFile) file.length() else 0L)
+                put("state", if (present) "file-present" else "file-missing")
+            }
+        }
+        val loaded = live?.loadedSlot?.fileName
+        return JSONObject().apply {
+            put("runtimeAvailable", runtimeAvailable)
+            put("runtimeState", if (runtimeAvailable) "available" else "unavailable")
+            put("runtimeMessage", live?.detail ?: if (runtimeAvailable) "EDA native runtime available; inference session not created" else "EDA native runtime library missing")
+            put("gemma3_1b", modelStatus("gemma3-1b.gguf", live?.lightModelReady))
+            put("gemma2_2b", modelStatus("gemma2-2b.gguf", live?.deepModelReady))
+            put("loadedModel", loaded ?: JSONObject.NULL)
+            put("loadedStateKnown", live != null)
+            put("sessionDetail", live?.detail ?: "No active inference session yet")
+        }
+    }
+
     private fun serveStatus(): Response {
         return try {
             val pil = BatteryUtils.pilBilgisiAl(context)
@@ -93,7 +124,8 @@ class PanelServer(
                     put("log", logSayi)
                     put("hatirlatma", hatirlatmaSayi)
                 })
-                put("ai", Settings.aiSaglayici)
+                put("ai", Settings.aiSaglayici.ifBlank { Settings.aiProvider })
+                put("gemmaRuntime", gemmaRuntimeStatus())
                 put("gemma", Settings.gemmaModel ?: "gemma2:2b")
                 put("saat", DigitUtils.formatTime("HH:mm"))
                 put("tarih", SimpleDateFormat("dd MMM yyyy", Locale("tr", "TR")).format(Date()))
