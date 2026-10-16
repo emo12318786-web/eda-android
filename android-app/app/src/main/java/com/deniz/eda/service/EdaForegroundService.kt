@@ -578,7 +578,9 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         // cekiyor) - bu yuzden coroutine icinde cagiriyoruz, dinleme donguyu
         // bloklamiyor.
         val baslangicZaman = System.currentTimeMillis()
+        android.util.Log.i("EdaService", "metniIsle başladı; karakter sayısı=" + (metin?.length ?: 0))
         serviceScope.launch {
+            android.util.Log.i("EdaService", "CommandProcessor çağrılıyor")
             val sonuc = try {
                 // Ses döngüsünü tek bir takılan AI/komut isteğinin sonsuza dek
                 // kilitlemesini önle. Uyku ve dinleme zamanlamasına dokunmaz.
@@ -586,6 +588,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                     withTimeout(25_000L) {
                         CommandProcessor.isle(this@EdaForegroundService, metin)
                     }
+                }.also {
+                    android.util.Log.i("EdaService", "CommandProcessor tamamlandı: " + (System.currentTimeMillis() - baslangicZaman) + "ms")
                 }
             } catch (e: TimeoutCancellationException) {
                 android.util.Log.e("EdaService", "Command processing timed out after 25s; voice loop will continue", e)
@@ -613,6 +617,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             }
 
             // ═══ پردازش نتیجه ═══
+            android.util.Log.i("EdaService", "Sonuç işleniyor; yanıt süresi=" + (System.currentTimeMillis() - baslangicZaman) + "ms")
             when (sonuc) {
                 is KomutSonucu.Cevap -> konus(sonuc.metin) { baslatDinleme() }
                 KomutSonucu.UykuyaDon -> {
