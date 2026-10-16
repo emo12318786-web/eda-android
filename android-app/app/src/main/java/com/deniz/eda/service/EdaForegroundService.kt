@@ -690,10 +690,11 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private fun konus(metin: String, tamamlaninca: (() -> Unit)? = null) {
         val id = "eda_${System.currentTimeMillis()}"
         val temizMetin = ttsTemizle(metin)
-        var completionUsed = false
+        // TTS callbacks and the watchdog can race; an atomic guard ensures the
+        // listener is restarted exactly once even when callbacks arrive late.
+        val completionUsed = java.util.concurrent.atomic.AtomicBoolean(false)
         fun finishOnce(source: String) {
-            if (completionUsed) return
-            completionUsed = true
+            if (!completionUsed.compareAndSet(false, true)) return
             android.util.Log.i("EDA-TTS", "utterance completion source=$source id=$id")
             tamamlaninca?.invoke()
         }
@@ -721,7 +722,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             // if this utterance is still outstanding; do not alter sleep timing.
             serviceScope.launch {
                 delay(30_000L)
-                if (!completionUsed) {
+                if (!completionUsed.get()) {
                     android.util.Log.e("EDA-TTS", "TTS callback timeout; recovering listener")
                     finishOnce("watchdog")
                 }
