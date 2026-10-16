@@ -198,7 +198,15 @@ class GemmaModeActivity : ComponentActivity(), TextToSpeech.OnInitListener {
     override fun onDestroy() {
         stopPageWork()
         tts?.shutdown()
-        // Do not close the model session: other EDA paths may share the runtime.
+        // Gemma 2.2B is a Gemma Mode-only resource: release its native model
+        // after any in-flight synchronized inference finishes, without blocking UI teardown.
+        Thread({
+            try {
+                sessions.unload()
+            } catch (error: Exception) {
+                android.util.Log.w("GemmaMode", "Could not unload local model on exit", error)
+            }
+        }, "EdaGemmaUnload").start()
         super.onDestroy()
     }
 }
