@@ -582,8 +582,10 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             val sonuc = try {
                 // Ses döngüsünü tek bir takılan AI/komut isteğinin sonsuza dek
                 // kilitlemesini önle. Uyku ve dinleme zamanlamasına dokunmaz.
-                withTimeout(25_000L) {
-                    CommandProcessor.isle(this@EdaForegroundService, metin)
+                withContext(Dispatchers.IO) {
+                    withTimeout(25_000L) {
+                        CommandProcessor.isle(this@EdaForegroundService, metin)
+                    }
                 }
             } catch (e: TimeoutCancellationException) {
                 android.util.Log.e("EdaService", "Command processing timed out after 25s; voice loop will continue", e)
