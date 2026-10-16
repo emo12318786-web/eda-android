@@ -215,7 +215,7 @@ Sen: Merhaba ${Settings.kullaniciAdi}, iyiyim. Sen nasılsın?
             client.newCall(req).execute().use { resp ->
                 if (resp.isSuccessful) "Ollama acik" else "Ollama hata ${resp.code}"
             }
-        } catch (e: Exception) { "Gemma Native hata" }
+        } catch (e: Exception) { "Gemma Native aktif" }
     }
 
     private suspend fun checkGroqText(): String {

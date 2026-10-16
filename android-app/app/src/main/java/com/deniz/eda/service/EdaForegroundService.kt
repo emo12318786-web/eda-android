@@ -608,7 +608,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 // Ses döngüsünü tek bir takılan AI/komut isteğinin sonsuza dek
                 // kilitlemesini önle. Uyku ve dinleme zamanlamasına dokunmaz.
                 withContext(Dispatchers.IO) {
-                    withTimeout(25_000L) {
+                    withTimeout(60_000L) {
                         CommandProcessor.isle(this@EdaForegroundService, metin)
                     }
                 }.also {
