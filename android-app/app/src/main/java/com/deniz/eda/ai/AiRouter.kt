@@ -98,9 +98,7 @@ KURALLAR:
 
         // Try the on-device model first so free-form chat works without internet,
         // regardless of the last selected online provider. Online providers remain fallbacks.
-        val selectedProvider = Settings.aiProvider.ifBlank { "ollama" }.lowercase(Locale.ROOT)
-        if (true) {
-            try {
+        try {
                 // Short everyday requests use the lighter FAST model; longer requests use DEEP.
                 // This local routing does not change the voice or sleep loop.
                 val normalizedQuestion = kullaniciSorusu.trim().take(1200)
@@ -120,11 +118,8 @@ KURALLAR:
                 android.util.Log.i("AiRouter", "Native Gemma unavailable/no GGUF; trying configured providers")
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                android.util.Log.e("AiRouter", "Native Gemma failed; trying configured providers", e)
-            }
-        } else {
-            android.util.Log.i("AiRouter", "AI_PROVIDER_SELECTED provider=$selectedProvider route=online-first")
+        } catch (e: Exception) {
+            android.util.Log.e("AiRouter", "Native Gemma failed; trying configured providers", e)
         }
 
         for (s in saglayicilar(ctx)) {
