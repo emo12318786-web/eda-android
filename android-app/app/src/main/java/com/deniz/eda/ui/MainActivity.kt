@@ -75,16 +75,53 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-        // POST_NOTIFICATIONS (Android 13+)
+        // ═══ همه مجوزهای ضروری — توی onCreate درخواست بشن ═══
+        val gerekliIzinler = mutableListOf<String>()
+
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.RECORD_AUDIO
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.RECORD_AUDIO)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.ACCESS_FINE_LOCATION
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.SEND_SMS
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.SEND_SMS)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.CAMERA
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.CAMERA)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (androidx.core.content.ContextCompat.checkSelfPermission(
                     this, Manifest.permission.POST_NOTIFICATIONS
                 ) != android.content.pm.PackageManager.PERMISSION_GRANTED
             ) {
-                androidx.core.app.ActivityCompat.requestPermissions(
-                    this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 2001
-                )
+                gerekliIzinler.add(Manifest.permission.POST_NOTIFICATIONS)
             }
+        }
+
+        if (gerekliIzinler.isNotEmpty()) {
+            android.util.Log.i("MainActivity", "İzinler isteniyor: ${gerekliIzinler.size} adet")
+            androidx.core.app.ActivityCompat.requestPermissions(
+                this, gerekliIzinler.toTypedArray(), 2001
+            )
         }
 
         durumText = findViewById(R.id.durumText)
