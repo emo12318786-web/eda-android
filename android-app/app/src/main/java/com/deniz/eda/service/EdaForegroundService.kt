@@ -404,6 +404,11 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         }
         
         dinlemeAktif = true
+        if (mod == Mod.AKTIF) {
+            // Bildirim durumunu gerçek dinleme döngüsüyle eşleştir; eski
+            // "mikrofon kapalı" metni aktif dinlemeye geçince kalmasın.
+            bildirimGuncelle("🎙️ Aktif — Mikrofon dinliyor")
+        }
         val uykuModu = mod == Mod.UYKU
         val offlineDenensin = uykuModu && !offlineDestekYok
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
