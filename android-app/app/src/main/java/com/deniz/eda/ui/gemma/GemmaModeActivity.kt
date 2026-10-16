@@ -92,8 +92,8 @@ class GemmaModeActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         statusText = when {
             !modelStatus.runtimeAvailable -> "Yerel Gemma motoru APK'da hazır değil"
             modelStatus.deepModelReady -> "Hazır — Gemma 2.2B modeli bulundu"
-            modelStatus.lightModelReady -> "Derin model yok; Gemma 3 1B yedek olarak kullanılabilir"
-            else -> "Model bulunamadı — Ayarlar'dan GGUF modelini içe aktar"
+            modelStatus.lightModelReady -> "Gemma 2.2B eksik — hafif modele geçiş yapılmaz; Ayarlar’dan 2.2B GGUF içe aktar"
+            else -> "Gemma 2.2B bulunamadı — yalnızca 2.2B GGUF dosyasını Ayarlar’dan içe aktar"
         }
     }
 
