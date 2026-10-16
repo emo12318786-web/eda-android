@@ -480,7 +480,7 @@ function updateUI(data) {
         'pollinations': 'Pollinations (Online)',
         'groq': 'Groq (Online)',
         'gemma': 'Gemma (Offline)',
-        'ollama': 'Ollama / Gemma (Local)'
+        'ollama': 'EDA Native Gemma (Local)'
     };
     document.getElementById('s-ai').textContent = aiNames[aiName] || aiName;
 
@@ -490,6 +490,12 @@ function updateUI(data) {
     runtimeEl.textContent = runtime.runtimeAvailable ? '🟢 موتور آماده' : '🔴 کتابخانه موتور موجود نیست';
     runtimeEl.className = 'status-value ' + (runtime.runtimeAvailable ? 'mode-active' : 'mode-off');
     runtimeEl.title = runtime.runtimeMessage || '';
+
+    const loadedEl = document.getElementById('s-runtime');
+    if (runtime.loadedStateKnown) {
+        loadedEl.textContent += runtime.loadedModel ? (' · بارگذاری‌شده: ' + runtime.loadedModel) : ' · مدلی بارگذاری نشده';
+    }
+    if (runtime.sessionDetail) loadedEl.title = runtime.sessionDetail;
 
     function showModelFile(elementId, model) {
         const el = document.getElementById(elementId);
