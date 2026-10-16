@@ -1,7 +1,6 @@
 package com.deniz.eda.ai
 
 import android.content.Context
-import com.deniz.eda.utils.OllamaLocator
 import com.deniz.eda.core.Settings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -32,19 +31,12 @@ object AiRouter {
         val needsKey: Boolean = true
     )
 
-    // OLLAMA_URL artik dinamik - OllamaLocator.bul(context) ile alinir
+    // Termux/Ollama is intentionally not a provider in the Android APK.
+    // Offline Gemma goes through NativeGemmaEngine; online providers are fallbacks only.
 
     private suspend fun saglayicilar(context: Context): List<Saglayici> {
-        val ollamaUrl = OllamaLocator.bul(context)
         val tum = listOf(
-        // ═══ ۱. Ollama Gemma2 (آفلاین، سریع) ═══
-        Saglayici(
-            ad = "Ollama-Gemma2",
-            baseUrl = "$ollamaUrl/v1/",
-            model = Settings.gemmaModel,
-            apiKey = { "ollama-local" },
-            needsKey = false
-        ),
+        // ═══ ۱. Pollinations (رایگان، آنلاین) ═══
         // ═══ ۲. Pollinations (رایگان، آنلاین) ═══
         Saglayici(
             ad = "Pollinations",
@@ -75,13 +67,12 @@ object AiRouter {
                 }
                 "pollinations" -> when (provider.ad) {
                     "Pollinations" -> 0
-                    "Ollama-Gemma2" -> 1
-                    else -> 2
+                    else -> 1
                 }
+                // "ollama" is a legacy preference key for EDA native offline inference.
                 else -> when (provider.ad) {
-                    "Ollama-Gemma2" -> 0
-                    "Pollinations" -> 1
-                    else -> 2
+                    "Pollinations" -> 0
+                    else -> 1
                 }
             }
         }
@@ -177,7 +168,7 @@ KURALLAR:
                     }
                     val toolName = match.groupValues[1].uppercase(Locale.ROOT)
                     val allowlist = setOf(
-                        "CHECK_INTERNET", "CHECK_OLLAMA", "CHECK_GROQ",
+                        "CHECK_INTERNET", "CHECK_GROQ",
                         "CHECK_POLLINATIONS", "GET_BATTERY", "GET_AI", "GET_MODE", "FULL_CHECK",
                         "GET_MEMORY", "GET_DIARY", "GET_REMINDERS", "GET_LEARNED", "GET_TIME", "GET_DATE",
                         "SAVE_MEMORY", "ADD_DIARY", "ADD_REMINDER",
