@@ -337,8 +337,16 @@ body {
             <span class="status-value" id="s-ai">...</span>
         </div>
         <div class="status-row">
-            <span class="status-label">🖥️ Termux Ollama</span>
-            <span class="status-value" id="s-ollama">Kontrol ediliyor...</span>
+            <span class="status-label">⚙️ موتور داخلی EDA</span>
+            <span class="status-value" id="s-runtime">Kontrol ediliyor...</span>
+        </div>
+        <div class="status-row">
+            <span class="status-label">🧠 Gemma 3 1B (GGUF)</span>
+            <span class="status-value" id="s-gemma3-file">Kontrol ediliyor...</span>
+        </div>
+        <div class="status-row">
+            <span class="status-label">🧠 Gemma 2 2B (GGUF)</span>
+            <span class="status-value" id="s-gemma2-file">Kontrol ediliyor...</span>
         </div>
     </div>
 
@@ -476,12 +484,22 @@ function updateUI(data) {
     };
     document.getElementById('s-ai').textContent = aiNames[aiName] || aiName;
 
-    // Real connectivity test from the Android app to the Termux Ollama API.
-    const ollamaEl = document.getElementById('s-ollama');
-    const ollama = data.ollama || {};
-    ollamaEl.textContent = ollama.connected ? '🟢 وصله — ' + (ollama.url || 'Ollama') : '🔴 وصله نیست';
-    ollamaEl.className = 'status-value ' + (ollama.connected ? 'mode-active' : 'mode-off');
-    ollamaEl.title = ollama.message || '';
+    // EDA's own in-process native runtime and app-private model files.
+    const runtime = data.gemmaRuntime || {};
+    const runtimeEl = document.getElementById('s-runtime');
+    runtimeEl.textContent = runtime.runtimeAvailable ? '🟢 موتور آماده' : '🔴 کتابخانه موتور موجود نیست';
+    runtimeEl.className = 'status-value ' + (runtime.runtimeAvailable ? 'mode-active' : 'mode-off');
+    runtimeEl.title = runtime.runtimeMessage || '';
+
+    function showModelFile(elementId, model) {
+        const el = document.getElementById(elementId);
+        const present = !!(model && model.present);
+        el.textContent = present ? '📦 فایل موجود' : '⚪ فایل پیدا نشد';
+        el.className = 'status-value ' + (present ? 'mode-active' : 'mode-off');
+        el.title = present ? ('حجم: ' + Math.round((model.sizeBytes || 0) / 1048576) + ' MB؛ وجود فایل به معنی بارگذاری مدل نیست') : 'فایل مدل در پوشه خصوصی EDA نیست';
+    }
+    showModelFile('s-gemma3-file', runtime.gemma3_1b);
+    showModelFile('s-gemma2-file', runtime.gemma2_2b);
 
     // ═══ Chip active state ═══
     document.querySelectorAll('.chip').forEach(c => {
