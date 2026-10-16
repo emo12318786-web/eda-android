@@ -7,14 +7,11 @@ import com.deniz.eda.data.db.EdaDatabase
 import com.deniz.eda.utils.BatteryUtils
 import fi.iki.elonen.NanoHTTPD
 import kotlinx.coroutines.runBlocking
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 import com.deniz.eda.utils.DigitUtils
 
 /**
@@ -69,51 +66,32 @@ class PanelServer(
                else com.deniz.eda.service.EdaForegroundService.sonMod
     }
     
-    @Volatile private var ollamaStatusCache: JSONObject? = null
-    @Volatile private var ollamaStatusCheckedAt: Long = 0L
-
-    private fun ollamaStatus(): JSONObject {
-        val now = System.currentTimeMillis()
-        val cached = ollamaStatusCache
-        if (cached != null && now - ollamaStatusCheckedAt < 5000L) return JSONObject(cached.toString())
-
-        val result = try {
-            runBlocking {
-                val baseUrl = com.deniz.eda.utils.OllamaLocator.bul(context)
-                val client = OkHttpClient.Builder()
-                    .connectTimeout(1200, TimeUnit.MILLISECONDS)
-                    .readTimeout(1200, TimeUnit.MILLISECONDS)
-                    .callTimeout(1800, TimeUnit.MILLISECONDS)
-                    .build()
-                // Check Ollama's native API first, then the OpenAI-compatible endpoint.
-                val nativeRequest = Request.Builder().url("$baseUrl/api/tags").get().build()
-                val nativeResponse = client.newCall(nativeRequest).execute()
-                val nativeCode = nativeResponse.code
-                val nativeOk = nativeResponse.isSuccessful
-                nativeResponse.close()
-                val openAiOk = if (nativeOk) {
-                    true
-                } else {
-                    val openAiRequest = Request.Builder().url("$baseUrl/v1/models").get().build()
-                    client.newCall(openAiRequest).execute().use { it.isSuccessful }
-                }
-                JSONObject().apply {
-                    put("connected", nativeOk || openAiOk)
-                    put("url", baseUrl)
-                    put("message", if (nativeOk || openAiOk) "Termux Ollama bağlı" else "Ollama yanıt vermedi (API kodu: $nativeCode)")
-                }
-            }
-        } catch (e: Exception) {
-            JSONObject().apply {
-                put("connected", false)
-                put("url", "")
-                put("message", "Termux Ollama bağlı değil")
+    /**
+     * Reports EDA's in-process native Gemma runtime and private GGUF files.
+     * File presence is deliberately separate from runtime availability.
+     */
+    private fun gemmaRuntimeStatus(): JSONObject {
+        val runtimeAvailable = com.deniz.eda.ai.NativeGemmaEngine().isRuntimeBundled()
+        val modelsDir = java.io.File(context.filesDir, "models")
+        fun modelStatus(fileName: String): JSONObject {
+            val file = java.io.File(modelsDir, fileName)
+            val present = file.isFile && file.length() > 1024L * 1024L
+            return JSONObject().apply {
+                put("present", present)
+                put("sizeBytes", if (present) file.length() else 0L)
+                put("state", if (present) "file-present" else "file-missing")
             }
         }
-        ollamaStatusCache = JSONObject(result.toString())
-        ollamaStatusCheckedAt = now
-        Log.i(TAG, "Ollama connection status: connected=${result.optBoolean("connected")} url=${result.optString("url")}")
-        return result
+        return JSONObject().apply {
+            put("runtimeAvailable", runtimeAvailable)
+            put("runtimeState", if (runtimeAvailable) "available" else "unavailable")
+            put("runtimeMessage", if (runtimeAvailable) "EDA native runtime available" else "EDA native runtime library missing")
+            put("gemma3_1b", modelStatus("gemma3-1b.gguf"))
+            put("gemma2_2b", modelStatus("gemma2-2b.gguf"))
+            // The dashboard must not infer that a model is loaded from file presence.
+            put("loadedModel", JSONObject.NULL)
+            put("loadedStateKnown", false)
+        }
     }
 
     private fun serveStatus(): Response {
@@ -144,7 +122,7 @@ class PanelServer(
                     put("hatirlatma", hatirlatmaSayi)
                 })
                 put("ai", Settings.aiProvider)
-                put("ollama", ollamaStatus())
+                put("gemmaRuntime", gemmaRuntimeStatus())
                 put("gemma", Settings.gemmaModel ?: "gemma2:2b")
                 put("saat", DigitUtils.formatTime("HH:mm"))
                 put("tarih", SimpleDateFormat("dd MMM yyyy", Locale("tr", "TR")).format(Date()))
