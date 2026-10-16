@@ -445,6 +445,12 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             speechRecognizer = createBestRecognizer()?.apply {
                 setRecognitionListener(recognitionListener)
             }
+            if (speechRecognizer == null) {
+                android.util.Log.e("EdaService", "createBestRecognizer null dondurdu, dinleme kilidi aciliyor")
+                dinlemeAktif = false
+                yenidenDenemeyiPlanla()
+                return
+            }
             speechRecognizer?.startListening(intent)
         } catch (e: Exception) {
             android.util.Log.e("EdaService", "startListening hata: ${e.message}")
