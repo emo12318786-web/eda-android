@@ -690,14 +690,24 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private fun konus(metin: String, tamamlaninca: (() -> Unit)? = null) {
         val id = "eda_${System.currentTimeMillis()}"
         val temizMetin = ttsTemizle(metin)
+        var completionUsed = false
+        fun finishOnce(source: String) {
+            if (completionUsed) return
+            completionUsed = true
+            android.util.Log.i("EDA-TTS", "utterance completion source=$source id=$id")
+            tamamlaninca?.invoke()
+        }
         tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) {}
             override fun onDone(utteranceId: String?) {
-                if (utteranceId == id) serviceScope.launch(Dispatchers.Main) { tamamlaninca?.invoke() }
+                if (utteranceId == id) serviceScope.launch(Dispatchers.Main) { finishOnce("onDone") }
             }
             @Deprecated("Deprecated in Java")
             override fun onError(utteranceId: String?) {
-                if (utteranceId == id) serviceScope.launch(Dispatchers.Main) { tamamlaninca?.invoke() }
+                if (utteranceId == id) serviceScope.launch(Dispatchers.Main) { finishOnce("onError") }
+            }
+            override fun onStop(utteranceId: String?, interrupted: Boolean) {
+                if (utteranceId == id) serviceScope.launch(Dispatchers.Main) { finishOnce("onStop") }
             }
         })
         val params = Bundle()
@@ -705,7 +715,17 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         val speakResult = tts.speak(temizMetin, TextToSpeech.QUEUE_FLUSH, params, id)
         if (speakResult == TextToSpeech.ERROR) {
             android.util.Log.e("EDA-TTS", "TTS speak() failed; restarting listener")
-            serviceScope.launch(Dispatchers.Main) { tamamlaninca?.invoke() }
+            serviceScope.launch(Dispatchers.Main) { finishOnce("speak-error") }
+        } else if (tamamlaninca != null) {
+            // Some TTS engines never send onDone/onError. Recover the voice loop
+            // if this utterance is still outstanding; do not alter sleep timing.
+            serviceScope.launch {
+                delay(30_000L)
+                if (!completionUsed) {
+                    android.util.Log.e("EDA-TTS", "TTS callback timeout; recovering listener")
+                    finishOnce("watchdog")
+                }
+            }
         }
     }
 
