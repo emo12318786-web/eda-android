@@ -437,8 +437,17 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1500L)
         }
         try {
+            // Her seferinde temiz bir recognizer kullan - Android'in
+            // SpeechRecognizer'i birkac hatadan sonra kilitlenebiliyor.
+            try { speechRecognizer?.cancel() } catch (_: Exception) {}
+            try { speechRecognizer?.destroy() } catch (_: Exception) {}
+            speechRecognizer = null
+            speechRecognizer = createBestRecognizer()?.apply {
+                setRecognitionListener(recognitionListener)
+            }
             speechRecognizer?.startListening(intent)
         } catch (e: Exception) {
+            android.util.Log.e("EdaService", "startListening hata: ${e.message}")
             dinlemeAktif = false
             yenidenDenemeyiPlanla()
         }
@@ -612,11 +621,14 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             // ═══ ثبت لاگ در فایل (بدون Room DB) ═══
             try {
                 val cevapMetni = (sonuc as? KomutSonucu.Cevap)?.metin ?: ""
+                val kaynakAdi = if (com.deniz.eda.ai.AiRouter.lastProvider.isNotBlank())
+                    com.deniz.eda.ai.AiRouter.lastProvider
+                else "komut"
                 com.deniz.eda.utils.EdaLog.ekle(
                     context = this@EdaForegroundService,
                     kullanici = metin,
                     eda = cevapMetni,
-                    kaynak = "komut",
+                    kaynak = kaynakAdi,
                     sleep = false
                 )
                 android.util.Log.d("EdaSvc", "log kaydedildi: $metin")

@@ -9,6 +9,10 @@ import java.util.Locale
 
 object AiRouter {
 
+    // Son basarili AI saglayicisinin adi (dashboard log icin)
+    @Volatile
+    var lastProvider: String = ""
+
     @Volatile
     private var nativeGemmaSession: GemmaSessionManager? = null
 
