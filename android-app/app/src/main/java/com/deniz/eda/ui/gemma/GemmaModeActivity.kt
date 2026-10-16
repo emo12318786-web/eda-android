@@ -173,11 +173,10 @@ class GemmaModeActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                     val modelStatus = sessions.status()
                     android.util.Log.i("GemmaMode", "runtime=${modelStatus.runtimeAvailable}, deep=${modelStatus.deepModelReady}, light=${modelStatus.lightModelReady}, loaded=${modelStatus.loadedSlot}")
                     if (!modelStatus.runtimeAvailable) throw IllegalStateException("Native Gemma motoru APK içinde bulunamadı")
-                    if (!modelStatus.deepModelReady && !modelStatus.lightModelReady) throw IllegalStateException("GGUF model dosyası içe aktarılmamış")
+                    if (!modelStatus.deepModelReady) throw IllegalStateException("Gemma 2.2B GGUF dosyası içe aktarılmamış")
                     val system = "Sen Eda'sın. Her zaman doğal, kısa ve anlaşılır İstanbul Türkçesiyle cevap ver. Kullanıcı Azerbaycan Türkçesi veya İstanbul Türkçesi konuşabilir; ikisini de anlamaya çalış, ama cevabı daima İstanbul Türkçesiyle ver. Yanıtı genellikle 1-3 kısa cümle tut. Bilmediğin şeyi uydurma. Bu sohbet ekranında telefon donanımını kontrol ettiğini iddia etme."
                     val prompt = system + "\n\nKullanıcı: " + text + "\nEda:"
-                    val deep = if (modelStatus.deepModelReady) sessions.generate(GemmaSessionManager.Task.DEEP, prompt, 180) else null
-                    if (!deep.isNullOrBlank()) deep else if (modelStatus.lightModelReady) sessions.generate(GemmaSessionManager.Task.LIGHT, prompt, 120) else null
+                    sessions.generate(GemmaSessionManager.Task.DEEP, prompt, 180)
                 }
                 if (requestId != generation || isFinishing || isDestroyed) return@launch
                 answerText = result?.trim()?.takeIf { it.isNotBlank() } ?: "Model dosyası bulundu ama yanıt üretilemedi. Durumu kontrol edip tekrar dene."
@@ -188,7 +187,7 @@ class GemmaModeActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                 if (requestId != generation || isFinishing || isDestroyed) return@launch
                 answerText = when {
                     error.message?.contains("APK", ignoreCase = true) == true -> "Bu APK'da yerel Gemma motoru eksik. Yeni sürümün kurulması gerekiyor."
-                    error.message?.contains("GGUF", ignoreCase = true) == true -> "Model içe aktarılmamış. Ayarlar'dan Gemma GGUF dosyasını seç."
+                    error.message?.contains("GGUF", ignoreCase = true) == true -> "Gemma 2.2B modeli içe aktarılmamış. Ayarlar'dan yalnızca Gemma 2.2B GGUF dosyasını seç."
                     else -> "Gemma yanıt üretemedi: " + (error.message ?: error.javaClass.simpleName)
                 }
                 statusText = "Hata yakalandı — ayrıntılar gösterildi"
