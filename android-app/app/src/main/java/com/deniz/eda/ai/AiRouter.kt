@@ -101,21 +101,24 @@ KURALLAR:
         // Prefer a model imported into EDA's private storage. This path runs
         // fully in-process and does not use Termux, Ollama, or network access.
         try {
-            val local = nativeSession(ctx).generate(
-                // EDA bu sürümde yalnızca Gemma 2 2B kullanır; Gemma 3 slotuna yönlendirme yapma.
-                task = GemmaSessionManager.Task.DEEP,
-                prompt = sistemMesaji + "\n\nKullanıcı: " + kullaniciSorusu + "\nEda:",
-                maxTokens = 180
+            val session = nativeSession(ctx)
+            val prompt = sistemMesaji + "\n\nKullanıcı: " + kullaniciSorusu + "\nEda:"
+            // Normal EDA routing uses only the light model. The DEEP (Gemma 2.2B)
+            // slot is reserved for the dedicated Gemma Mode screen.
+            val local = session.generate(
+                task = GemmaSessionManager.Task.LIGHT,
+                prompt = prompt,
+                maxTokens = 96
             )
             if (!local.isNullOrBlank()) {
                 android.util.Log.i("AiRouter", "Native Gemma offline response returned")
                 return@withContext local.trim()
             }
-            android.util.Log.i("AiRouter", "Native Gemma unavailable/no GGUF; trying configured providers")
+            android.util.Log.w("AiRouter", "Native Gemma unavailable: runtime/model missing; trying configured providers")
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            android.util.Log.e("AiRouter", "Native Gemma failed; trying online providers", e)
+            android.util.Log.e("AiRouter", "Native Gemma failed; trying configured providers", e)
         }
 
         for (s in saglayicilar(ctx)) {

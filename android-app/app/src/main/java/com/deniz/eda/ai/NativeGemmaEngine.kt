@@ -5,10 +5,10 @@ import java.io.File
 /**
  * Contract for the in-process native inference engine.
  *
- * This adapter intentionally fails closed until libeda_llama.so is packaged
- * into the APK. It never falls back to localhost:11434 or silently launches
- * Termux/Ollama. The JNI implementation must be added with the pinned
- * llama.cpp source before this engine can be enabled in production.
+ * Loads the in-process libeda_llama.so JNI runtime built from the pinned
+ * llama.cpp source. It never falls back to localhost:11434 or silently launches
+ * Termux/Ollama. A successful APK build verifies compilation/linking only;
+ * the GGUF load and generation path still needs a real-device smoke test.
  */
 class NativeGemmaEngine {
 
@@ -41,7 +41,7 @@ class NativeGemmaEngine {
     }
 
     /**
-     * Returns false until the native runtime is actually bundled.
+     * Returns false if the native runtime cannot be loaded from the APK.
      * Does not attempt any Ollama/Termux/network fallback.
      */
     @Synchronized
