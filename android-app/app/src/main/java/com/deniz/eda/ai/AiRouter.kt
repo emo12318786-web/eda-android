@@ -36,8 +36,7 @@ object AiRouter {
 
     private suspend fun saglayicilar(context: Context): List<Saglayici> {
         val tum = listOf(
-        // ═══ ۱. Pollinations (رایگان، آنلاین) ═══
-        // ═══ ۲. Pollinations (رایگان، آنلاین) ═══
+        // ═══ Pollinations (رایگان، آنلاین) ═══
         Saglayici(
             ad = "Pollinations",
             baseUrl = "https://text.pollinations.ai/openai/",
