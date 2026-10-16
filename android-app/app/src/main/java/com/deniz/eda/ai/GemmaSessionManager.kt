@@ -71,15 +71,21 @@ class GemmaSessionManager(context: Context) {
             Task.LIGHT -> GemmaModelStore.Slot.FAST
             Task.DEEP -> GemmaModelStore.Slot.DEEP
         }
-        val model: File = store.info(requested)?.file ?: return null
+        // Use the requested model when available; otherwise fall back to the
+        // other imported slot so a missing FAST/DEEP file does not disable chat.
+        val selected = if (store.info(requested) != null) requested else when (requested) {
+            GemmaModelStore.Slot.FAST -> GemmaModelStore.Slot.DEEP
+            GemmaModelStore.Slot.DEEP -> GemmaModelStore.Slot.FAST
+        }
+        val model: File = store.info(selected)?.file ?: return null
 
-        if (loadedSlot != requested) {
+        if (loadedSlot != selected) {
             if (loadedSlot != null) {
                 engine.unload()
                 loadedSlot = null
             }
             if (!engine.loadModel(model)) return null
-            loadedSlot = requested
+            loadedSlot = selected
         }
         return engine.generate(prompt, maxTokens)
     }
