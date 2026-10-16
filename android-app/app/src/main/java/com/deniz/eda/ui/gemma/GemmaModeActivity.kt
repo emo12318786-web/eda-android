@@ -167,17 +167,34 @@ class GemmaModeActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         busy = true
         statusText = "Yerel Gemma yanıt hazırlıyor…"
         requestJob = lifecycleScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                val system = "Sen Eda'sın. Her zaman doğal, kısa ve anlaşılır İstanbul Türkçesiyle cevap ver. Kullanıcı Azerbaycan Türkçesi veya İstanbul Türkçesi konuşabilir; ikisini de anlamaya çalış, ama cevabı daima İstanbul Türkçesiyle ver. Yanıtı genellikle 1-3 kısa cümle tut. Bilmediğin şeyi uydurma. Bu sohbet ekranında telefon donanımını kontrol ettiğini iddia etme."
-                val prompt = system + "\n\nKullanıcı: " + text + "\nEda:"
-                val deep = sessions.generate(GemmaSessionManager.Task.DEEP, prompt, 180)
-                if (!deep.isNullOrBlank()) deep else sessions.generate(GemmaSessionManager.Task.LIGHT, prompt, 120)
+            try {
+                statusText = "Model kontrol ediliyor…"
+                val result = withContext(Dispatchers.IO) {
+                    val modelStatus = sessions.status()
+                    android.util.Log.i("GemmaMode", "runtime=${modelStatus.runtimeAvailable}, deep=${modelStatus.deepModelReady}, light=${modelStatus.lightModelReady}, loaded=${modelStatus.loadedSlot}")
+                    if (!modelStatus.runtimeAvailable) throw IllegalStateException("Native Gemma motoru APK içinde bulunamadı")
+                    if (!modelStatus.deepModelReady && !modelStatus.lightModelReady) throw IllegalStateException("GGUF model dosyası içe aktarılmamış")
+                    val system = "Sen Eda'sın. Her zaman doğal, kısa ve anlaşılır İstanbul Türkçesiyle cevap ver. Kullanıcı Azerbaycan Türkçesi veya İstanbul Türkçesi konuşabilir; ikisini de anlamaya çalış, ama cevabı daima İstanbul Türkçesiyle ver. Yanıtı genellikle 1-3 kısa cümle tut. Bilmediğin şeyi uydurma. Bu sohbet ekranında telefon donanımını kontrol ettiğini iddia etme."
+                    val prompt = system + "\n\nKullanıcı: " + text + "\nEda:"
+                    val deep = if (modelStatus.deepModelReady) sessions.generate(GemmaSessionManager.Task.DEEP, prompt, 180) else null
+                    if (!deep.isNullOrBlank()) deep else if (modelStatus.lightModelReady) sessions.generate(GemmaSessionManager.Task.LIGHT, prompt, 120) else null
+                }
+                if (requestId != generation || isFinishing || isDestroyed) return@launch
+                answerText = result?.trim()?.takeIf { it.isNotBlank() } ?: "Model dosyası bulundu ama yanıt üretilemedi. Durumu kontrol edip tekrar dene."
+                statusText = if (result.isNullOrBlank()) "Model yanıt üretmedi; günlük kaydı için GemmaMode etiketi" else "Yanıt hazır — yalnızca yerel model"
+                if (ttsReady && !result.isNullOrBlank()) tts?.speak(answerText, TextToSpeech.QUEUE_FLUSH, null, "eda-gemma-answer")
+            } catch (error: Throwable) {
+                android.util.Log.e("GemmaMode", "Local generation failed", error)
+                if (requestId != generation || isFinishing || isDestroyed) return@launch
+                answerText = when {
+                    error.message?.contains("APK", ignoreCase = true) == true -> "Bu APK'da yerel Gemma motoru eksik. Yeni sürümün kurulması gerekiyor."
+                    error.message?.contains("GGUF", ignoreCase = true) == true -> "Model içe aktarılmamış. Ayarlar'dan Gemma GGUF dosyasını seç."
+                    else -> "Gemma yanıt üretemedi: " + (error.message ?: error.javaClass.simpleName)
+                }
+                statusText = "Hata yakalandı — ayrıntılar gösterildi"
+            } finally {
+                if (requestId == generation && !isFinishing && !isDestroyed) busy = false
             }
-            if (requestId != generation || isFinishing || isDestroyed) return@launch
-            busy = false
-            answerText = result?.trim()?.takeIf { it.isNotBlank() } ?: "Yerel Gemma modeli hazır değil. Ayarlar bölümünden Gemma 2.2B veya Gemma 3 1B modelini içe aktar."
-            statusText = if (result.isNullOrBlank()) "Model kullanılamıyor" else "Yanıt hazır — yalnızca yerel model"
-            if (ttsReady) tts?.speak(answerText, TextToSpeech.QUEUE_FLUSH, null, "eda-gemma-answer")
         }
     }
 
