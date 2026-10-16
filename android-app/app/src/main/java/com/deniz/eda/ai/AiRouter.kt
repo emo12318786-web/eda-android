@@ -103,14 +103,9 @@ KURALLAR:
         try {
             val session = nativeSession(ctx)
             val prompt = sistemMesaji + "\n\nKullanıcı: " + kullaniciSorusu + "\nEda:"
-            // Prefer the deep slot, but if only the light slot is imported,
-            // use it rather than declaring native offline chat unavailable.
-            val deep = session.generate(
-                task = GemmaSessionManager.Task.DEEP,
-                prompt = prompt,
-                maxTokens = 180
-            )
-            val local = if (!deep.isNullOrBlank()) deep else session.generate(
+            // Normal EDA routing uses only the light model. The DEEP (Gemma 2.2B)
+            // slot is reserved for the dedicated Gemma Mode screen.
+            val local = session.generate(
                 task = GemmaSessionManager.Task.LIGHT,
                 prompt = prompt,
                 maxTokens = 96
