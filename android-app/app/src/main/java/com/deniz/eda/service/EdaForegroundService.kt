@@ -388,6 +388,14 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 }
                 startActivity(i)
                 android.util.Log.i("EdaService", "SttActivity baslatildi (fallback)")
+                serviceScope.launch {
+                    delay(20000L)
+                    if (dinlemeAktif) {
+                        android.util.Log.w("EdaService", "SttActivity timeout; dinleme kilidini ac")
+                        dinlemeAktif = false
+                        yenidenDenemeyiPlanla()
+                    }
+                }
             } catch (e: Exception) {
                 dinlemeAktif = false
                 yenidenDenemeyiPlanla()

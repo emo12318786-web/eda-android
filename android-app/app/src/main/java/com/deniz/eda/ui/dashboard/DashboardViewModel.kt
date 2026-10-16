@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.deniz.eda.core.Settings
+import com.deniz.eda.ai.GemmaSessionManager
 import com.deniz.eda.data.db.EdaDatabase
 import com.deniz.eda.utils.BatteryUtils
 import com.deniz.eda.utils.EdaLog
@@ -103,8 +104,16 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
             // ═══ AI Durumu kontrol ═══
             val internet = try { SystemTools.checkInternet(ctx) } catch (e: Exception) { false }
             val ollama = try {
-                withContext(Dispatchers.IO) { SystemTools.runTool("CHECK_OLLAMA", ctx) }
-            } catch (e: Exception) { "Ollama kapali" }
+                val gsm = GemmaSessionManager(ctx)
+                val st = gsm.status()
+                if (!st.runtimeAvailable) {
+                    "Native motor yok"
+                } else {
+                    val light = if (st.lightModelReady) "3 1B hazır" else "3 1B yok"
+                    val deep = if (st.deepModelReady) "2 2B hazır" else "2 2B yok"
+                    "Gemma Native · $light · $deep"
+                }
+            } catch (e: Exception) { "Gemma Native hata: ${e.message}" }
             val groq = try {
                 withContext(Dispatchers.IO) { SystemTools.runTool("CHECK_GROQ", ctx) }
             } catch (e: Exception) { "Groq yok" }
