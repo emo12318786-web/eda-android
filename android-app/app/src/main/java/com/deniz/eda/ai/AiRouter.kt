@@ -20,6 +20,10 @@ object AiRouter {
             }
         }
 
+    /** Dashboard reads the same live session used by inference; never creates a fake status session. */
+    fun nativeGemmaStatus(context: Context): GemmaSessionManager.Status? =
+        nativeGemmaSession?.status()
+
     private data class Saglayici(
         val ad: String,
         val baseUrl: String,
