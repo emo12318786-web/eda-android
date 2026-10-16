@@ -96,22 +96,21 @@ KURALLAR:
     ): String? = withContext(Dispatchers.IO) {
         val ctx = context ?: return@withContext null
 
-        // Honor the selected provider. Never run native Gemma first when the user
-        // explicitly selected an online provider: native inference can stall on
-        // long prompts and prevent the configured online route from being reached.
+        // Try the on-device model first so free-form chat works without internet,
+        // regardless of the last selected online provider. Online providers remain fallbacks.
         val selectedProvider = Settings.aiProvider.ifBlank { "ollama" }.lowercase(Locale.ROOT)
-        if (selectedProvider == "ollama") {
+        if (true) {
             try {
                 // Short everyday requests use the lighter FAST model; longer requests use DEEP.
                 // This local routing does not change the voice or sleep loop.
-                val normalizedQuestion = kullaniciSorusu.trim()
+                val normalizedQuestion = kullaniciSorusu.trim().take(1200)
                 val fastRequest = normalizedQuestion.length <= 100 &&
                     normalizedQuestion.split(Regex("\\s+")).size <= 14
                 val localTask = if (fastRequest) GemmaSessionManager.Task.LIGHT else GemmaSessionManager.Task.DEEP
                 val local = nativeSession(ctx).generate(
                     task = localTask,
                     prompt = sistemMesaji + "\n\nKullanıcı: " + normalizedQuestion + "\nEda:",
-                    maxTokens = if (fastRequest) 96 else 180
+                    maxTokens = if (fastRequest) 64 else 96
                 )
                 if (!local.isNullOrBlank()) {
                     android.util.Log.i("AiRouter", "AI_RESPONSE_SUCCESS provider=Native-Gemma model=local-gemma task=DEEP chars=${local.trim().length}")
