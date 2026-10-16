@@ -3,6 +3,7 @@ package com.deniz.eda.core
 import com.deniz.eda.utils.SystemTools
 import android.content.Context
 import com.deniz.eda.ai.AiRouter
+import com.deniz.eda.ai.GemmaSessionManager
 import com.deniz.eda.data.DiaryStore
 import com.deniz.eda.data.LearningStore
 import com.deniz.eda.data.MemoryStore
@@ -902,9 +903,29 @@ else -> {
                         .any { sosyal.contains(it) } ->
                         KomutSonucu.Cevap("Bugün epey yorulmuşsun $hitap. Biraz soluklanalım; istersen anlat, seni dinliyorum. En çok ne yordu?")
                     else -> {
+                        // 1. Online AI dene (Groq / Pollinations)
                         val aiCevap = AiRouter.sor(metinHam, context = context)
-                        if (aiCevap != null) KomutSonucu.Cevap(aiCevap)
-                        else KomutSonucu.Cevap("Şu an cevap veremiyorum $hitap, ama dinliyorum.")
+                        if (aiCevap != null) {
+                            KomutSonucu.Cevap(aiCevap)
+                        } else {
+                            // 2. Native Gemma fallback (offline)
+                            val gemmaCevap = try {
+                                val gsm = GemmaSessionManager(context)
+                                val status = gsm.status()
+                                if (status.runtimeAvailable && (status.lightModelReady || status.deepModelReady)) {
+                                    gsm.generate(
+                                        if (metinHam.length < 60) GemmaSessionManager.Task.LIGHT
+                                        else GemmaSessionManager.Task.DEEP,
+                                        metinHam
+                                    )
+                                } else null
+                            } catch (e: Exception) {
+                                android.util.Log.e("CommandProcessor", "Gemma hata: ${e.message}")
+                                null
+                            }
+                            if (gemmaCevap != null) KomutSonucu.Cevap(gemmaCevap)
+                            else KomutSonucu.Cevap("Şu an cevap veremiyorum $hitap, ama dinliyorum.")
+                        }
                     }
                 }
             }

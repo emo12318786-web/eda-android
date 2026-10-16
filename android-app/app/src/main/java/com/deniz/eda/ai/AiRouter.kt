@@ -115,6 +115,7 @@ KURALLAR:
                 )
                 if (!local.isNullOrBlank()) {
                     android.util.Log.i("AiRouter", "AI_RESPONSE_SUCCESS provider=Native-Gemma model=local-gemma task=DEEP chars=${local.trim().length}")
+                    lastProvider = "Native-Gemma"
                     return@withContext local.trim()
                 }
                 android.util.Log.i("AiRouter", "Native Gemma unavailable/no GGUF; trying configured providers")
@@ -200,6 +201,7 @@ KURALLAR:
                 }
                 if (!sonCevap.isNullOrBlank()) {
                     android.util.Log.i("AiRouter", "AI_RESPONSE_SUCCESS provider=${s.ad} model=${s.model} agentSteps=$aracAdimi chars=${sonCevap.length}")
+                    lastProvider = s.ad
                     val kayitliAd = Settings.kullaniciAdi.trim()
                     return@withContext sonCevap
                         .replace(Regex("(?i)denizcim"), kayitliAd.ifBlank { "" })
