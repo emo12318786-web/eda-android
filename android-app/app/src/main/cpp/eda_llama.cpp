@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <mutex>
 #include "llama.h"
 
 #define EDA_LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "EdaNativeGemma", __VA_ARGS__)
@@ -11,6 +12,8 @@ static llama_model *g_model = nullptr;
 static llama_context *g_context = nullptr;
 static llama_sampler *g_sampler = nullptr;
 static const llama_vocab *g_vocab = nullptr;
+// JNI globals represent one process-wide model; serialize access across all engine instances.
+static std::mutex g_model_mutex;
 
 static void unload_model() {
     if (g_sampler) { llama_sampler_free(g_sampler); g_sampler = nullptr; }
@@ -21,6 +24,7 @@ static void unload_model() {
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_deniz_eda_ai_NativeGemmaEngine_nativeLoadModel(JNIEnv *env, jobject, jstring jpath) {
+    std::lock_guard<std::mutex> lock(g_model_mutex);
     const char *path = env->GetStringUTFChars(jpath, nullptr);
     if (!path) return JNI_FALSE;
     unload_model();
@@ -55,6 +59,7 @@ Java_com_deniz_eda_ai_NativeGemmaEngine_nativeLoadModel(JNIEnv *env, jobject, js
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_deniz_eda_ai_NativeGemmaEngine_nativeGenerate(JNIEnv *env, jobject, jstring jprompt, jint maxTokens) {
+    std::lock_guard<std::mutex> lock(g_model_mutex);
     if (!g_model || !g_context || !g_vocab || !g_sampler) return nullptr;
     const char *raw = env->GetStringUTFChars(jprompt, nullptr);
     if (!raw) return nullptr;
@@ -91,5 +96,6 @@ Java_com_deniz_eda_ai_NativeGemmaEngine_nativeGenerate(JNIEnv *env, jobject, jst
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_deniz_eda_ai_NativeGemmaEngine_nativeUnloadModel(JNIEnv *, jobject) {
+    std::lock_guard<std::mutex> lock(g_model_mutex);
     unload_model();
 }
