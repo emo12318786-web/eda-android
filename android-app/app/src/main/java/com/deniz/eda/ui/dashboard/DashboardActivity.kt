@@ -5,6 +5,7 @@ import com.deniz.eda.ai.AiRouter
 import kotlinx.coroutines.launch
 
 import android.content.Intent
+import android.speech.RecognizerIntent
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.result.contract.ActivityResultContracts
@@ -121,6 +122,15 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
     var deepChatReply by remember { mutableStateOf("Ollama · Termux üzerinden yerel sohbet.") }
     var deepChatBusy by remember { mutableStateOf(false) }
     val chatScope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val voiceInput = androidx.activity.compose.rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+            if (!spoken.isNullOrBlank()) deepChatInput = spoken
+        }
+    }
     // Use observable dashboard state; Compose cannot observe mutable Settings directly.
     val active = state.mod == "AKTIF"
     val sleeping = state.mod == "UYKU"
@@ -265,6 +275,21 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                         enabled = !deepChatBusy,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    OutlinedButton(
+                        enabled = !deepChatBusy,
+                        onClick = {
+                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "tr-TR")
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "tr-TR")
+                                putExtra(RecognizerIntent.EXTRA_PROMPT, "Eda'ya söylemek istediğini konuş")
+                                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                            }
+                            runCatching { voiceInput.launch(intent) }
+                                .onFailure { android.widget.Toast.makeText(context, "Ses tanıma açılamadı.", android.widget.Toast.LENGTH_SHORT).show() }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("🎙️ Sesle konuş") }
                     if (deepChatBusy) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -291,6 +316,16 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                                 )
                             }.getOrNull()
                             deepChatReply = answer ?: "Şu an yanıt alamadım. Termux'ta ~/ollama-start.sh çalışıyor mu kontrol et."
+                            if (!answer.isNullOrBlank()) {
+                                val speakIntent = Intent(context, EdaForegroundService::class.java).apply {
+                                    action = "ACTION_SPEAK"
+                                    putExtra("text", answer)
+                                }
+                                runCatching {
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) context.startForegroundService(speakIntent)
+                                    else context.startService(speakIntent)
+                                }
+                            }
                             deepChatBusy = false
                         }
                     }
