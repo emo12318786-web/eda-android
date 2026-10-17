@@ -907,7 +907,7 @@ else -> {
                         if (Settings.gemmaMode) {
                             // Gemma Mode is intentionally offline-first and does not call online providers.
                             val gemmaCevap = try {
-                                val gsm = GemmaSessionManager(context)
+                                val gsm = GemmaSessionManager.get(context)
                                 val status = gsm.status()
                                 if (status.runtimeAvailable && status.modelReady) gsm.generate(metinHam) else null
                             } catch (e: Exception) {
@@ -923,7 +923,7 @@ else -> {
                                 KomutSonucu.Cevap(aiCevap)
                             } else {
                                 val gemmaCevap = try {
-                                    val gsm = GemmaSessionManager(context)
+                                    val gsm = GemmaSessionManager.get(context)
                                     val status = gsm.status()
                                     if (status.runtimeAvailable && status.modelReady) gsm.generate(metinHam) else null
                                 } catch (e: Exception) {
