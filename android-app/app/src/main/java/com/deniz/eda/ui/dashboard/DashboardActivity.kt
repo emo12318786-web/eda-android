@@ -209,7 +209,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 ControlTile("🔒", "Gemma 2.2B Modu", "Çevrimdışı sohbet • Türkçe ve Azerbaycan Türkçesi girişi", Violet) {
                     context.startActivity(Intent(context, com.deniz.eda.ui.gemma.GemmaModeActivity::class.java))
                 }
-                ControlTile("🧠", "آفلاین هوشمند · سؤال‌های بزرگ", "تحلیل متن‌های طولانی با مدل محلی؛ بدون ارسال به اینترنت", Cyan) {
+                ControlTile("🧠", "Çevrimdışı Akıllı Analiz", "Uzun metinleri yerel modelle incele; internete gönderilmez", Cyan) {
                     context.startActivity(Intent(context, com.deniz.eda.ui.OfflineDeepQuestionsActivity::class.java))
                 }
                 SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
