@@ -53,6 +53,9 @@ class DashboardActivity : ComponentActivity() {
         if (granted && action != null) sendAction(action)
         else if (!granted) android.widget.Toast.makeText(this, "Eda için mikrofon izni gerekli.", android.widget.Toast.LENGTH_LONG).show()
     }
+    private val phonePermissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        android.util.Log.i("EDA-Permissions", "Telefon izinleri: $result")
+    }
     private val viewModel: DashboardViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,6 +73,16 @@ class DashboardActivity : ComponentActivity() {
                     onShareLog = { com.deniz.eda.utils.EdaLog.share(this) }
                 )
             }
+        }
+        val requiredPhonePermissions = arrayOf(
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_SMS,
+            Manifest.permission.READ_PHONE_STATE
+        )
+        if (requiredPhonePermissions.any {
+                ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+            }) {
+            phonePermissions.launch(requiredPhonePermissions)
         }
     }
 
