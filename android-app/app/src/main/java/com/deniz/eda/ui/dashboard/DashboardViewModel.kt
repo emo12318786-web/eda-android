@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.deniz.eda.core.Settings
+import com.deniz.eda.ai.GemmaSessionManager
 import com.deniz.eda.data.db.EdaDatabase
 import com.deniz.eda.utils.BatteryUtils
 import com.deniz.eda.utils.EdaLog
@@ -48,13 +49,17 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         val groqStatus: String = "...",
         val pollinationsStatus: String = "...",
         val internetStatus: Boolean = false,
-        val aiModel: String = "..."
+        val aiModel: String = "...",
+        val localRuntimeStatus: String = "Kontrol ediliyor",
+        val fastModelStatus: String = "Kontrol ediliyor",
+        val deepModelStatus: String = "Kontrol ediliyor"
     )
 
     private val _state = MutableStateFlow(DashboardState())
     val state: StateFlow<DashboardState> = _state.asStateFlow()
 
     private val db = EdaDatabase.get(app)
+    private val localGemma = GemmaSessionManager(app.applicationContext)
 
     fun yenile() {
         viewModelScope.launch {
@@ -100,6 +105,9 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                 runCatching { db.diaryDao().listele(1000).size }.getOrDefault(0)
             }
 
+            // Local llama.cpp / GGUF status (cached by this long-lived manager).
+            val local = try { localGemma.status() } catch (e: Exception) { null }
+
             // ═══ AI Durumu kontrol ═══
             val internet = try { SystemTools.checkInternet(ctx) } catch (e: Exception) { false }
             val ollama = try {
@@ -133,7 +141,15 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                 groqStatus = groq,
                 pollinationsStatus = pollinations,
                 internetStatus = internet,
-                aiModel = Settings.gemmaModel
+                aiModel = Settings.gemmaModel,
+                localRuntimeStatus = when {
+                    local == null -> "Durum okunamadı"
+                    !local.runtimeAvailable -> "llama.cpp motoru APK içinde yok"
+                    local.loadedSlot != null -> "Model yüklü: " + local.loadedSlot
+                    else -> "llama.cpp hazır"
+                },
+                fastModelStatus = if (local?.lightModelReady == true) "Gemma 3 1B • GGUF hazır" else "Gemma 3 1B • GGUF yok",
+                deepModelStatus = if (local?.deepModelReady == true) "Gemma 2 2B • GGUF hazır" else "Gemma 2 2B • GGUF yok"
             )
         }
     }
