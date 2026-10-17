@@ -109,9 +109,8 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                 if (!st.runtimeAvailable) {
                     "Native motor yok"
                 } else {
-                    val light = if (st.lightModelReady) "3 1B hazır" else "3 1B yok"
-                    val deep = if (st.deepModelReady) "2 2B hazır" else "2 2B yok"
-                    "Gemma Native · $light · $deep"
+                    val model = if (st.modelReady) "Gemma 3 1B hazır" else "Gemma 3 1B içe aktarılmadı"
+                    "Gemma Native · $model"
                 }
             } catch (e: Exception) { "Gemma Native hata: ${e.message}" }
             val groq = try {
@@ -154,16 +153,16 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
             "groq" -> {
                 if (Settings.groqApiKey.isNotBlank()) sirali.add("Groq")
                 sirali.add("Pollinations")
-                sirali.add("Ollama-Gemma2")
+                sirali.add("Gemma 3 1B")
             }
             "ollama" -> {
-                sirali.add("Ollama-Gemma2")
+                sirali.add("Gemma 3 1B")
                 sirali.add("Pollinations")
                 if (Settings.groqApiKey.isNotBlank()) sirali.add("Groq")
             }
             else -> {
                 sirali.add("Pollinations")
-                sirali.add("Ollama-Gemma2")
+                sirali.add("Gemma 3 1B")
                 if (Settings.groqApiKey.isNotBlank()) sirali.add("Groq")
             }
         }
