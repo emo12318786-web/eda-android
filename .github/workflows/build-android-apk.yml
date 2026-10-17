@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main, eda-v5-native-gemma-runtime, eda-fix-long-prompt-crash ]
+    branches: [ main, eda-v5-native-gemma-runtime, eda-fix-long-prompt-crash, eda-v5-gemma-dual-model-screen ]
     paths:
       - "android-app/**"
       - ".github/workflows/**"
