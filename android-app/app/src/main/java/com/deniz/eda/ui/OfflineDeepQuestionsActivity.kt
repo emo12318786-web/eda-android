@@ -1,6 +1,16 @@
 package com.deniz.eda.ui
 
 import android.os.Bundle
+import android.Manifest
+import android.content.pm.PackageManager
+import android.content.Intent
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import android.speech.tts.TextToSpeech
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import java.util.Locale
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -23,17 +33,29 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Dedicated text-first offline screen for long or complex questions. */
-class OfflineDeepQuestionsActivity : ComponentActivity() {
+class OfflineDeepQuestionsActivity : ComponentActivity(), TextToSpeech.OnInitListener {
+    private var recognizer: SpeechRecognizer? = null
+    private var tts: TextToSpeech? = null
+    private var ttsReady = false
+    private var azFallback = false
+    private var listeningLocale = Locale("tr", "TR")
+    private var questionSetter: ((String) -> Unit)? = null
+    private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) startVoiceInput() else voiceStatus = "Mikrofon izni gerekli"
+    }
+    private var voiceStatus by mutableStateOf("Ses girişi: Türkçe / Azərbaycan türkcəsi")
+
     private lateinit var sessions: GemmaSessionManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Settings.init(this)
         sessions = GemmaSessionManager(applicationContext)
+        tts = TextToSpeech(this, this)
 
         var question by mutableStateOf("")
         var answer by mutableStateOf("")
-        var status by mutableStateOf("کاملاً آفلاین • نیازمند فایل مدل Gemma 2 2B")
+        var status by mutableStateOf("Offline • Gemma 2 2B GGUF gerekli")
         var busy by mutableStateOf(false)
 
         setContent {
@@ -51,28 +73,39 @@ class OfflineDeepQuestionsActivity : ComponentActivity() {
                 ) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column(Modifier.weight(1f)) {
-                            Text("آفلاین هوشمند", color = Color(0xFFB49AFF), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                            Text("برای سؤال‌های طولانی و تحلیل‌های پیچیده", color = Color(0xFF98A2B9), fontSize = 13.sp)
+                            Text("Offline Smart", color = Color(0xFFB49AFF), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                            Text("Uzun sorular ve karmaşık analizler • Offline", color = Color(0xFF98A2B9), fontSize = 13.sp)
                         }
                         TextButton(onClick = { finish() }) { Text("بازگشت") }
                     }
                     Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF121626))) {
                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("حالت مستقل از Gemma Mode", color = Color(0xFF64E5E0), fontWeight = FontWeight.Bold)
-                            Text("این صفحه از موتور محلی استفاده می‌کند و سؤال را به سرویس آنلاین نمی‌فرستد. برای سؤال‌های بزرگ، مدل Gemma 2 2B مناسب‌تر است؛ فقط یک مدل در هر لحظه بارگذاری می‌شود.", color = Color(0xFFCBD2E3), fontSize = 13.sp)
+                            Text("Gemma Mode’dan ayrı", color = Color(0xFF64E5E0), fontWeight = FontWeight.Bold)
+                            Text("Sorular telefondaki yerel modele gider; çevrimiçi servise gönderilmez. Uzun analiz için Gemma 2 2B önerilir. Aynı anda yalnızca bir model yüklenir.", color = Color(0xFFCBD2E3), fontSize = 13.sp)
                         }
                     }
-                    Text("سؤال یا متن طولانی", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text("Soru veya uzun metin", color = Color.White, fontWeight = FontWeight.SemiBold)
                     OutlinedTextField(
                         value = question,
                         onValueChange = { question = it },
                         modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp),
-                        placeholder = { Text("متن را اینجا بنویس یا جای‌گذاری کن…") },
+                        placeholder = { Text("Buraya yaz, yapıştır veya sesle sor…") },
                         minLines = 5,
                         maxLines = 12,
                         enabled = !busy,
                         shape = RoundedCornerShape(16.dp)
                     )
+                    OutlinedButton(
+                        onClick = {
+                            questionSetter = { question = it }
+                            if (ContextCompat.checkSelfPermission(this@OfflineDeepQuestionsActivity, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                                micPermission.launch(Manifest.permission.RECORD_AUDIO)
+                            } else startVoiceInput()
+                        },
+                        enabled = !busy,
+                        modifier = Modifier.fillMaxWidth().height(52.dp)
+                    ) { Text("🎙  Sesle sor / Voice input") }
+                    Text(voiceStatus, color = Color(0xFF64E5E0), fontSize = 12.sp)
                     Button(
                         onClick = {
                             val prompt = question.trim()
@@ -92,11 +125,12 @@ class OfflineDeepQuestionsActivity : ComponentActivity() {
                                             sessions.generate(GemmaSessionManager.Task.DEEP, system + "سؤال کاربر:\n" + prompt + "\n\nتحلیل و پاسخ:", 220)
                                         }
                                         answer = result?.trim()?.takeIf { it.isNotBlank() }
-                                            ?: "مدل پاسخ تولید نکرد. فایل مدل و گزارش خطا را بررسی کن."
-                                        status = if (result.isNullOrBlank()) "پاسخی تولید نشد" else "پاسخ با مدل محلی تولید شد • بدون اینترنت"
+                                            ?: "Model yanıt üretmedi. GGUF dosyasını ve model durumunu kontrol et."
+                                        status = if (result.isNullOrBlank()) "Yanıt üretilemedi" else "Yanıt yerel modelden üretildi • İnternet kullanılmadı"
+                                        if (ttsReady && !result.isNullOrBlank()) tts?.speak(answer, TextToSpeech.QUEUE_FLUSH, null, "eda-offline-answer")
                                     } catch (e: Exception) {
                                         answer = e.message ?: "خطای ناشناخته در اجرای مدل"
-                                        status = "اجرای آفلاین ناموفق بود"
+                                        status = "Çevrimdışı çalıştırma başarısız"
                                     } finally {
                                         busy = false
                                     }
@@ -110,12 +144,12 @@ class OfflineDeepQuestionsActivity : ComponentActivity() {
                         onClick = { question = ""; answer = ""; status = "آماده برای سؤال جدید" },
                         enabled = !busy,
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text("پاک کردن") }
+                    ) { Text("Temizle") }
                     Text(status, color = Color(0xFF64E5E0), fontSize = 13.sp)
                     if (answer.isNotBlank()) {
                         Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF121626)), shape = RoundedCornerShape(18.dp)) {
                             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("پاسخ EDA", color = Color(0xFFB49AFF), fontWeight = FontWeight.Bold)
+                                Text("EDA yanıtı", color = Color(0xFFB49AFF), fontWeight = FontWeight.Bold)
                                 Text(answer, color = Color.White, fontSize = 15.sp, lineHeight = 22.sp)
                             }
                         }
@@ -123,5 +157,70 @@ class OfflineDeepQuestionsActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onInit(result: Int) {
+        ttsReady = result == TextToSpeech.SUCCESS
+        if (ttsReady) {
+            val language = tts?.setLanguage(Locale("tr", "TR"))
+            if (language == TextToSpeech.LANG_MISSING_DATA || language == TextToSpeech.LANG_NOT_SUPPORTED) {
+                voiceStatus = "Türkçe ses paketi bulunamadı; TTS ayarlarını kontrol et"
+            }
+        }
+    }
+
+    private fun startVoiceInput() {
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            voiceStatus = "Telefonda konuşma tanıma hizmeti yok"
+            return
+        }
+        try { recognizer?.destroy() } catch (_: Exception) {}
+        azFallback = false
+        listeningLocale = Locale("tr", "TR")
+        createRecognizer()
+    }
+
+    private fun createRecognizer() {
+        try { recognizer?.destroy() } catch (_: Exception) {}
+        recognizer = SpeechRecognizer.createSpeechRecognizer(this).also { sr ->
+            sr.setRecognitionListener(object : RecognitionListener {
+                override fun onReadyForSpeech(params: Bundle?) { voiceStatus = "Dinliyorum • ${listeningLocale.displayName}" }
+                override fun onBeginningOfSpeech() {}
+                override fun onRmsChanged(rmsdB: Float) {}
+                override fun onBufferReceived(buffer: ByteArray?) {}
+                override fun onEndOfSpeech() { voiceStatus = "Konuşma çözümleniyor…" }
+                override fun onError(error: Int) {
+                    if (!azFallback && listeningLocale.language == "tr" &&
+                        error in setOf(SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED, SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE, SpeechRecognizer.ERROR_NO_MATCH)) {
+                        azFallback = true
+                        listeningLocale = Locale("az", "AZ")
+                        createRecognizer()
+                    } else voiceStatus = "Ses tanıma hatası ($error); çevrimdışı dil paketi gerekebilir"
+                }
+                override fun onResults(results: Bundle?) {
+                    val spoken = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
+                    if (spoken.isNotBlank()) {
+                        questionSetter?.invoke(spoken)
+                        voiceStatus = "Algılandı: $spoken"
+                    } else voiceStatus = "Ses metne çevrilemedi"
+                }
+                override fun onPartialResults(partialResults: Bundle?) {}
+                override fun onEvent(eventType: Int, params: Bundle?) {}
+            })
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, listeningLocale.toLanguageTag())
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, listeningLocale.toLanguageTag())
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+            }
+            sr.startListening(intent)
+        }
+    }
+
+    override fun onDestroy() {
+        try { recognizer?.cancel(); recognizer?.destroy() } catch (_: Exception) {}
+        tts?.stop()
+        tts?.shutdown()
+        super.onDestroy()
     }
 }
