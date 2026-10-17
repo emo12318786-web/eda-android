@@ -741,6 +741,7 @@ object CommandProcessor {
             v(metin, "gemma mode kapat", "gemma modu kapat", "gemma modunu kapat",
                 "gemma modundan çık", "gemma mode kapalı", "yerel gemma modu kapat") -> {
                 Settings.gemmaMode = false
+                try { GemmaSessionManager.get(context).unload() } catch (_: Exception) { }
                 KomutSonucu.Cevap("Gemma Mode kapatıldı $hitap. Normal AI sağlayıcılarına döndüm.")
             }
             v(metin, "gemma mode durumu", "gemma modu durumu", "gemma mode açık mı",
