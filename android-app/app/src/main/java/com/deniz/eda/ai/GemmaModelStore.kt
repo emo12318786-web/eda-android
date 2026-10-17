@@ -6,42 +6,24 @@ import java.io.File
 import java.io.FileOutputStream
 import java.security.MessageDigest
 
-/**
- * Stores user-selected GGUF model files in EDA's private app directory.
- *
- * Importing a model is independent from Termux and Ollama. This class only
- * validates/stores model files; the native inference runtime is separate.
- * SHA-256 is cached by file length and modification time so status checks do
- * not repeatedly read gigabytes from flash storage.
- */
+/** Stores user-selected GGUF model files in EDA's private app directory. */
 class GemmaModelStore(context: Context) {
     private val root = File(context.filesDir, "models").apply { mkdirs() }
     private val digestCache = mutableMapOf<String, CachedDigest>()
 
-    init {
-        // EDA V5 now supports only Gemma 3 1B. Remove obsolete 2B files from
-        // earlier installs so they cannot consume storage or be selected.
-        File(root, "gemma2-2b.gguf").delete()
-        File(root, "gemma2-2b.gguf.importing").delete()
-        File(root, "gemma2-2b.gguf.previous").delete()
+    private data class CachedDigest(val length: Long, val modified: Long, val sha256: String)
+
+    enum class Slot(val fileName: String, val preferenceValue: String, val displayName: String) {
+        GEMMA31("gemma3-1b.gguf", "gemma3:1b", "Gemma 3 1B"),
+        GEMMA22("gemma2-2b.gguf", "gemma2:2b", "Gemma 2 2B");
+
+        companion object {
+            fun fromPreference(value: String): Slot =
+                values().firstOrNull { it.preferenceValue == value } ?: GEMMA31
+        }
     }
 
-    private data class CachedDigest(
-        val length: Long,
-        val modified: Long,
-        val sha256: String
-    )
-
-    enum class Slot(val fileName: String) {
-        GEMMA31("gemma3-1b.gguf")
-    }
-
-    data class ModelInfo(
-        val slot: Slot,
-        val file: File,
-        val sizeBytes: Long,
-        val sha256: String
-    )
+    data class ModelInfo(val slot: Slot, val file: File, val sizeBytes: Long, val sha256: String)
 
     @Synchronized
     fun importGguf(context: Context, uri: Uri, slot: Slot): ModelInfo {
@@ -50,26 +32,18 @@ class GemmaModelStore(context: Context) {
         val backup = File(root, "${slot.fileName}.previous")
         temp.delete()
         backup.delete()
-
         try {
             context.contentResolver.openInputStream(uri)?.use { input ->
                 FileOutputStream(temp).use { output -> input.copyTo(output) }
             } ?: error("Cannot open selected model file")
-
-            require(temp.length() > 1024 * 1024) {
-                "Selected file is too small to be a GGUF model"
-            }
+            require(temp.length() > 1024 * 1024) { "Selected file is too small to be a GGUF model" }
             require(temp.inputStream().buffered().use { stream ->
                 val magic = ByteArray(4)
-                stream.read(magic) == 4 &&
-                    magic.contentEquals(byteArrayOf(0x47, 0x47, 0x55, 0x46))
+                stream.read(magic) == 4 && magic.contentEquals(byteArrayOf(0x47, 0x47, 0x55, 0x46))
             }) { "Invalid model file: GGUF header not found" }
 
-            // Keep the last working model if finalizing the new import fails.
             if (destination.exists()) {
-                check(destination.renameTo(backup)) {
-                    "Could not preserve the existing model before import"
-                }
+                check(destination.renameTo(backup)) { "Could not preserve the existing model before import" }
             }
             if (!temp.renameTo(destination)) {
                 if (backup.exists()) backup.renameTo(destination)
@@ -83,7 +57,6 @@ class GemmaModelStore(context: Context) {
             if (!destination.exists() && backup.exists()) backup.renameTo(destination)
             throw error
         } finally {
-            // A backup is only disposable after a successful replacement.
             if (destination.exists()) backup.delete()
         }
     }
@@ -95,7 +68,7 @@ class GemmaModelStore(context: Context) {
     }
 
     @Synchronized
-    fun hasModel(): Boolean = info(Slot.GEMMA31) != null
+    fun hasModel(slot: Slot): Boolean = info(slot) != null
 
     @Synchronized
     fun delete(slot: Slot): Boolean {
@@ -105,8 +78,7 @@ class GemmaModelStore(context: Context) {
     }
 
     @Synchronized
-    private fun info(slot: Slot, file: File): ModelInfo =
-        ModelInfo(slot, file, file.length(), sha256(file))
+    private fun info(slot: Slot, file: File): ModelInfo = ModelInfo(slot, file, file.length(), sha256(file))
 
     @Synchronized
     private fun sha256(file: File): String {
@@ -114,10 +86,7 @@ class GemmaModelStore(context: Context) {
         val length = file.length()
         val modified = file.lastModified()
         val cached = digestCache[key]
-        if (cached != null && cached.length == length && cached.modified == modified) {
-            return cached.sha256
-        }
-
+        if (cached != null && cached.length == length && cached.modified == modified) return cached.sha256
         val digest = MessageDigest.getInstance("SHA-256")
         file.inputStream().buffered().use { input ->
             val buffer = ByteArray(1024 * 1024)
