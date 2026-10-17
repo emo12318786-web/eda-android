@@ -64,7 +64,16 @@ class GemmaModelStore(context: Context) {
     @Synchronized
     fun info(slot: Slot): ModelInfo? {
         val file = File(root, slot.fileName)
-        return if (file.isFile && file.length() > 1024 * 1024) info(slot, file) else null
+        return if (file.isFile && file.length() > 1024 * 1024) {
+            // Status checks must never hash a 0.8–1.6 GB model on every question.
+            // The digest is computed only during import, not on the hot inference path.
+            val cached = digestCache[file.absolutePath]
+            if (cached != null && cached.length == file.length() && cached.modified == file.lastModified()) {
+                ModelInfo(slot, file, file.length(), cached.sha256)
+            } else {
+                ModelInfo(slot, file, file.length(), "")
+            }
+        } else null
     }
 
     @Synchronized
