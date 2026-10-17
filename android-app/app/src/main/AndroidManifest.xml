@@ -42,8 +42,12 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <!-- SMS gonderme komutu -->
+    <!-- SMS gönderme ve gelen SMS okuma -->
     <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <!-- Gelen aramayı algılama -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <!-- Guvenlik modu: hareket algilama -->
     <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
 
@@ -127,6 +131,25 @@
         <receiver
             android:name=".receiver.ReminderReceiver"
             android:exported="false" />
+
+        <!-- Gelen SMS'leri sesli okuma -->
+        <receiver
+            android:name=".receiver.IncomingSmsReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter android:priority="999">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Gelen arama durumunu algılama -->
+        <receiver
+            android:name=".receiver.IncomingCallReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE" />
+            </intent-filter>
+        </receiver>
 
 
         <!-- Telefonu kilitleme icin Device Admin Receiver -->
