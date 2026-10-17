@@ -1,6 +1,7 @@
 #include <jni.h>
 #include <android/log.h>
 #include <algorithm>
+#include <chrono>
 #include <string>
 #include <vector>
 #include "llama.h"
@@ -39,8 +40,8 @@ Java_com_deniz_eda_ai_NativeGemmaEngine_nativeLoadModel(JNIEnv *env, jobject, js
     // Keep each decode batch small; large prompts are processed in chunks below.
     cp.n_batch = 128;
     cp.n_ubatch = 128;
-    cp.n_threads = 2;
-    cp.n_threads_batch = 2;
+    cp.n_threads = 4;
+    cp.n_threads_batch = 4;
     g_context = llama_init_from_model(g_model, cp);
     if (!g_context) {
         EDA_LOGE("Could not create llama context");
@@ -59,7 +60,7 @@ Java_com_deniz_eda_ai_NativeGemmaEngine_nativeGenerate(JNIEnv *env, jobject, jst
     if (!g_model || !g_context || !g_vocab || !g_sampler) return nullptr;
     const char *raw = env->GetStringUTFChars(jprompt, nullptr);
     if (!raw) return nullptr;
-    std::string prompt = std::string("You are Eda, a helpful conversational assistant. Reply naturally and concisely in the user's language.\nUser: ") + raw + "\nAssistant:";
+    std::string prompt = std::string("You are Eda, a helpful conversational assistant. Reply naturally and concisely in the user's language.\\n<start_of_turn>user\\n") + raw + "\\n<end_of_turn>\\n<start_of_turn>model\\n";
     env->ReleaseStringUTFChars(jprompt, raw);
 
     int32_t needed = llama_tokenize(g_vocab, prompt.c_str(), (int32_t) prompt.size(), nullptr, 0, true, true);
