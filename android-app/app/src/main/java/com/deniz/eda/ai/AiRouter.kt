@@ -35,12 +35,19 @@ object AiRouter {
         val needsKey: Boolean = true
     )
 
-    // Termux/Ollama is intentionally not a provider in the Android APK.
-    // Offline Gemma goes through NativeGemmaEngine; online providers are fallbacks only.
+    // Ollama, Termux üzerinde çalışan çevrimdışı sağlayıcıdır.
 
     private suspend fun saglayicilar(context: Context): List<Saglayici> {
         val tum = listOf(
-        // ═══ Pollinations (رایگان، آنلاین) ═══
+        // Ollama: Termux'ta çalışan çevrimdışı model
+        Saglayici(
+            ad = "Ollama",
+            baseUrl = "http://127.0.0.1:11434/v1/",
+            model = "gemma2:2b",
+            apiKey = { "ollama-local" },
+            needsKey = false
+        ),
+        // Pollinations: ücretsiz çevrimiçi yedek
         Saglayici(
             ad = "Pollinations",
             baseUrl = "https://text.pollinations.ai/openai/",
@@ -48,7 +55,7 @@ object AiRouter {
             apiKey = { "no-key" },
             needsKey = false
         ),
-        // ═══ ۳. Groq ═══
+        // Groq: çevrimiçi yedek
         Saglayici(
             ad = "Groq",
             baseUrl = "https://api.groq.com/openai/v1/",
@@ -57,27 +64,11 @@ object AiRouter {
             needsKey = true
         )
         )
-        // Respect the provider selected in Settings/Dashboard. The old fixed sort
-        // always preferred Ollama, so changing the dashboard selection had no effect.
-        // Remaining providers are ordered as fallbacks after the selected provider.
         val selected = Settings.aiProvider.ifBlank { "ollama" }.lowercase(Locale.ROOT)
-        return tum.sortedBy { provider ->
-            when (selected) {
-                "groq" -> when (provider.ad) {
-                    "Groq" -> 0
-                    "Pollinations" -> 1
-                    else -> 2
-                }
-                "pollinations" -> when (provider.ad) {
-                    "Pollinations" -> 0
-                    else -> 1
-                }
-                // "ollama" is a legacy preference key for EDA native offline inference.
-                else -> when (provider.ad) {
-                    "Pollinations" -> 0
-                    else -> 1
-                }
-            }
+        return when (selected) {
+            "groq" -> tum.sortedBy { when (it.ad) { "Groq" -> 0; "Pollinations" -> 1; else -> 2 } }
+            "pollinations" -> tum.sortedBy { when (it.ad) { "Pollinations" -> 0; "Ollama" -> 1; else -> 2 } }
+            else -> tum.sortedBy { when (it.ad) { "Ollama" -> 0; "Pollinations" -> 1; else -> 2 } }
         }
     }
 
@@ -96,34 +87,7 @@ KURALLAR:
     ): String? = withContext(Dispatchers.IO) {
         val ctx = context ?: return@withContext null
 
-        // Honor the selected provider. Never run native Gemma first when the user
-        // explicitly selected an online provider: native inference can stall on
-        // long prompts and prevent the configured online route from being reached.
-        val selectedProvider = Settings.aiProvider.ifBlank { "ollama" }.lowercase(Locale.ROOT)
-        if (selectedProvider == "ollama") {
-            try {
-                // Every local request uses the single Gemma 3 1B model.
-                // This does not change the voice or sleep/wake loop.
-                val normalizedQuestion = kullaniciSorusu.trim()
-                val local = nativeSession(ctx).generate(
-                    prompt = sistemMesaji + "\n\nKullanıcı: " + normalizedQuestion + "\nEda:",
-                    maxTokens = if (normalizedQuestion.length <= 100) 96 else 180
-                )
-                if (!local.isNullOrBlank()) {
-                    android.util.Log.i("AiRouter", "AI_RESPONSE_SUCCESS provider=Native-Gemma model=Gemma-3-1B chars=${local.trim().length}")
-                    lastProvider = "Native-Gemma"
-                    return@withContext local.trim()
-                }
-                android.util.Log.i("AiRouter", "Native Gemma unavailable/no GGUF; trying configured providers")
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                android.util.Log.e("AiRouter", "Native Gemma failed; trying configured providers", e)
-            }
-        } else {
-            android.util.Log.i("AiRouter", "AI_PROVIDER_SELECTED provider=$selectedProvider route=online-first")
-        }
-
+        // Seçilen sağlayıcı ilk sıradadır; Ollama çalışmıyorsa çevrimiçi yedekler denenir.
         for (s in saglayicilar(ctx)) {
             val anahtar = s.apiKey()
             if (s.needsKey && anahtar.isBlank()) {
@@ -133,7 +97,7 @@ KURALLAR:
             android.util.Log.i("AiRouter", "AI_PROVIDER_ATTEMPT provider=${s.ad} model=${s.model}")
             try {
                 val api = OpenAiCompatibleApi.olustur(s.baseUrl)
-                // ═══ ابزارها رو به prompt اضافه کن ═══
+                // İzinli araç açıklamalarını sistem mesajına ekle
                 val sistemTam = if (context != null) {
                     sistemMesaji + "\n\n" + com.deniz.eda.utils.SystemTools.listTools()
                 } else sistemMesaji
@@ -174,7 +138,7 @@ KURALLAR:
                     }
                     val toolName = match.groupValues[1].uppercase(Locale.ROOT)
                     val allowlist = setOf(
-                        "CHECK_INTERNET", "CHECK_GROQ",
+                        "CHECK_INTERNET", "CHECK_GROQ", "CHECK_OLLAMA",
                         "CHECK_POLLINATIONS", "GET_BATTERY", "GET_AI", "GET_MODE", "FULL_CHECK",
                         "GET_MEMORY", "GET_DIARY", "GET_REMINDERS", "GET_LEARNED", "GET_TIME", "GET_DATE",
                         "SAVE_MEMORY", "ADD_DIARY", "ADD_REMINDER",
