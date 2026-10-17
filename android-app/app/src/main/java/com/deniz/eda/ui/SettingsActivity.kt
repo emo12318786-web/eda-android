@@ -9,7 +9,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.deniz.eda.R
 import com.deniz.eda.core.Settings
-import com.deniz.eda.ai.GemmaModelStore
 
 class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,10 +37,4 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        if (!::unused.isInitialized) { }
-    }
-
-    private lateinit var unused: String
 }
