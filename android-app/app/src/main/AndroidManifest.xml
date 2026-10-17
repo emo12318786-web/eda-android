@@ -44,6 +44,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- SMS gonderme komutu -->
     <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <!-- Guvenlik modu: hareket algilama -->
     <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
 
