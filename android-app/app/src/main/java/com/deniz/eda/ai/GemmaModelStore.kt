@@ -18,6 +18,14 @@ class GemmaModelStore(context: Context) {
     private val root = File(context.filesDir, "models").apply { mkdirs() }
     private val digestCache = mutableMapOf<String, CachedDigest>()
 
+    init {
+        // EDA V5 now supports only Gemma 3 1B. Remove obsolete 2B files from
+        // earlier installs so they cannot consume storage or be selected.
+        File(root, "gemma2-2b.gguf").delete()
+        File(root, "gemma2-2b.gguf.importing").delete()
+        File(root, "gemma2-2b.gguf.previous").delete()
+    }
+
     private data class CachedDigest(
         val length: Long,
         val modified: Long,
@@ -25,8 +33,7 @@ class GemmaModelStore(context: Context) {
     )
 
     enum class Slot(val fileName: String) {
-        FAST("gemma3-1b.gguf"),
-        DEEP("gemma2-2b.gguf")
+        GEMMA31("gemma3-1b.gguf")
     }
 
     data class ModelInfo(
@@ -88,7 +95,7 @@ class GemmaModelStore(context: Context) {
     }
 
     @Synchronized
-    fun hasBothModels(): Boolean = Slot.values().all { info(it) != null }
+    fun hasModel(): Boolean = info(Slot.GEMMA31) != null
 
     @Synchronized
     fun delete(slot: Slot): Boolean {
