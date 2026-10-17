@@ -53,3 +53,5 @@ jobs:
           name: eda-debug-apk
           path: android-app/app/build/outputs/apk/debug/*.apk
           retention-days: 30
+
+# Rebuild requested after the Gemma 3 1B-only changes.
