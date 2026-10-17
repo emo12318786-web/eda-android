@@ -212,6 +212,9 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 ControlTile("🧠", "Çevrimdışı Akıllı Analiz", "Uzun metinleri yerel modelle incele; internete gönderilmez", Cyan) {
                     context.startActivity(Intent(context, com.deniz.eda.ui.OfflineDeepQuestionsActivity::class.java))
                 }
+                ControlTile("💬", "İletişim Merkezi", "SMS metnini kontrol et; yalnızca açık onayından sonra gönder", Violet) {
+                    context.startActivity(Intent(context, com.deniz.eda.ui.IletisimMerkeziActivity::class.java))
+                }
                 SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
                 ControlTile("▶", "Eda’yı başlat", "Eda’yı dinlemeye hazır hâle getir", Good) { onAction("ACTION_AKTIF") }
                 ControlTile("☾", "Uyku moduna al", "Uyandırma kelimesiyle yeniden etkinleşir", Cyan) { onAction("ACTION_UYKU") }
