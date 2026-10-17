@@ -5,7 +5,6 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.deniz.eda.core.Settings
-import com.deniz.eda.ai.GemmaSessionManager
 import com.deniz.eda.data.db.EdaDatabase
 import com.deniz.eda.utils.BatteryUtils
 import com.deniz.eda.utils.EdaLog
@@ -104,15 +103,8 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
             // ═══ AI Durumu kontrol ═══
             val internet = try { SystemTools.checkInternet(ctx) } catch (e: Exception) { false }
             val ollama = try {
-                val gsm = GemmaSessionManager(ctx)
-                val st = gsm.status()
-                if (!st.runtimeAvailable) {
-                    "Native motor yok"
-                } else {
-                    val model = if (st.modelReady) "Gemma 3 1B hazır" else "Gemma 3 1B içe aktarılmadı"
-                    "Gemma Native · $model"
-                }
-            } catch (e: Exception) { "Gemma Native hata: ${e.message}" }
+                withContext(Dispatchers.IO) { SystemTools.runTool("CHECK_OLLAMA", ctx) }
+            } catch (e: Exception) { "Ollama kontrol edilemedi" }
             val groq = try {
                 withContext(Dispatchers.IO) { SystemTools.runTool("CHECK_GROQ", ctx) }
             } catch (e: Exception) { "Groq yok" }
@@ -141,7 +133,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                 groqStatus = groq,
                 pollinationsStatus = pollinations,
                 internetStatus = internet,
-                aiModel = Settings.gemmaModel
+                aiModel = if (Settings.aiProvider.equals("ollama", ignoreCase = true)) "gemma2:2b" else Settings.gemmaModel
             )
         }
     }
@@ -153,7 +145,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
             "groq" -> {
                 if (Settings.groqApiKey.isNotBlank()) sirali.add("Groq")
                 sirali.add("Pollinations")
-                sirali.add("Gemma 3 1B")
+                sirali.add("Ollama · Termux (gemma2:2b)")
             }
             "ollama" -> {
                 sirali.add("Gemma 3 1B")
