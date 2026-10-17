@@ -78,7 +78,8 @@ class DashboardActivity : ComponentActivity() {
         val requiredPhonePermissions = arrayOf(
             Manifest.permission.RECEIVE_SMS,
             Manifest.permission.READ_SMS,
-            Manifest.permission.READ_PHONE_STATE
+            Manifest.permission.READ_PHONE_STATE,
+            Manifest.permission.READ_CONTACTS
         )
         if (requiredPhonePermissions.any {
                 ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
