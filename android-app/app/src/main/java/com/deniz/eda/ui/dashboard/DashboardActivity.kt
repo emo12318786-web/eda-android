@@ -314,7 +314,7 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
     ).padding(20.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("MERHABA, ${name.uppercase()}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
-            Text("Ben Eda.\nBuradayım.", fontSize = 31.sp, lineHeight = 36.sp,
+            Text("Ben Eda." + 10.toChar() + "Buradayım.", fontSize = 31.sp, lineHeight = 36.sp,
                 fontWeight = FontWeight.Bold, color = Color.White)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(time, fontSize = 22.sp, color = Cyan, fontWeight = FontWeight.SemiBold)
