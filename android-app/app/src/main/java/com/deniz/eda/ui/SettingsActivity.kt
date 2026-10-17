@@ -53,6 +53,17 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<Button>(R.id.gemma3ModelImport).setOnClickListener {
             gemmaModelPicker.launch(arrayOf("application/octet-stream", "*/*"))
         }
+        val gemmaModeSwitch = findViewById<android.widget.Switch>(R.id.gemmaModeSwitch)
+        gemmaModeSwitch.isChecked = Settings.gemmaMode
+        gemmaModeSwitch.setOnCheckedChangeListener { _, checked ->
+            Settings.gemmaMode = checked
+            Toast.makeText(
+                this,
+                if (checked) "Gemma Mode açık: yerel Gemma 3 1B" else "Gemma Mode kapalı",
+                Toast.LENGTH_SHORT
+            ).show()
+            refreshGemmaStatus()
+        }
         refreshGemmaStatus()
 
         // ═══ Header ═══
@@ -83,8 +94,9 @@ class SettingsActivity : AppCompatActivity() {
             val status = withContext(Dispatchers.IO) { gemmaSessions.status() }
             val model = if (status.modelReady) "hazır" else "içe aktarılmadı"
             val runtime = if (status.runtimeAvailable) "hazır" else "APK'da motor bulunamadı"
+            val mode = if (Settings.gemmaMode) "AÇIK" else "kapalı"
             findViewById<TextView>(R.id.gemmaDurum).text =
-                "Yerel motor: $runtime\nTek model: Gemma 3 1B GGUF ($model)"
+                "Gemma Mode: $mode\nYerel motor: $runtime\nModel: Gemma 3 1B GGUF ($model)"
         }
     }
 }
