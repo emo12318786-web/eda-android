@@ -43,7 +43,7 @@ class OfflineDeepQuestionsActivity : ComponentActivity(), TextToSpeech.OnInitLis
     private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) startVoiceInput() else voiceStatus = "Mikrofon izni gerekli"
     }
-    private var voiceStatus by mutableStateOf("Ses girişi: Türkçe / Azərbaycan türkcəsi")
+    private var voiceStatus by mutableStateOf("Ses girişi: Türkçe / Azerbaycan Türkçesi")
 
     private lateinit var sessions: GemmaSessionManager
 
@@ -55,7 +55,7 @@ class OfflineDeepQuestionsActivity : ComponentActivity(), TextToSpeech.OnInitLis
 
         var question by mutableStateOf("")
         var answer by mutableStateOf("")
-        var status by mutableStateOf("Offline • Gemma 2 2B GGUF gerekli")
+        var status by mutableStateOf("Çevrimdışı • Gemma 2 2B GGUF gerekli")
         var busy by mutableStateOf(false)
 
         setContent {
@@ -73,10 +73,10 @@ class OfflineDeepQuestionsActivity : ComponentActivity(), TextToSpeech.OnInitLis
                 ) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column(Modifier.weight(1f)) {
-                            Text("Offline Smart", color = Color(0xFFB49AFF), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                            Text("Çevrimdışı Akıllı Analiz", color = Color(0xFFB49AFF), fontSize = 24.sp, fontWeight = FontWeight.Bold)
                             Text("Uzun sorular ve karmaşık analizler • Offline", color = Color(0xFF98A2B9), fontSize = 13.sp)
                         }
-                        TextButton(onClick = { finish() }) { Text("بازگشت") }
+                        TextButton(onClick = { finish() }) { Text("Geri dön") }
                     }
                     Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF121626))) {
                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -104,24 +104,24 @@ class OfflineDeepQuestionsActivity : ComponentActivity(), TextToSpeech.OnInitLis
                         },
                         enabled = !busy,
                         modifier = Modifier.fillMaxWidth().height(52.dp)
-                    ) { Text("🎙  Sesle sor / Voice input") }
+                    ) { Text("🎙  Sesli soru sor") }
                     Text(voiceStatus, color = Color(0xFF64E5E0), fontSize = 12.sp)
                     Button(
                         onClick = {
                             val prompt = question.trim()
                             if (prompt.isBlank()) {
-                                status = "اول سؤال را وارد کن."
+                                status = "Lütfen önce sorunuzu yazın."
                             } else {
                                 busy = true
                                 answer = ""
-                                status = "مدل محلی در حال بارگذاری و تحلیل است؛ اجرای اول ممکن است طول بکشد…"
+                                status = "Yerel model yükleniyor ve analiz ediyor. İlk çalışma uzun sürebilir…"
                                 lifecycleScope.launch {
                                     try {
                                         val result = withContext(Dispatchers.IO) {
                                             val state = sessions.status()
-                                            if (!state.runtimeAvailable) throw IllegalStateException("موتور محلی در APK موجود نیست.")
-                                            if (!state.deepModelReady) throw IllegalStateException("فایل GGUF مدل Gemma 2 2B وارد نشده است.")
-                                            val system = "تو Eda هستی؛ یک دستیار آفلاین دقیق. متن بلند را مرحله‌به‌مرحله تحلیل کن، نکات مهم را دسته‌بندی کن، اگر لازم بود فرض‌ها و نتیجه را جدا بنویس. به زبان متن کاربر پاسخ بده، اطلاعات را جعل نکن و پاسخ را روشن و منظم نگه دار.\n\n"
+                                            if (!state.runtimeAvailable) throw IllegalStateException("Yerel yapay zekâ motoru APK içinde bulunamadı.")
+                                            if (!state.deepModelReady) throw IllegalStateException("Gemma 2 2B GGUF dosyası henüz içe aktarılmadı.")
+                                            val system = "Sen Eda’sın; doğru ve dikkatli bir çevrimdışı asistansın. Uzun metni adım adım incele, önemli noktaları sınıflandır, gerekirse varsayımları ve sonucu ayrı yaz. Kullanıcının dilinde yanıt ver, bilgi uydurma ve yanıtı açık, düzenli tut.\n\n"
                                             sessions.generate(GemmaSessionManager.Task.DEEP, system + "سؤال کاربر:\n" + prompt + "\n\nتحلیل و پاسخ:", 220)
                                         }
                                         answer = result?.trim()?.takeIf { it.isNotBlank() }
@@ -129,7 +129,7 @@ class OfflineDeepQuestionsActivity : ComponentActivity(), TextToSpeech.OnInitLis
                                         status = if (result.isNullOrBlank()) "Yanıt üretilemedi" else "Yanıt yerel modelden üretildi • İnternet kullanılmadı"
                                         if (ttsReady && !result.isNullOrBlank()) tts?.speak(answer, TextToSpeech.QUEUE_FLUSH, null, "eda-offline-answer")
                                     } catch (e: Exception) {
-                                        answer = e.message ?: "خطای ناشناخته در اجرای مدل"
+                                        answer = e.message ?: "Model çalışırken bilinmeyen bir hata oluştu."
                                         status = "Çevrimdışı çalıştırma başarısız"
                                     } finally {
                                         busy = false
@@ -139,9 +139,9 @@ class OfflineDeepQuestionsActivity : ComponentActivity(), TextToSpeech.OnInitLis
                         },
                         enabled = !busy,
                         modifier = Modifier.fillMaxWidth().height(54.dp)
-                    ) { Text(if (busy) "در حال تحلیل…" else "تحلیل آفلاین", fontWeight = FontWeight.Bold) }
+                    ) { Text(if (busy) "Analiz ediliyor…" else "Çevrimdışı analiz", fontWeight = FontWeight.Bold) }
                     OutlinedButton(
-                        onClick = { question = ""; answer = ""; status = "آماده برای سؤال جدید" },
+                        onClick = { question = ""; answer = ""; status = "Yeni soru için hazır." },
                         enabled = !busy,
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("Temizle") }
