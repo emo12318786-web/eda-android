@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_gradient"
+    android:fillViewport="true">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="18dp">
+            <TextView
+                android:id="@+id/gemmaBack"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/circle_bg"
+                android:gravity="center"
+                android:text="←"
+                android:textColor="@color/text_primary"
+                android:textSize="26sp" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="14dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="GEMMA MODE"
+                    android:textColor="@color/purple_end"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.18" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="مغز محلی EDA"
+                    android:textColor="@color/text_primary"
+                    android:textSize="26sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="18dp"
+            android:background="@drawable/card_settings"
+            android:layout_marginBottom="14dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🧠  حالت گفت‌وگوی آفلاین"
+                android:textColor="@color/purple_end"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="10dp" />
+            <Switch
+                android:id="@+id/gemmaScreenSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="فعال‌کردن Gemma Mode"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp" />
+            <TextView
+                android:id="@+id/gemmaModeLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="حالت Gemma خاموش است"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:layout_marginTop="6dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="18dp"
+            android:background="@drawable/card_settings"
+            android:layout_marginBottom="14dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="انتخاب مدل برای Gemma Mode"
+                android:textColor="@color/text_primary"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="فقط یک مدل در هر لحظه اجرا می‌شود تا حافظهٔ A71 بی‌جهت پر نشود."
+                android:textColor="@color/text_muted"
+                android:textSize="12sp"
+                android:layout_marginTop="5dp"
+                android:layout_marginBottom="8dp" />
+            <RadioGroup
+                android:id="@+id/gemmaModelChoice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <RadioButton
+                    android:id="@+id/chooseGemma3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Gemma 3 1B — سبک‌تر و سریع‌تر"
+                    android:textColor="@color/text_primary"
+                    android:buttonTint="@color/purple_end" />
+                <RadioButton
+                    android:id="@+id/chooseGemma2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Gemma 2 2B — مدل بزرگ‌تر"
+                    android:textColor="@color/text_primary"
+                    android:buttonTint="@color/purple_end" />
+            </RadioGroup>
+            <Button
+                android:id="@+id/importGemma3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="واردکردن فایل GGUF — Gemma 3 1B"
+                android:layout_marginTop="8dp" />
+            <Button
+                android:id="@+id/importGemma2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="واردکردن فایل GGUF — Gemma 2 2B"
+                android:layout_marginTop="6dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="18dp"
+            android:background="@drawable/card_settings"
+            android:layout_marginBottom="14dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="وضعیت موتور و مدل"
+                android:textColor="@color/purple_end"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+            <TextView
+                android:id="@+id/gemmaScreenStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="در حال بررسی…"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="18dp"
+            android:background="@drawable/card_settings"
+            android:layout_marginBottom="24dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="تست سرعت و کیفیت"
+                android:textColor="@color/purple_end"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/gemmaTestQuestion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Hayatın anlamı nedir? Bana içten ve doğal Türkçeyle en fazla 5 cümlede cevap ver."
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp" />
+            <Button
+                android:id="@+id/gemmaTestButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="مدل انتخاب‌شده را آزمایش کن" />
+            <ProgressBar
+                android:id="@+id/gemmaProgress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:indeterminate="true"
+                android:visibility="gone"
+                android:layout_marginTop="8dp" />
+            <TextView
+                android:id="@+id/gemmaTestOutput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:paddingTop="12dp"
+                android:textIsSelectable="true" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
