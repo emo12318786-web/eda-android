@@ -18,7 +18,7 @@ object AiRouter {
 
     private fun nativeSession(context: Context): GemmaSessionManager =
         nativeGemmaSession ?: synchronized(this) {
-            nativeGemmaSession ?: GemmaSessionManager(context.applicationContext).also {
+            nativeGemmaSession ?: GemmaSessionManager.get(context.applicationContext).also {
                 nativeGemmaSession = it
             }
         }
