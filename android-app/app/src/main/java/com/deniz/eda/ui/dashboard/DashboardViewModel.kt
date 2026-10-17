@@ -104,12 +104,12 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
             // ═══ AI Durumu kontrol ═══
             val internet = try { SystemTools.checkInternet(ctx) } catch (e: Exception) { false }
             val ollama = try {
-                val gsm = GemmaSessionManager(ctx)
+                val gsm = GemmaSessionManager.get(ctx)
                 val st = gsm.status()
                 if (!st.runtimeAvailable) {
                     "Native motor yok"
                 } else {
-                    val model = if (st.modelReady) "Gemma 3 1B hazır" else "Gemma 3 1B içe aktarılmadı"
+                    val model = if (st.modelReady) "${st.selectedModel} hazır" else "${st.selectedModel} içe aktarılmadı"
                     "Gemma Native · $model"
                 }
             } catch (e: Exception) { "Gemma Native hata: ${e.message}" }
