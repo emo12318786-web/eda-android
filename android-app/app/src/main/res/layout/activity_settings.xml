@@ -116,7 +116,7 @@
                 android:backgroundTint="@color/purple_start" />
         </LinearLayout>
 
-        <!-- CARD: Offline Gemma models -->
+        <!-- CARD: Gemma Mode -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -128,7 +128,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🧠  GEMMA ÇEVRİMDIŞI MODELLER"
+                android:text="🧠  GEMMA MODE"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/purple_end"
@@ -138,33 +138,19 @@
                 android:id="@+id/gemmaDurum"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Model durumu kontrol ediliyor..."
+                android:text="گفت‌وگوی آفلاین با انتخاب مدل Gemma"
                 android:textColor="@color/text_primary"
                 android:textSize="13sp"
                 android:layout_marginBottom="12dp" />
 
-            <Switch
-                android:id="@+id/gemmaModeSwitch"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Gemma Mode (yerel sohbet)"
-                android:textColor="@color/text_primary"
-                android:textSize="15sp"
-                android:layout_marginBottom="12dp" />
-
             <Button
-                android:id="@+id/gemma3ModelImport"
+                android:id="@+id/gemmaOpenButton"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Gemma 3 1B GGUF içe aktar" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Not: Model dosyası GGUF biçiminde olmalı. Ollama'nın özel klasöründeki blob dosyaları otomatik olarak görünmez; dosyayı önce telefonun ortak depolamasına kopyala."
-                android:textColor="@color/text_muted"
-                android:textSize="12sp"
-                android:layout_marginTop="8dp" />
+                android:layout_height="56dp"
+                android:text="بازکردن صفحهٔ Gemma Mode  →"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/btn_purple" />
         </LinearLayout>
 
         <!-- Kaydet butonu -->
