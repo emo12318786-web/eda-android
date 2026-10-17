@@ -60,7 +60,7 @@ Java_com_deniz_eda_ai_NativeGemmaEngine_nativeGenerate(JNIEnv *env, jobject, jst
     if (!g_model || !g_context || !g_vocab || !g_sampler) return nullptr;
     const char *raw = env->GetStringUTFChars(jprompt, nullptr);
     if (!raw) return nullptr;
-    std::string prompt = std::string("You are Eda, a helpful conversational assistant. Reply naturally and concisely in the user's language.\\n<start_of_turn>user\\n") + raw + "\\n<end_of_turn>\\n<start_of_turn>model\\n";
+    std::string prompt = std::string("<start_of_turn>user\nYou are Eda, a helpful conversational assistant. Reply naturally and concisely in the user's language.\nUser: ") + raw + "\n<end_of_turn>\n<start_of_turn>model\n";
     env->ReleaseStringUTFChars(jprompt, raw);
 
     int32_t needed = llama_tokenize(g_vocab, prompt.c_str(), (int32_t) prompt.size(), nullptr, 0, true, true);
