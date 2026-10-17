@@ -133,6 +133,11 @@ object Settings {
         get() = getString("gemma_model", "gemma3:1b")
         set(v) = setString("gemma_model", v)
 
+    /** Gemma Mode: route free conversation directly to the local Gemma 3 1B model. */
+    var gemmaMode: Boolean
+        get() = getBool("gemma_mode", false)
+        set(v) = setBool("gemma_mode", v)
+
     var pilBildirimAktif: Boolean
         get() = getBool("pil_bildirim_aktif", true)
         set(v) = setBool("pil_bildirim_aktif", v)
