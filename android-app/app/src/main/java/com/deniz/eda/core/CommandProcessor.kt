@@ -908,23 +908,7 @@ else -> {
                         if (aiCevap != null) {
                             KomutSonucu.Cevap(aiCevap)
                         } else {
-                            // 2. Native Gemma fallback (offline)
-                            val gemmaCevap = try {
-                                val gsm = GemmaSessionManager(context)
-                                val status = gsm.status()
-                                if (status.runtimeAvailable && (status.lightModelReady || status.deepModelReady)) {
-                                    gsm.generate(
-                                        if (metinHam.length < 60) GemmaSessionManager.Task.LIGHT
-                                        else GemmaSessionManager.Task.DEEP,
-                                        metinHam
-                                    )
-                                } else null
-                            } catch (e: Exception) {
-                                android.util.Log.e("CommandProcessor", "Gemma hata: ${e.message}")
-                                null
-                            }
-                            if (gemmaCevap != null) KomutSonucu.Cevap(gemmaCevap)
-                            else KomutSonucu.Cevap("Şu an cevap veremiyorum $hitap, ama dinliyorum.")
+                            KomutSonucu.Cevap("Şu an cevap veremiyorum $hitap, ama dinliyorum.")
                         }
                     }
                 }
