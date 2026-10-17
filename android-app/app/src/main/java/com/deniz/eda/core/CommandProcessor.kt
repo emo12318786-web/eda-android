@@ -513,14 +513,22 @@ object CommandProcessor {
             v(metin, "hafızamda", "hafizamda", "hafızayı", "hafizayi") && v(metin, "ne", "göster", "goster", "var") ->
                 KomutSonucu.Cevap(MemoryStore.goster(context))
 
-            v(metin, "mesaj", "mesage") && v(metin, "gönder", "gonder") -> {
-                val numara = SmsUtils.numarayiAyikla(metin)
+            v(metin, "mesaj", "mesage") && v(metin, "gönder", "gonder", "göndər", "göndər") -> {
+                val directNumber = SmsUtils.numarayiAyikla(metin)
+                val contact = if (directNumber == null) SmsUtils.kisiNumarasiBul(context, metin) else null
+                val numara = directNumber ?: contact?.first
+                val kisiAdi = contact?.second
                 if (numara == null) {
-                    KomutSonucu.Cevap("Numarayı anlayamadım $hitap, tekrar söyler misin?")
+                    KomutSonucu.Cevap("Kişiyi bulamadım. Kişi iznini ver veya telefon numarasını söyle $hitap.")
                 } else {
-                    val icerik = metin.replace(numara, "").replace("mesaj", "").replace("gönder", "").replace("gonder", "").trim()
-                    val basarili = SmsUtils.gonder(context, numara, icerik.ifBlank { "Eda üzerinden gönderildi." })
-                    KomutSonucu.Cevap(if (basarili) "Mesajı gönderdim $hitap." else "Mesaj gönderilemedi, SMS izni verildi mi $hitap?")
+                    val icerik = SmsUtils.mesajMetniAyikla(metin, kisiAdi)
+                    if (icerik.isBlank()) {
+                        KomutSonucu.Cevap("Mesajın içeriğini de söyler misin $hitap?")
+                    } else {
+                        val basarili = SmsUtils.gonder(context, numara, icerik)
+                        val hedef = kisiAdi ?: numara
+                        KomutSonucu.Cevap(if (basarili) "$hedef kişisine mesaj gönderildi $hitap." else "Mesaj gönderilemedi. SMS izni ve varsayılan SIM durumunu kontrol et $hitap.")
+                    }
                 }
             }
 
