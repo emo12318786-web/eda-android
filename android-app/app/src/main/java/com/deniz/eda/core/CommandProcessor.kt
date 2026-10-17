@@ -732,20 +732,21 @@ object CommandProcessor {
                 KomutSonucu.Cevap("Bip sesi kapatıldı $hitap.")
             }
             
-            // ═══ Beyin (فقط Gemma 2.2 فعاله) ═══
-            // هر ترکیبی از "beyin 2" یا "güçlü beyin" → gemma2:2b
-            (v(metin, "beyin 2", "beyin2", "güçlü beyin", "guclu beyin", "büyük beyin", "buyuk beyin", "gemma 2", "gemma2", "beyin")) -> {
-                Settings.gemmaModel = "gemma2:2b"
-                android.util.Log.d("CommandProcessor", "gemmaModel → gemma2:2b (Beyin)")
-                KomutSonucu.Cevap("Beyin 2 aktif $hitap. Güçlü ve derin.")
+            // ═══ Gemma Mode: use the local Gemma 3 1B model exclusively ═══
+            v(metin, "gemma mode aç", "gemma modu aç", "gemma modunu aç", "gemma moda geç",
+                "gemma mode aktif", "gemma modu aktif", "yerel gemma modu aç") -> {
+                Settings.gemmaMode = true
+                KomutSonucu.Cevap("Gemma Mode açıldı $hitap. Sohbetler yerel Gemma 3 1B ile çalışacak.")
             }
-            // Beyin 1 → صرفاً پیام، settings عوض نمی‌شه
-            (v(metin, "beyin 1", "beyin1", "hızlı beyin", "hizli beyin", "küçük beyin", "kucuk beyin", "base beyin", "gemma 3")) -> {
-                KomutSonucu.Cevap("Beyin 1 (Gemma 3.1) devre dışı $hitap. Sadece Beyin 2 (Gemma 2.2) kullanılıyor.")
+            v(metin, "gemma mode kapat", "gemma modu kapat", "gemma modunu kapat",
+                "gemma modundan çık", "gemma mode kapalı", "yerel gemma modu kapat") -> {
+                Settings.gemmaMode = false
+                KomutSonucu.Cevap("Gemma Mode kapatıldı $hitap. Normal AI sağlayıcılarına döndüm.")
             }
-            // ═══ Beyin değiştir (سوال) ═══
-            v(metin, "beyin değiştir", "beyin degistir", "hangi beyin", "beyin seç") -> {
-                KomutSonucu.Cevap("Şu an Beyin 2 (Gemma 2.2) aktif $hitap.")
+            v(metin, "gemma mode durumu", "gemma modu durumu", "gemma mode açık mı",
+                "gemma modu açık mı", "hangi gemma modu") -> {
+                KomutSonucu.Cevap(if (Settings.gemmaMode) "Gemma Mode açık; yerel Gemma 3 1B kullanılacak."
+                    else "Gemma Mode kapalı; normal AI sağlayıcıları kullanılacak.")
             }
             
             // ═══ 10. Sistem test ═══
@@ -903,24 +904,35 @@ else -> {
                         .any { sosyal.contains(it) } ->
                         KomutSonucu.Cevap("Bugün epey yorulmuşsun $hitap. Biraz soluklanalım; istersen anlat, seni dinliyorum. En çok ne yordu?")
                     else -> {
-                        // 1. Online AI dene (Groq / Pollinations)
-                        val aiCevap = AiRouter.sor(metinHam, context = context)
-                        if (aiCevap != null) {
-                            KomutSonucu.Cevap(aiCevap)
-                        } else {
-                            // 2. Native Gemma fallback (offline)
+                        if (Settings.gemmaMode) {
+                            // Gemma Mode is intentionally offline-first and does not call online providers.
                             val gemmaCevap = try {
                                 val gsm = GemmaSessionManager(context)
                                 val status = gsm.status()
-                                if (status.runtimeAvailable && status.modelReady) {
-                                    gsm.generate(metinHam)
-                                } else null
+                                if (status.runtimeAvailable && status.modelReady) gsm.generate(metinHam) else null
                             } catch (e: Exception) {
-                                android.util.Log.e("CommandProcessor", "Gemma hata: ${e.message}")
+                                android.util.Log.e("CommandProcessor", "Gemma Mode hata: ${e.message}")
                                 null
                             }
                             if (gemmaCevap != null) KomutSonucu.Cevap(gemmaCevap)
-                            else KomutSonucu.Cevap("Şu an cevap veremiyorum $hitap, ama dinliyorum.")
+                            else KomutSonucu.Cevap("Gemma Mode açık $hitap, ancak Gemma 3 1B modeli hazır değil. Ayarlardan GGUF modelini içe aktar.")
+                        } else {
+                            // Normal mode: online provider first, local Gemma as offline fallback.
+                            val aiCevap = AiRouter.sor(metinHam, context = context)
+                            if (aiCevap != null) {
+                                KomutSonucu.Cevap(aiCevap)
+                            } else {
+                                val gemmaCevap = try {
+                                    val gsm = GemmaSessionManager(context)
+                                    val status = gsm.status()
+                                    if (status.runtimeAvailable && status.modelReady) gsm.generate(metinHam) else null
+                                } catch (e: Exception) {
+                                    android.util.Log.e("CommandProcessor", "Gemma hata: ${e.message}")
+                                    null
+                                }
+                                if (gemmaCevap != null) KomutSonucu.Cevap(gemmaCevap)
+                                else KomutSonucu.Cevap("Şu an cevap veremiyorum $hitap, ama dinliyorum.")
+                            }
                         }
                     }
                 }
