@@ -1,7 +1,6 @@
 package com.deniz.eda.ai
 
 import android.content.Context
-import com.deniz.eda.utils.OllamaLocator
 import com.deniz.eda.core.Settings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -9,6 +8,10 @@ import kotlinx.coroutines.withContext
 import java.util.Locale
 
 object AiRouter {
+
+    // Son basarili AI saglayicisinin adi (dashboard log icin)
+    @Volatile
+    var lastProvider: String = ""
 
     @Volatile
     private var nativeGemmaSession: GemmaSessionManager? = null
@@ -20,6 +23,10 @@ object AiRouter {
             }
         }
 
+    /** Dashboard reads the same live session used by inference; never creates a fake status session. */
+    fun nativeGemmaStatus(context: Context): GemmaSessionManager.Status? =
+        nativeGemmaSession?.status()
+
     private data class Saglayici(
         val ad: String,
         val baseUrl: String,
@@ -28,20 +35,12 @@ object AiRouter {
         val needsKey: Boolean = true
     )
 
-    // OLLAMA_URL artik dinamik - OllamaLocator.bul(context) ile alinir
+    // Termux/Ollama is intentionally not a provider in the Android APK.
+    // Offline Gemma goes through NativeGemmaEngine; online providers are fallbacks only.
 
     private suspend fun saglayicilar(context: Context): List<Saglayici> {
-        val ollamaUrl = OllamaLocator.bul(context)
         val tum = listOf(
-        // ═══ ۱. Ollama Gemma2 (آفلاین، سریع) ═══
-        Saglayici(
-            ad = "Ollama-Gemma2",
-            baseUrl = "$ollamaUrl/v1/",
-            model = Settings.gemmaModel,
-            apiKey = { "ollama-local" },
-            needsKey = false
-        ),
-        // ═══ ۲. Pollinations (رایگان، آنلاین) ═══
+        // ═══ Pollinations (رایگان، آنلاین) ═══
         Saglayici(
             ad = "Pollinations",
             baseUrl = "https://text.pollinations.ai/openai/",
@@ -71,13 +70,12 @@ object AiRouter {
                 }
                 "pollinations" -> when (provider.ad) {
                     "Pollinations" -> 0
-                    "Ollama-Gemma2" -> 1
-                    else -> 2
+                    else -> 1
                 }
+                // "ollama" is a legacy preference key for EDA native offline inference.
                 else -> when (provider.ad) {
-                    "Ollama-Gemma2" -> 0
-                    "Pollinations" -> 1
-                    else -> 2
+                    "Pollinations" -> 0
+                    else -> 1
                 }
             }
         }
@@ -98,24 +96,32 @@ KURALLAR:
     ): String? = withContext(Dispatchers.IO) {
         val ctx = context ?: return@withContext null
 
-        // Prefer a model imported into EDA's private storage. This path runs
-        // fully in-process and does not use Termux, Ollama, or network access.
-        try {
-            val local = nativeSession(ctx).generate(
-                // EDA bu sürümde yalnızca Gemma 2 2B kullanır; Gemma 3 slotuna yönlendirme yapma.
-                task = GemmaSessionManager.Task.DEEP,
-                prompt = sistemMesaji + "\n\nKullanıcı: " + kullaniciSorusu + "\nEda:",
-                maxTokens = 180
-            )
-            if (!local.isNullOrBlank()) {
-                android.util.Log.i("AiRouter", "Native Gemma offline response returned")
-                return@withContext local.trim()
+        // Honor the selected provider. Never run native Gemma first when the user
+        // explicitly selected an online provider: native inference can stall on
+        // long prompts and prevent the configured online route from being reached.
+        val selectedProvider = Settings.aiProvider.ifBlank { "ollama" }.lowercase(Locale.ROOT)
+        if (selectedProvider == "ollama") {
+            try {
+                // Every local request uses the single Gemma 3 1B model.
+                // This does not change the voice or sleep/wake loop.
+                val normalizedQuestion = kullaniciSorusu.trim()
+                val local = nativeSession(ctx).generate(
+                    prompt = sistemMesaji + "\n\nKullanıcı: " + normalizedQuestion + "\nEda:",
+                    maxTokens = if (normalizedQuestion.length <= 100) 96 else 180
+                )
+                if (!local.isNullOrBlank()) {
+                    android.util.Log.i("AiRouter", "AI_RESPONSE_SUCCESS provider=Native-Gemma model=Gemma-3-1B chars=${local.trim().length}")
+                    lastProvider = "Native-Gemma"
+                    return@withContext local.trim()
+                }
+                android.util.Log.i("AiRouter", "Native Gemma unavailable/no GGUF; trying configured providers")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("AiRouter", "Native Gemma failed; trying configured providers", e)
             }
-            android.util.Log.i("AiRouter", "Native Gemma unavailable/no GGUF; trying configured providers")
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            android.util.Log.e("AiRouter", "Native Gemma failed; trying online providers", e)
+        } else {
+            android.util.Log.i("AiRouter", "AI_PROVIDER_SELECTED provider=$selectedProvider route=online-first")
         }
 
         for (s in saglayicilar(ctx)) {
@@ -124,7 +130,7 @@ KURALLAR:
                 android.util.Log.w("AiRouter", "SKIP ${s.ad}: API key boş")
                 continue
             }
-            android.util.Log.i("AiRouter", "Denenecek sağlayıcı: ${s.ad}, model=${s.model}, url=${s.baseUrl}")
+            android.util.Log.i("AiRouter", "AI_PROVIDER_ATTEMPT provider=${s.ad} model=${s.model}")
             try {
                 val api = OpenAiCompatibleApi.olustur(s.baseUrl)
                 // ═══ ابزارها رو به prompt اضافه کن ═══
@@ -160,7 +166,7 @@ KURALLAR:
                         android.util.Log.w("AiRouter", "EMPTY_RESPONSE provider=${s.ad} http=${yanit.code()}")
                         break
                     }
-                    android.util.Log.d("AiRouter", "✅ ${s.ad} agent step=$aracAdimi")
+                    android.util.Log.d("AiRouter", "AI_RESPONSE_CHUNK provider=${s.ad} model=${s.model} agentStep=$aracAdimi chars=${cevap.length}")
                     val match = Regex("<TOOL>\\s*([A-Z_]+)(?:\\s*[:|]\\s*(.*?))?\\s*</TOOL>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)).find(cevap)
                     if (match == null || context == null || aracAdimi >= 3) {
                         sonCevap = cevap.replace(Regex("<TOOL>.*?</TOOL>", RegexOption.DOT_MATCHES_ALL), "").trim()
@@ -168,7 +174,7 @@ KURALLAR:
                     }
                     val toolName = match.groupValues[1].uppercase(Locale.ROOT)
                     val allowlist = setOf(
-                        "CHECK_INTERNET", "CHECK_OLLAMA", "CHECK_GROQ",
+                        "CHECK_INTERNET", "CHECK_GROQ",
                         "CHECK_POLLINATIONS", "GET_BATTERY", "GET_AI", "GET_MODE", "FULL_CHECK",
                         "GET_MEMORY", "GET_DIARY", "GET_REMINDERS", "GET_LEARNED", "GET_TIME", "GET_DATE",
                         "SAVE_MEMORY", "ADD_DIARY", "ADD_REMINDER",
@@ -190,12 +196,15 @@ KURALLAR:
                     aracAdimi++
                 }
                 if (!sonCevap.isNullOrBlank()) {
+                    android.util.Log.i("AiRouter", "AI_RESPONSE_SUCCESS provider=${s.ad} model=${s.model} agentSteps=$aracAdimi chars=${sonCevap.length}")
+                    lastProvider = s.ad
                     val kayitliAd = Settings.kullaniciAdi.trim()
                     return@withContext sonCevap
                         .replace(Regex("(?i)denizcim"), kayitliAd.ifBlank { "" })
                         .replace(Regex("\\s{2,}"), " ")
                         .trim()
                 }
+                android.util.Log.w("AiRouter", "AI_PROVIDER_NO_FINAL_ANSWER provider=${s.ad} model=${s.model}; trying next provider")
                 // Sağlayıcı başarısızsa sıradaki yapılandırılmış sağlayıcıya geç.
             } catch (e: CancellationException) {
                 throw e

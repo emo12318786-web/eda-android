@@ -201,7 +201,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 HeroMini("SİSTEM DURUMU", "Bağlantıları ve kayıtlarını buradan kontrol et.")
                 SectionHeader("YAPAY ZEKÂ BAĞLANTILARI", "Son bağlantı kontrolünün sonucu")
                 StatusLine("🌐 İnternet", if (state.internetStatus) "Bağlı" else "Bağlı değil", state.internetStatus)
-                StatusLine("🦙 Ollama · ${state.aiModel}", state.ollamaStatus, state.ollamaStatus.contains("açık", true) || state.ollamaStatus.contains("çalışıyor", true))
+                StatusLine("💎 Gemma Native", state.ollamaStatus, state.ollamaStatus.contains("hazır", true) && !state.ollamaStatus.contains("yok", true))
                 StatusLine("⚡ Groq", state.groqStatus, state.groqStatus.contains("bağlı", true) && !state.groqStatus.contains("yok", true))
                 StatusLine("🌸 Pollinations", state.pollinationsStatus, state.pollinationsStatus.contains("açık", true) || state.pollinationsStatus.contains("çalışıyor", true))
                 SectionHeader("KAYITLARIN", "Bu telefonda saklanan bilgiler")
@@ -304,7 +304,7 @@ private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
         Text("Öncelik zinciri", color = Muted, fontSize = 10.sp)
         Text(selected, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("Groq", "Pollinations", "Ollama").forEach { provider ->
+            listOf("Groq", "Pollinations", "Gemma 3 1B").forEach { provider ->
                 val action = when (provider) {
                     "Groq" -> "ACTION_AI_GROQ"
                     "Pollinations" -> "ACTION_AI_POLLINATIONS"

@@ -7,7 +7,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
-import com.deniz.eda.ai.GemmaModelStore
 import com.deniz.eda.ai.GemmaSessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,21 +18,19 @@ import com.deniz.eda.core.Settings
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var gemmaSessions: GemmaSessionManager
-    private var pendingGemmaSlot: GemmaModelStore.Slot? = null
 
     private val gemmaModelPicker = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
-        val slot = pendingGemmaSlot
-        if (uri == null || slot == null) return@registerForActivityResult
+        if (uri == null) return@registerForActivityResult
         lifecycleScope.launch {
             try {
                 val info = withContext(Dispatchers.IO) {
-                    gemmaSessions.importModel(uri, slot)
+                    gemmaSessions.importModel(uri)
                 }
                 Toast.makeText(
                     this@SettingsActivity,
-                    "${slot.name}: model içe aktarıldı (${info.sizeBytes / (1024 * 1024)} MB)",
+                    "Gemma 3 1B: model içe aktarıldı (${info.sizeBytes / (1024 * 1024)} MB)",
                     Toast.LENGTH_LONG
                 ).show()
                 refreshGemmaStatus()
@@ -54,11 +51,6 @@ class SettingsActivity : AppCompatActivity() {
         gemmaSessions = GemmaSessionManager(applicationContext)
 
         findViewById<Button>(R.id.gemma3ModelImport).setOnClickListener {
-            pendingGemmaSlot = GemmaModelStore.Slot.FAST
-            gemmaModelPicker.launch(arrayOf("application/octet-stream", "*/*"))
-        }
-        findViewById<Button>(R.id.gemma2ModelImport).setOnClickListener {
-            pendingGemmaSlot = GemmaModelStore.Slot.DEEP
             gemmaModelPicker.launch(arrayOf("application/octet-stream", "*/*"))
         }
         refreshGemmaStatus()
@@ -89,11 +81,10 @@ class SettingsActivity : AppCompatActivity() {
     private fun refreshGemmaStatus() {
         lifecycleScope.launch {
             val status = withContext(Dispatchers.IO) { gemmaSessions.status() }
-            val light = if (status.lightModelReady) "var" else "yok"
-            val deep = if (status.deepModelReady) "var" else "yok"
+            val model = if (status.modelReady) "hazır" else "içe aktarılmadı"
             val runtime = if (status.runtimeAvailable) "hazır" else "APK'da motor bulunamadı"
             findViewById<TextView>(R.id.gemmaDurum).text =
-                "Yerel motor: $runtime\nGemma 3 1B GGUF: $light\nGemma 2 2B GGUF: $deep"
+                "Yerel motor: $runtime\nTek model: Gemma 3 1B GGUF ($model)"
         }
     }
 }

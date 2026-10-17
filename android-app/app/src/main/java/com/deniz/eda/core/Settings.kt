@@ -130,7 +130,7 @@ object Settings {
         set(v) = setString("son_mod", v)
 
     var gemmaModel: String
-        get() = getString("gemma_model", "gemma2:2b")
+        get() = getString("gemma_model", "gemma3:1b")
         set(v) = setString("gemma_model", v)
 
     var pilBildirimAktif: Boolean
