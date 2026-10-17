@@ -68,6 +68,11 @@
             android:label="Gemma 2.2B Offline" />
 
         <activity
+            android:name=".ui.IletisimMerkeziActivity"
+            android:exported="false"
+            android:label="İletişim Merkezi" />
+
+        <activity
             android:name=".ui.OfflineDeepQuestionsActivity"
             android:exported="false"
             android:label="EDA Offline Deep Questions" />
