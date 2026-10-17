@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - eda-v5-agent-integration
+      - eda-full-offline-build
     paths:
       - "android-app/**"
       - ".github/workflows/eda-v5-agent-build.yml"
