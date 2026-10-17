@@ -48,6 +48,7 @@
     <uses-permission android:name="android.permission.READ_SMS" />
     <!-- Gelen aramayı algılama -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <!-- Guvenlik modu: hareket algilama -->
     <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
 
