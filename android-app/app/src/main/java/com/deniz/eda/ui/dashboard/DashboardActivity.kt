@@ -53,10 +53,25 @@ class DashboardActivity : ComponentActivity() {
         else if (!granted) android.widget.Toast.makeText(this, "Eda için mikrofon izni gerekli.", android.widget.Toast.LENGTH_LONG).show()
     }
     private val viewModel: DashboardViewModel by viewModels()
+    private val contactsSmsPermission = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+        val contacts = results[Manifest.permission.READ_CONTACTS] == true
+        val sms = results[Manifest.permission.SEND_SMS] == true
+        val message = when {
+            contacts && sms -> "Eda artık kişi adlarını bulabilir ve SMS gönderebilir."
+            contacts -> "Kişiler izni verildi; doğrudan SMS için SMS izni de gerekli."
+            else -> "Kişi adına göre mesaj için Kişiler iznini Ayarlar'dan açabilirsin."
+        }
+        android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Settings.init(this)
+        val needsContacts = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED
+        val needsSms = ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED
+        if (needsContacts || needsSms) {
+            contactsSmsPermission.launch(arrayOf(Manifest.permission.READ_CONTACTS, Manifest.permission.SEND_SMS))
+        }
         viewModel.yenile()
         setContent {
             MaterialTheme(colorScheme = darkColorScheme(
