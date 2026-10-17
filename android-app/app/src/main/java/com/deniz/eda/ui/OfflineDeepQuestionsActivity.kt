@@ -74,7 +74,7 @@ class OfflineDeepQuestionsActivity : ComponentActivity(), TextToSpeech.OnInitLis
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column(Modifier.weight(1f)) {
                             Text("Çevrimdışı Akıllı Analiz", color = Color(0xFFB49AFF), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                            Text("Uzun sorular ve karmaşık analizler • Offline", color = Color(0xFF98A2B9), fontSize = 13.sp)
+                            Text("Uzun sorular ve karmaşık analizler • Çevrimdışı", color = Color(0xFF98A2B9), fontSize = 13.sp)
                         }
                         TextButton(onClick = { finish() }) { Text("Geri dön") }
                     }
@@ -122,7 +122,7 @@ class OfflineDeepQuestionsActivity : ComponentActivity(), TextToSpeech.OnInitLis
                                             if (!state.runtimeAvailable) throw IllegalStateException("Yerel yapay zekâ motoru APK içinde bulunamadı.")
                                             if (!state.deepModelReady) throw IllegalStateException("Gemma 2 2B GGUF dosyası henüz içe aktarılmadı.")
                                             val system = "Sen Eda’sın; doğru ve dikkatli bir çevrimdışı asistansın. Uzun metni adım adım incele, önemli noktaları sınıflandır, gerekirse varsayımları ve sonucu ayrı yaz. Kullanıcının dilinde yanıt ver, bilgi uydurma ve yanıtı açık, düzenli tut.\n\n"
-                                            sessions.generate(GemmaSessionManager.Task.DEEP, system + "سؤال کاربر:\n" + prompt + "\n\nتحلیل و پاسخ:", 220)
+                                            sessions.generate(GemmaSessionManager.Task.DEEP, system + "Kullanıcının sorusu:\n" + prompt + "\n\nAnaliz ve yanıt:", 220)
                                         }
                                         answer = result?.trim()?.takeIf { it.isNotBlank() }
                                             ?: "Model yanıt üretmedi. GGUF dosyasını ve model durumunu kontrol et."
