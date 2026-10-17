@@ -27,10 +27,29 @@ class IncomingCallReceiver : BroadcastReceiver() {
                 if (prefs.getBoolean("announced", false)) return
                 prefs.edit().putBoolean("announced", true).apply()
                 val number = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER).orEmpty()
-                val text = if (number.isBlank()) {
-                    "Gelen bir telefon araması var."
+                val contactName = if (number.isNotBlank() &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    runCatching {
+                        val uri = android.net.Uri.withAppendedPath(
+                            android.provider.ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                            android.net.Uri.encode(number)
+                        )
+                        context.contentResolver.query(
+                            uri,
+                            arrayOf(android.provider.ContactsContract.PhoneLookup.DISPLAY_NAME),
+                            null, null, null
+                        )?.use { cursor ->
+                            if (cursor.moveToFirst()) cursor.getString(0) else null
+                        }
+                    }.getOrNull()
+                } else null
+                val caller = contactName?.takeIf { it.isNotBlank() }
+                    ?: number.takeIf { it.isNotBlank() }
+                val text = if (caller == null) {
+                    "Telefonunuz çalıyor. Aramayı cevaplamak mı, reddetmek mi istersiniz?"
                 } else {
-                    "Gelen arama var. Arayan numara: $number."
+                    "$caller arıyor. Aramayı cevaplamak mı, reddetmek mi istersiniz?"
                 }
                 val serviceIntent = Intent(context, EdaForegroundService::class.java).apply {
                     action = "ACTION_SPEAK"
