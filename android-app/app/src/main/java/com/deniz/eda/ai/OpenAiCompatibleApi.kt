@@ -25,9 +25,9 @@ interface OpenAiCompatibleApi {
         fun olustur(baseUrl: String): OpenAiCompatibleApi {
             val client = OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(45, TimeUnit.SECONDS)
+                .readTimeout(180, TimeUnit.SECONDS)
                 .writeTimeout(20, TimeUnit.SECONDS)
-                .callTimeout(60, TimeUnit.SECONDS)
+                .callTimeout(180, TimeUnit.SECONDS)
                 .retryOnConnectionFailure(true)
                 .build()
 
