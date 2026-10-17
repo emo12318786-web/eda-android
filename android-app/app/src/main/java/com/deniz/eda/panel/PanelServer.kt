@@ -84,13 +84,12 @@ class PanelServer(
                 put("state", if (present) "file-present" else "file-missing")
             }
         }
-        val loaded = live?.loadedSlot?.fileName
+        val loaded = if (live?.loaded == true) "gemma3-1b.gguf" else null
         return JSONObject().apply {
             put("runtimeAvailable", runtimeAvailable)
             put("runtimeState", if (runtimeAvailable) "available" else "unavailable")
             put("runtimeMessage", live?.detail ?: if (runtimeAvailable) "EDA native runtime available; inference session not created" else "EDA native runtime library missing")
-            put("gemma3_1b", modelStatus("gemma3-1b.gguf", live?.lightModelReady))
-            put("gemma2_2b", modelStatus("gemma2-2b.gguf", live?.deepModelReady))
+            put("gemma3_1b", modelStatus("gemma3-1b.gguf", live?.modelReady))
             put("loadedModel", loaded ?: JSONObject.NULL)
             put("loadedStateKnown", live != null)
             put("sessionDetail", live?.detail ?: "No active inference session yet")
