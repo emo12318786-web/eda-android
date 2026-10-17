@@ -239,6 +239,61 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 color = Muted, fontSize = 9.sp, letterSpacing = 2.sp, textAlign = TextAlign.Center)
         }
     }
+
+    if (deepChatOpen) {
+        AlertDialog(
+            onDismissRequest = { if (!deepChatBusy) deepChatOpen = false },
+            title = { Text("Eda · Derin sohbet") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(deepChatReply, color = Color.White)
+                    OutlinedTextField(
+                        value = deepChatInput,
+                        onValueChange = { deepChatInput = it },
+                        label = { Text("Mesajın") },
+                        placeholder = { Text("Eda'ya ne sormak istiyorsun?") },
+                        enabled = !deepChatBusy,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (deepChatBusy) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Gemma yanıt hazırlıyor…", color = Muted, fontSize = 12.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = deepChatInput.isNotBlank() && !deepChatBusy,
+                    onClick = {
+                        val question = deepChatInput.trim()
+                        deepChatInput = ""
+                        deepChatBusy = true
+                        deepChatReply = "Düşünüyorum…"
+                        chatScope.launch {
+                            val answer = runCatching {
+                                AiRouter.sor(
+                                    kullaniciSorusu = question,
+                                    sistemMesaji = "Sen Eda'sın. Doğal, sıcak ve anlaşılır İstanbul Türkçesiyle cevap ver. Derin sohbet modundasın; soruyu dikkatle ele al, gerektiğinde ayrıntılı ama anlaşılır cevap ver. Bu sohbet yolundan donanım kontrolü yapma ve yapmış gibi söyleme.",
+                                    context = viewModel.getApplication()
+                                )
+                            }.getOrNull()
+                            deepChatReply = answer ?: "Şu an yanıt alamadım. Termux'ta ~/ollama-start.sh çalışıyor mu kontrol et."
+                            deepChatBusy = false
+                        }
+                    }
+                ) { Text("Gönder") }
+            },
+            dismissButton = {
+                TextButton(onClick = { if (!deepChatBusy) deepChatOpen = false }) { Text("Kapat") }
+            },
+            containerColor = Panel,
+            titleContentColor = Color.White,
+            textContentColor = Color.White
+        )
+    }
 }
 
 @Composable
