@@ -304,7 +304,7 @@ private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
         Text("Öncelik zinciri", color = Muted, fontSize = 10.sp)
         Text(selected, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("Groq", "Pollinations", "Ollama").forEach { provider ->
+            listOf("Groq", "Pollinations", "Gemma 3 1B").forEach { provider ->
                 val action = when (provider) {
                     "Groq" -> "ACTION_AI_GROQ"
                     "Pollinations" -> "ACTION_AI_POLLINATIONS"
