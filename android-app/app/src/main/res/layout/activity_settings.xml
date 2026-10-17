@@ -149,13 +149,6 @@
                 android:layout_height="wrap_content"
                 android:text="Gemma 3 1B GGUF içe aktar" />
 
-            <Button
-                android:id="@+id/gemma2ModelImport"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Gemma 2 2B GGUF içe aktar"
-                android:layout_marginTop="8dp" />
-
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
