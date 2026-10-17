@@ -344,10 +344,6 @@ body {
             <span class="status-label">🧠 Gemma 3 1B (GGUF)</span>
             <span class="status-value" id="s-gemma3-file">Kontrol ediliyor...</span>
         </div>
-        <div class="status-row">
-            <span class="status-label">🧠 Gemma 2 2B (GGUF)</span>
-            <span class="status-value" id="s-gemma2-file">Kontrol ediliyor...</span>
-        </div>
     </div>
 
     <div class="grid">
@@ -505,7 +501,6 @@ function updateUI(data) {
         el.title = present ? ('حجم: ' + Math.round((model.sizeBytes || 0) / 1048576) + ' MB؛ وجود فایل به معنی بارگذاری مدل نیست') : 'فایل مدل در پوشه خصوصی EDA نیست';
     }
     showModelFile('s-gemma3-file', runtime.gemma3_1b);
-    showModelFile('s-gemma2-file', runtime.gemma2_2b);
 
     // ═══ Chip active state ═══
     document.querySelectorAll('.chip').forEach(c => {
