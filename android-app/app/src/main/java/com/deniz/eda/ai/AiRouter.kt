@@ -102,19 +102,15 @@ KURALLAR:
         val selectedProvider = Settings.aiProvider.ifBlank { "ollama" }.lowercase(Locale.ROOT)
         if (selectedProvider == "ollama") {
             try {
-                // Short everyday requests use the lighter FAST model; longer requests use DEEP.
-                // This local routing does not change the voice or sleep loop.
+                // Every local request uses the single Gemma 3 1B model.
+                // This does not change the voice or sleep/wake loop.
                 val normalizedQuestion = kullaniciSorusu.trim()
-                val fastRequest = normalizedQuestion.length <= 100 &&
-                    normalizedQuestion.split(Regex("\\s+")).size <= 14
-                val localTask = if (fastRequest) GemmaSessionManager.Task.LIGHT else GemmaSessionManager.Task.DEEP
                 val local = nativeSession(ctx).generate(
-                    task = localTask,
                     prompt = sistemMesaji + "\n\nKullanıcı: " + normalizedQuestion + "\nEda:",
-                    maxTokens = if (fastRequest) 96 else 180
+                    maxTokens = if (normalizedQuestion.length <= 100) 96 else 180
                 )
                 if (!local.isNullOrBlank()) {
-                    android.util.Log.i("AiRouter", "AI_RESPONSE_SUCCESS provider=Native-Gemma model=local-gemma task=DEEP chars=${local.trim().length}")
+                    android.util.Log.i("AiRouter", "AI_RESPONSE_SUCCESS provider=Native-Gemma model=Gemma-3-1B chars=${local.trim().length}")
                     lastProvider = "Native-Gemma"
                     return@withContext local.trim()
                 }
