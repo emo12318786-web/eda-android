@@ -36,12 +36,12 @@ Java_com_deniz_eda_ai_NativeGemmaEngine_nativeLoadModel(JNIEnv *env, jobject, js
     }
     g_vocab = llama_model_get_vocab(g_model);
     llama_context_params cp = llama_context_default_params();
-    cp.n_ctx = 2048;
+    cp.n_ctx = 1024; // Lower memory use on phones such as Galaxy A71.
     // Keep each decode batch small; large prompts are processed in chunks below.
-    cp.n_batch = 128;
-    cp.n_ubatch = 128;
-    cp.n_threads = 4;
-    cp.n_threads_batch = 4;
+    cp.n_batch = 32;
+    cp.n_ubatch = 32;
+    cp.n_threads = 2; // Avoid starving Android's UI thread on mobile CPUs.
+    cp.n_threads_batch = 2;
     g_context = llama_init_from_model(g_model, cp);
     if (!g_context) {
         EDA_LOGE("Could not create llama context");
@@ -76,7 +76,7 @@ Java_com_deniz_eda_ai_NativeGemmaEngine_nativeGenerate(JNIEnv *env, jobject, jst
     const int limit = std::max(1, std::min((int)maxTokens, 256));
     // Never let prompt + answer exceed the context window. Keep the tail so
     // the user's latest question survives if the system prompt is very long.
-    const size_t maxPromptTokens = 2048u - (size_t)limit - 1u;
+    const size_t maxPromptTokens = 1024u - (size_t)limit - 1u;
     if (tokens.size() > maxPromptTokens) {
         EDA_LOGE("Truncating oversized prompt from %zu to %zu tokens", tokens.size(), maxPromptTokens);
         tokens.erase(tokens.begin(), tokens.end() - (ptrdiff_t)maxPromptTokens);
@@ -87,7 +87,7 @@ Java_com_deniz_eda_ai_NativeGemmaEngine_nativeGenerate(JNIEnv *env, jobject, jst
 
     // llama_batch_get_one() with the whole prompt can exceed n_batch and abort
     // native inference. Decode in bounded batches with continuous positions.
-    const size_t chunkSize = 128;
+    const size_t chunkSize = 32;
     for (size_t offset = 0; offset < tokens.size(); offset += chunkSize) {
         const size_t count = std::min(chunkSize, tokens.size() - offset);
         llama_batch batch = llama_batch_init((int32_t)count, 0, 1);
