@@ -912,12 +912,8 @@ else -> {
                             val gemmaCevap = try {
                                 val gsm = GemmaSessionManager(context)
                                 val status = gsm.status()
-                                if (status.runtimeAvailable && (status.lightModelReady || status.deepModelReady)) {
-                                    gsm.generate(
-                                        if (metinHam.length < 60) GemmaSessionManager.Task.LIGHT
-                                        else GemmaSessionManager.Task.DEEP,
-                                        metinHam
-                                    )
+                                if (status.runtimeAvailable && status.modelReady) {
+                                    gsm.generate(metinHam)
                                 } else null
                             } catch (e: Exception) {
                                 android.util.Log.e("CommandProcessor", "Gemma hata: ${e.message}")
