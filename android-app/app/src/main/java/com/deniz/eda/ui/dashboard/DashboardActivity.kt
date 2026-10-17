@@ -1,6 +1,8 @@
 package com.deniz.eda.ui.dashboard
 
 import com.deniz.eda.core.Settings
+import com.deniz.eda.ai.AiRouter
+import kotlinx.coroutines.launch
 
 import android.content.Intent
 import android.Manifest
@@ -100,7 +102,7 @@ class DashboardActivity : ComponentActivity() {
 @Composable
 private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Unit, onShareLog: () -> Unit) {
     val state by viewModel.state.collectAsState()
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableStateOf(0) }\n    var deepChatOpen by remember { mutableStateOf(false) }\n    var deepChatInput by remember { mutableStateOf("") }\n    var deepChatReply by remember { mutableStateOf("Ollama · Termux üzerinden yerel sohbet.") }\n    var deepChatBusy by remember { mutableStateOf(false) }\n    val chatScope = rememberCoroutineScope()
     // Use observable dashboard state; Compose cannot observe mutable Settings directly.
     val active = state.mod == "AKTIF"
     val sleeping = state.mod == "UYKU"
@@ -189,7 +191,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 LogsPanel(state.sonLoglar)
             } else if (selectedTab == 1) {
                 HeroMini("KONTROL", "Eda’nın çalışma durumunu buradan yönet.")
-                SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
+                SectionHeader("DERİN SOHBET", "Yerel Gemma 2:2B · Termux / Ollama")\n                ControlTile("✧", "Derin sohbeti aç", "Uzun sorularını yerel Gemma modeliyle konuş", Violet) {\n                    onAction("ACTION_AI_OLLAMA")\n                    deepChatOpen = true\n                }\n                SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
                 ControlTile("▶", "Eda’yı başlat", "Eda’yı dinlemeye hazır hâle getir", Good) { onAction("ACTION_AKTIF") }
                 ControlTile("☾", "Uyku moduna al", "Uyandırma kelimesiyle yeniden etkinleşir", Cyan) { onAction("ACTION_UYKU") }
                 ControlTile("■", "Eda'yı durdur", "Arka plan servisini kapat", Bad) { onAction("ACTION_STOP") }
@@ -304,7 +306,7 @@ private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
         Text("Öncelik zinciri", color = Muted, fontSize = 10.sp)
         Text(selected, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("Groq", "Pollinations", "Gemma 3 1B").forEach { provider ->
+            listOf("Groq", "Pollinations", "Ollama · Termux").forEach { provider ->
                 val action = when (provider) {
                     "Groq" -> "ACTION_AI_GROQ"
                     "Pollinations" -> "ACTION_AI_POLLINATIONS"
