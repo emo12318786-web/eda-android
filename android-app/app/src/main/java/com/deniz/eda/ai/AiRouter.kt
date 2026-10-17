@@ -115,7 +115,7 @@ KURALLAR:
                         model = s.model,
                         messages = mesajlar.toList(),
                         temperature = 0.2,
-                        max_tokens = 180
+                        max_tokens = if (s.ad == "Ollama") 700 else 180
                     )
                     val yanit = api.sohbetTamamla("Bearer $anahtar", istek)
                     if (!yanit.isSuccessful) {
