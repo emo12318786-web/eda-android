@@ -67,6 +67,11 @@
             android:label="Gemma 2.2B Offline" />
 
         <activity
+            android:name=".ui.OfflineDeepQuestionsActivity"
+            android:exported="false"
+            android:label="EDA Offline Deep Questions" />
+
+        <activity
             android:name=".ui.SettingsActivity"
             android:exported="false"
             android:label="Eda Ayarlar" />
