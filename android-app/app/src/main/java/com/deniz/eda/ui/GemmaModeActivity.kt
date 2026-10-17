@@ -91,15 +91,21 @@ class GemmaModeActivity : AppCompatActivity() {
         output.text = ""
         lifecycleScope.launch {
             val started = System.nanoTime()
-            val answer = withContext(Dispatchers.IO) { sessions.generate(question, 72) }
-            val seconds = (System.nanoTime() - started) / 1_000_000_000.0
-            output.text = if (answer.isNullOrBlank()) {
-                "پاسخی دریافت نشد. بررسی کن فایل مدل انتخاب‌شده وارد شده باشد."
-            } else {
-                "زمان: %.1f ثانیه\n\n%s".format(java.util.Locale.getDefault(), seconds, answer.trim())
+            try {
+                // Short diagnostic reply first to reduce CPU pressure on mobile.
+                val answer = withContext(Dispatchers.IO) { sessions.generate(question, 24) }
+                val seconds = (System.nanoTime() - started) / 1_000_000_000.0
+                output.text = if (answer.isNullOrBlank()) {
+                    "پاسخی دریافت نشد. وضعیت موتور و فایل مدل را در بالا بررسی کن."
+                } else {
+                    "زمان: %.1f ثانیه\n\n%s".format(java.util.Locale.getDefault(), seconds, answer.trim())
+                }
+            } catch (e: Exception) {
+                output.text = "اجرای مدل با خطا روبه‌رو شد: ${e.message ?: e.javaClass.simpleName}"
+            } finally {
+                setBusy(false)
+                refreshStatus()
             }
-            setBusy(false)
-            refreshStatus()
         }
     }
 
