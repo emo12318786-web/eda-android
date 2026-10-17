@@ -258,7 +258,11 @@ Sen: Merhaba ${Settings.kullaniciAdi}, iyiyim. Sen nasılsın?
     }
 
     private fun getAIText(): String {
-        return "Yapay zeka ${Settings.aiSaglayici}, model ${Settings.gemmaModel}"
+        return if (Settings.aiProvider.equals("ollama", ignoreCase = true)) {
+            "Yapay zeka Ollama (Termux), model gemma2:2b"
+        } else {
+            "Yapay zeka ${Settings.aiSaglayici}, model ${Settings.gemmaModel}"
+        }
     }
 
     private fun getModeText(): String {
