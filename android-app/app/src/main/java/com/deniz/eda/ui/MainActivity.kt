@@ -103,6 +103,24 @@ class MainActivity : AppCompatActivity() {
             gerekliIzinler.add(Manifest.permission.SEND_SMS)
         }
         if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.RECEIVE_SMS
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.RECEIVE_SMS)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.READ_SMS
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.READ_SMS)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.READ_PHONE_STATE
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.READ_PHONE_STATE)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
                 this, Manifest.permission.CAMERA
             ) != android.content.pm.PackageManager.PERMISSION_GRANTED
         ) {
@@ -200,6 +218,9 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION,
             Manifest.permission.SEND_SMS,
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_SMS,
+            Manifest.permission.READ_PHONE_STATE,
             Manifest.permission.CAMERA
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
