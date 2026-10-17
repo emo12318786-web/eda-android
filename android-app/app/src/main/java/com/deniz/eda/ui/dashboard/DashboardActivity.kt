@@ -115,7 +115,12 @@ class DashboardActivity : ComponentActivity() {
 @Composable
 private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Unit, onShareLog: () -> Unit) {
     val state by viewModel.state.collectAsState()
-    var selectedTab by remember { mutableStateOf(0) }\n    var deepChatOpen by remember { mutableStateOf(false) }\n    var deepChatInput by remember { mutableStateOf("") }\n    var deepChatReply by remember { mutableStateOf("Ollama · Termux üzerinden yerel sohbet.") }\n    var deepChatBusy by remember { mutableStateOf(false) }\n    val chatScope = rememberCoroutineScope()
+    var selectedTab by remember { mutableStateOf(0) }
+    var deepChatOpen by remember { mutableStateOf(false) }
+    var deepChatInput by remember { mutableStateOf("") }
+    var deepChatReply by remember { mutableStateOf("Ollama · Termux üzerinden yerel sohbet.") }
+    var deepChatBusy by remember { mutableStateOf(false) }
+    val chatScope = rememberCoroutineScope()
     // Use observable dashboard state; Compose cannot observe mutable Settings directly.
     val active = state.mod == "AKTIF"
     val sleeping = state.mod == "UYKU"
@@ -204,7 +209,12 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 LogsPanel(state.sonLoglar)
             } else if (selectedTab == 1) {
                 HeroMini("KONTROL", "Eda’nın çalışma durumunu buradan yönet.")
-                SectionHeader("DERİN SOHBET", "Yerel Gemma 2:2B · Termux / Ollama")\n                ControlTile("✧", "Derin sohbeti aç", "Uzun sorularını yerel Gemma modeliyle konuş", Violet) {\n                    onAction("ACTION_AI_OLLAMA")\n                    deepChatOpen = true\n                }\n                SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
+                SectionHeader("DERİN SOHBET", "Yerel Gemma 2:2B · Termux / Ollama")
+                ControlTile("✧", "Derin sohbeti aç", "Uzun sorularını yerel Gemma modeliyle konuş", Violet) {
+                    onAction("ACTION_AI_OLLAMA")
+                    deepChatOpen = true
+                }
+                SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
                 ControlTile("▶", "Eda’yı başlat", "Eda’yı dinlemeye hazır hâle getir", Good) { onAction("ACTION_AKTIF") }
                 ControlTile("☾", "Uyku moduna al", "Uyandırma kelimesiyle yeniden etkinleşir", Cyan) { onAction("ACTION_UYKU") }
                 ControlTile("■", "Eda'yı durdur", "Arka plan servisini kapat", Bad) { onAction("ACTION_STOP") }
@@ -304,7 +314,8 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
     ).padding(20.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("MERHABA, ${name.uppercase()}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
-            Text("Ben Eda.\nBuradayım.", fontSize = 31.sp, lineHeight = 36.sp,
+            Text("Ben Eda.
+Buradayım.", fontSize = 31.sp, lineHeight = 36.sp,
                 fontWeight = FontWeight.Bold, color = Color.White)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(time, fontSize = 22.sp, color = Cyan, fontWeight = FontWeight.SemiBold)
