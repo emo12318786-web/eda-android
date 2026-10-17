@@ -122,7 +122,7 @@ object Settings {
 
     var pilKritikUyariAktif: Boolean
         get() = getBool("pil_kritik_uyari_aktif", true)
-        set(v) = setBool("pil_kritik_uyari_aktif", v)
+        set(v) = setBool("pil_dusuk_uyari_aktif", v)
 
     // ═══ Son mod (PanelServer için kalıcı) ═══
     var sonMod: String
