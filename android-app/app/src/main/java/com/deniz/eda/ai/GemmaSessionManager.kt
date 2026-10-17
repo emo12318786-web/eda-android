@@ -5,81 +5,58 @@ import android.net.Uri
 import java.io.File
 
 /**
- * Owns the single native Gemma session used by EDA.
- *
- * The manager deliberately keeps at most one model loaded. Switching model
- * first releases the previous native context, then loads the selected GGUF.
- * It does not start Ollama, Termux, or a network provider as a fallback.
+ * Owns EDA's single native Gemma 3 1B session.
+ * Only one GGUF model is supported and kept loaded at a time.
+ * No Termux, Ollama, or network fallback is started by this manager.
  */
 class GemmaSessionManager(context: Context) {
     private val appContext = context.applicationContext
     private val store = GemmaModelStore(appContext)
     private val engine = NativeGemmaEngine()
 
-    enum class Task { LIGHT, DEEP }
-
     data class Status(
         val runtimeAvailable: Boolean,
-        val loadedSlot: GemmaModelStore.Slot?,
-        val lightModelReady: Boolean,
-        val deepModelReady: Boolean,
+        val loaded: Boolean,
+        val modelReady: Boolean,
         val detail: String
     )
 
     @Volatile
-    private var loadedSlot: GemmaModelStore.Slot? = null
+    private var loaded = false
 
-    /**
-     * Replacing a model currently in use must unload its native context first.
-     * Otherwise the runtime could keep a stale file mapping while the store
-     * reports that the newly imported model is active.
-     */
     @Synchronized
-    fun importModel(uri: Uri, slot: GemmaModelStore.Slot): GemmaModelStore.ModelInfo {
-        if (loadedSlot == slot) {
-            engine.unload()
-            loadedSlot = null
-        }
-        return store.importGguf(appContext, uri, slot)
+    fun importModel(uri: Uri): GemmaModelStore.ModelInfo {
+        engine.unload()
+        loaded = false
+        return store.importGguf(appContext, uri, GemmaModelStore.Slot.GEMMA31)
     }
 
     @Synchronized
     fun status(): Status {
         val runtime = engine.isRuntimeBundled()
+        val ready = store.info(GemmaModelStore.Slot.GEMMA31) != null
         return Status(
             runtimeAvailable = runtime,
-            loadedSlot = loadedSlot,
-            lightModelReady = store.info(GemmaModelStore.Slot.FAST) != null,
-            deepModelReady = store.info(GemmaModelStore.Slot.DEEP) != null,
+            loaded = loaded,
+            modelReady = ready,
             detail = when {
                 !runtime -> "Native inference library is not packaged"
-                loadedSlot != null -> "Model loaded: ${loadedSlot!!.name}"
-                else -> "Native runtime ready; no model loaded"
+                loaded -> "Gemma 3 1B loaded"
+                ready -> "Gemma 3 1B ready; not loaded"
+                else -> "Import a Gemma 3 1B GGUF model"
             }
         )
     }
 
-    /**
-     * Runs one request. Models are loaded on demand and only one stays loaded.
-     * The caller should invoke this from Dispatchers.IO, not the main thread.
-     */
+    /** Run inference on Dispatchers.IO; never keep a second model in memory. */
     @Synchronized
-    fun generate(task: Task, prompt: String, maxTokens: Int = 192): String? {
+    fun generate(prompt: String, maxTokens: Int = 160): String? {
         if (prompt.isBlank() || !engine.isRuntimeBundled()) return null
+        val model: File = store.info(GemmaModelStore.Slot.GEMMA31)?.file ?: return null
 
-        val requested = when (task) {
-            Task.LIGHT -> GemmaModelStore.Slot.FAST
-            Task.DEEP -> GemmaModelStore.Slot.DEEP
-        }
-        val model: File = store.info(requested)?.file ?: return null
-
-        if (loadedSlot != requested) {
-            if (loadedSlot != null) {
-                engine.unload()
-                loadedSlot = null
-            }
+        if (!loaded) {
             if (!engine.loadModel(model)) return null
-            loadedSlot = requested
+            loaded = true
         }
         return engine.generate(prompt, maxTokens)
     }
@@ -87,12 +64,12 @@ class GemmaSessionManager(context: Context) {
     @Synchronized
     fun unload() {
         engine.unload()
-        loadedSlot = null
+        loaded = false
     }
 
     @Synchronized
     fun close() {
         engine.close()
-        loadedSlot = null
+        loaded = false
     }
 }
