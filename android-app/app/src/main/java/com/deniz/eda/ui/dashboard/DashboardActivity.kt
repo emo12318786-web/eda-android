@@ -1,5 +1,7 @@
 package com.deniz.eda.ui.dashboard
 
+import com.deniz.eda.core.Settings
+
 import android.content.Intent
 import android.Manifest
 import android.content.pm.PackageManager
@@ -29,7 +31,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import com.deniz.eda.core.Settings
 import com.deniz.eda.service.EdaForegroundService
 
 private val VoidBlack = Color(0xFF080A12)
@@ -100,12 +101,13 @@ class DashboardActivity : ComponentActivity() {
 private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Unit, onShareLog: () -> Unit) {
     val state by viewModel.state.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
-    val active = Settings.sonMod == "AKTIF"
-    val sleeping = Settings.sonMod == "UYKU"
+    // Use observable dashboard state; Compose cannot observe mutable Settings directly.
+    val active = state.mod == "AKTIF"
+    val sleeping = state.mod == "UYKU"
 
     LaunchedEffect(Unit) {
         while (true) {
-            delay(30_000)
+            delay(3_000)
             viewModel.yenile()
         }
     }
@@ -199,7 +201,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 HeroMini("SİSTEM DURUMU", "Bağlantıları ve kayıtlarını buradan kontrol et.")
                 SectionHeader("YAPAY ZEKÂ BAĞLANTILARI", "Son bağlantı kontrolünün sonucu")
                 StatusLine("🌐 İnternet", if (state.internetStatus) "Bağlı" else "Bağlı değil", state.internetStatus)
-                StatusLine("🦙 Ollama · ${state.aiModel}", state.ollamaStatus, state.ollamaStatus.contains("açık", true) || state.ollamaStatus.contains("çalışıyor", true))
+                StatusLine("💎 Gemma Native", state.ollamaStatus, state.ollamaStatus.contains("hazır", true) && !state.ollamaStatus.contains("yok", true))
                 StatusLine("⚡ Groq", state.groqStatus, state.groqStatus.contains("bağlı", true) && !state.groqStatus.contains("yok", true))
                 StatusLine("🌸 Pollinations", state.pollinationsStatus, state.pollinationsStatus.contains("açık", true) || state.pollinationsStatus.contains("çalışıyor", true))
                 SectionHeader("KAYITLARIN", "Bu telefonda saklanan bilgiler")
@@ -302,7 +304,7 @@ private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
         Text("Öncelik zinciri", color = Muted, fontSize = 10.sp)
         Text(selected, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("Groq", "Pollinations", "Ollama").forEach { provider ->
+            listOf("Groq", "Pollinations", "Gemma 3 1B").forEach { provider ->
                 val action = when (provider) {
                     "Groq" -> "ACTION_AI_GROQ"
                     "Pollinations" -> "ACTION_AI_POLLINATIONS"

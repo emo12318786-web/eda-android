@@ -3,6 +3,7 @@ package com.deniz.eda.core
 import com.deniz.eda.utils.SystemTools
 import android.content.Context
 import com.deniz.eda.ai.AiRouter
+import com.deniz.eda.ai.GemmaSessionManager
 import com.deniz.eda.data.DiaryStore
 import com.deniz.eda.data.LearningStore
 import com.deniz.eda.data.MemoryStore
@@ -64,6 +65,38 @@ object CommandProcessor {
     private const val EV_LON = 46.232105
 
     private fun v(m: String, vararg k: String) = FuzzyMatcher.herhangiBiri(m, *k)
+
+    // Critical intents such as location must not use fuzzy single-word matching:
+    // Turkish "konuş" (talk) can be misheard as "konum" (location).
+    // Avoid triggering location when speech recognition confuses "konuş" with "konum".
+    private fun hasExplicitLocationQuestion(m: String): Boolean {
+        val normalized = m.lowercase(Locale.ROOT)
+            .replace(Regex("[^a-zçğıöşü\\s]"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        val conversational = listOf("konuş", "konus", "benimle konuş", "benimle konus",
+            "yorgun", "hissediyorum", "çalıştım", "calistim", "çalışmaktan",
+            "calismaktan", "benimle sohbet", "sohbet et")
+        if (conversational.any { normalized.contains(it) }) return false
+        val explicitQuestions = listOf("neredeyim", "nerdeyim", "konumum nerede",
+            "konumum neresi", "şu an neredeyim", "su an neredeyim",
+            "bulunduğum yer neresi", "bulundugum yer neresi",
+            "konumumu göster", "konumumu goster")
+        return explicitQuestions.any { phrase ->
+            Regex("(^|\\s)" + Regex.escape(phrase) + "($|\\s)").containsMatchIn(normalized)
+        }
+    }
+
+    private fun hasExactIntent(m: String, vararg phrases: String): Boolean {
+        val normalized = m.lowercase(Locale.ROOT)
+            .replace(Regex("[^a-zçğıöşü\\s]"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        return phrases.any { phrase ->
+            val p = phrase.lowercase(Locale.ROOT).trim()
+            Regex("(^|\\s)" + Regex.escape(p) + "($|\\s)").containsMatchIn(normalized)
+        }
+    }
 
     // Saat ve dakikayi sozcuklere cevir (TTS "14:30" okuyamadigi icin)
     private fun saatToKelime(saat: Int): String = when (saat) {
@@ -292,8 +325,8 @@ object CommandProcessor {
             }
         }
 
-        // ═══ 19 بخش محبت‌آمیز (بدون AI) ═══
-        AffectionResponses.bul(metin, hitap)?.let { return KomutSonucu.Cevap(it) }
+        // Conversation is handled by the configured AI provider. Do not intercept
+        // greetings, feelings, or ordinary sentences with canned affection templates.
 
         // ═══ Öğret Komutu ═══
         if (metin.startsWith("öğret ") || metin.startsWith("ogret ")) {
@@ -493,7 +526,7 @@ object CommandProcessor {
             }
 
             // Konum - aktif konum ister
-            v(metin, "konum", "neredeyim", "nerdeyim") -> {
+            hasExplicitLocationQuestion(metin) -> {
                 val metinCevap = LocationUtils.konumMetni(context, hitap)
                 KomutSonucu.Cevap(metinCevap)
             }
@@ -572,7 +605,7 @@ object CommandProcessor {
 
             v(metin, "kapat", "kapa", "kapt") -> KomutSonucu.KapatOnayIste
 
-            // Saat - sozcuklerle soyle
+            // Saat - onceki 12 saatlik soyleyis biçimi korunur
             v(metin, "saat", "sat", "sad") -> {
                 val simdi = Calendar.getInstance()
                 val saatInt = simdi.get(Calendar.HOUR_OF_DAY)
@@ -587,7 +620,9 @@ object CommandProcessor {
                 KomutSonucu.Cevap(cevap)
             }
 
-            v(metin, "tarih", "tarik", "bugün", "bugun", "hangi gün", "hangi gun", "bugün ne") -> {
+            (v(metin, "tarih", "tarik", "hangi gün", "hangi gun", "bugün ne", "bugun ne") ||
+                metin.trim().equals("bugün", ignoreCase = true) ||
+                metin.trim().equals("bugun", ignoreCase = true)) -> {
                 val (tarih, gunAdi) = JalaliCalendar.bugununSemsiTarihi()
                 KomutSonucu.Cevap("Bugün $tarih, $gunAdi $hitap.")
             }
@@ -697,20 +732,21 @@ object CommandProcessor {
                 KomutSonucu.Cevap("Bip sesi kapatıldı $hitap.")
             }
             
-            // ═══ Beyin (فقط Gemma 2.2 فعاله) ═══
-            // هر ترکیبی از "beyin 2" یا "güçlü beyin" → gemma2:2b
-            (v(metin, "beyin 2", "beyin2", "güçlü beyin", "guclu beyin", "büyük beyin", "buyuk beyin", "gemma 2", "gemma2", "beyin")) -> {
-                Settings.gemmaModel = "gemma2:2b"
-                android.util.Log.d("CommandProcessor", "gemmaModel → gemma2:2b (Beyin)")
-                KomutSonucu.Cevap("Beyin 2 aktif $hitap. Güçlü ve derin.")
+            // ═══ Gemma Mode: use the local Gemma 3 1B model exclusively ═══
+            v(metin, "gemma mode aç", "gemma modu aç", "gemma modunu aç", "gemma moda geç",
+                "gemma mode aktif", "gemma modu aktif", "yerel gemma modu aç") -> {
+                Settings.gemmaMode = true
+                KomutSonucu.Cevap("Gemma Mode açıldı $hitap. Sohbetler yerel Gemma 3 1B ile çalışacak.")
             }
-            // Beyin 1 → صرفاً پیام، settings عوض نمی‌شه
-            (v(metin, "beyin 1", "beyin1", "hızlı beyin", "hizli beyin", "küçük beyin", "kucuk beyin", "base beyin", "gemma 3")) -> {
-                KomutSonucu.Cevap("Beyin 1 (Gemma 3.1) devre dışı $hitap. Sadece Beyin 2 (Gemma 2.2) kullanılıyor.")
+            v(metin, "gemma mode kapat", "gemma modu kapat", "gemma modunu kapat",
+                "gemma modundan çık", "gemma mode kapalı", "yerel gemma modu kapat") -> {
+                Settings.gemmaMode = false
+                KomutSonucu.Cevap("Gemma Mode kapatıldı $hitap. Normal AI sağlayıcılarına döndüm.")
             }
-            // ═══ Beyin değiştir (سوال) ═══
-            v(metin, "beyin değiştir", "beyin degistir", "hangi beyin", "beyin seç") -> {
-                KomutSonucu.Cevap("Şu an Beyin 2 (Gemma 2.2) aktif $hitap.")
+            v(metin, "gemma mode durumu", "gemma modu durumu", "gemma mode açık mı",
+                "gemma modu açık mı", "hangi gemma modu") -> {
+                KomutSonucu.Cevap(if (Settings.gemmaMode) "Gemma Mode açık; yerel Gemma 3 1B kullanılacak."
+                    else "Gemma Mode kapalı; normal AI sağlayıcıları kullanılacak.")
             }
             
             // ═══ 10. Sistem test ═══
@@ -840,9 +876,66 @@ object CommandProcessor {
             }
 
 else -> {
-                val aiCevap = AiRouter.sor(metinHam, context = context)
-                if (aiCevap != null) KomutSonucu.Cevap(aiCevap)
-                else KomutSonucu.Cevap("Şu an cevap veremiyorum $hitap, ama dinliyorum.")
+                // Basit sosyal ifadeler ağ sağlayıcısına bağlı kalmasın.
+                // Böylece bağlantı kesilince selamlaşma ve destek isteği de çalışır.
+                val sosyal = java.text.Normalizer.normalize(metin.lowercase(Locale.ROOT), java.text.Normalizer.Form.NFD)
+                    .replace(Regex("\\p{M}+"), "")
+                    .replace('ı', 'i')
+                    .replace(Regex("[^a-z\\s]"), " ")
+                    .replace(Regex("\\s+"), " ")
+                    .trim()
+                when {
+                    sosyal in setOf("merhaba", "selam", "eda merhaba", "hey eda", "gunaydin") ->
+                        KomutSonucu.Cevap("Merhaba $hitap, buradayım. Nasılsın?")
+                    sosyal in setOf("iyi misin", "nasilsin", "ne haber", "iyi misin eda") ->
+                        KomutSonucu.Cevap("İyiyim $hitap, buradayım. Sen nasılsın?")
+                    sosyal.contains("geri dondum") ->
+                        KomutSonucu.Cevap("Hoş geldin $hitap, seni dinliyorum.")
+                    listOf("dizim agri", "dizim cok agri", "agriyor", "agrim var", "basim agri",
+                        "belim agri", "ayagim agri", "kolum agri", "sancim var", "aci cekiyorum")
+                        .any { sosyal.contains(it) } ->
+                        KomutSonucu.Cevap("Geçmiş olsun $hitap. Ağrın şiddetliyse, dizinde belirgin şişlik varsa veya yürümekte zorlanıyorsan tıbbi yardım al. Ne zamandır ağrıyor?")
+                    listOf("kafam cok bozulmus", "kafam bozuk", "moralim bozuk", "canim sikkin",
+                        "halim cok iyi degil", "halim iyi degil", "iyi degilim",
+                        "kendimi kotu hissediyorum", "keyfim yok", "uzgunum", "moralim yok")
+                        .any { sosyal.contains(it) } ->
+                        KomutSonucu.Cevap("Buradayım $hitap, seni dinliyorum. İstersen anlat; bugün seni en çok ne zorladı?")
+                    listOf("yoruldum", "yorgunum", "yorgun", "cok calistim", "bitkinim", "tukendim")
+                        .any { sosyal.contains(it) } ->
+                        KomutSonucu.Cevap("Bugün epey yorulmuşsun $hitap. Biraz soluklanalım; istersen anlat, seni dinliyorum. En çok ne yordu?")
+                    else -> {
+                        if (Settings.gemmaMode) {
+                            // Gemma Mode is intentionally offline-first and does not call online providers.
+                            val gemmaCevap = try {
+                                val gsm = GemmaSessionManager(context)
+                                val status = gsm.status()
+                                if (status.runtimeAvailable && status.modelReady) gsm.generate(metinHam) else null
+                            } catch (e: Exception) {
+                                android.util.Log.e("CommandProcessor", "Gemma Mode hata: ${e.message}")
+                                null
+                            }
+                            if (gemmaCevap != null) KomutSonucu.Cevap(gemmaCevap)
+                            else KomutSonucu.Cevap("Gemma Mode açık $hitap, ancak Gemma 3 1B modeli hazır değil. Ayarlardan GGUF modelini içe aktar.")
+                        } else {
+                            // Normal mode: online provider first, local Gemma as offline fallback.
+                            val aiCevap = AiRouter.sor(metinHam, context = context)
+                            if (aiCevap != null) {
+                                KomutSonucu.Cevap(aiCevap)
+                            } else {
+                                val gemmaCevap = try {
+                                    val gsm = GemmaSessionManager(context)
+                                    val status = gsm.status()
+                                    if (status.runtimeAvailable && status.modelReady) gsm.generate(metinHam) else null
+                                } catch (e: Exception) {
+                                    android.util.Log.e("CommandProcessor", "Gemma hata: ${e.message}")
+                                    null
+                                }
+                                if (gemmaCevap != null) KomutSonucu.Cevap(gemmaCevap)
+                                else KomutSonucu.Cevap("Şu an cevap veremiyorum $hitap, ama dinliyorum.")
+                            }
+                        }
+                    }
+                }
             }
         }
     }

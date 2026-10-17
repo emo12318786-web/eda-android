@@ -12,8 +12,10 @@ import android.content.SharedPreferences
  * ile ayni sadelikte.
  */
 object Settings {
-    /** Aktif AI saglayici: "groq", "pollinations", "ollama" */
-    var aiProvider: String = "pollinations"
+    /** Aktif AI sağlayıcısı; tüm ekranlar ve servisler aynı kalıcı ayarı kullanır. */
+    var aiProvider: String
+        get() = getString("ai_provider", "ollama")
+        set(value) = setString("ai_provider", value.lowercase())
 
 
     private const val PREFS_NAME = "eda_settings"
@@ -46,8 +48,8 @@ object Settings {
         set(v) = setString("kullanici_adi", v)
 
     var aiSaglayici: String
-        get() = getString("ai_provider", "groq")
-        set(v) = setString("ai_provider", v)
+        get() = aiProvider
+        set(v) { aiProvider = v }
 
     var groqApiKey: String
         get() = getString("groq_api_key", "")
@@ -128,8 +130,13 @@ object Settings {
         set(v) = setString("son_mod", v)
 
     var gemmaModel: String
-        get() = getString("gemma_model", "gemma2:2b")
+        get() = getString("gemma_model", "gemma3:1b")
         set(v) = setString("gemma_model", v)
+
+    /** Gemma Mode: route free conversation directly to the local Gemma 3 1B model. */
+    var gemmaMode: Boolean
+        get() = getBool("gemma_mode", false)
+        set(v) = setBool("gemma_mode", v)
 
     var pilBildirimAktif: Boolean
         get() = getBool("pil_bildirim_aktif", true)

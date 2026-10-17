@@ -388,6 +388,14 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 }
                 startActivity(i)
                 android.util.Log.i("EdaService", "SttActivity baslatildi (fallback)")
+                serviceScope.launch {
+                    delay(20000L)
+                    if (dinlemeAktif) {
+                        android.util.Log.w("EdaService", "SttActivity timeout; dinleme kilidini ac")
+                        dinlemeAktif = false
+                        yenidenDenemeyiPlanla()
+                    }
+                }
             } catch (e: Exception) {
                 dinlemeAktif = false
                 yenidenDenemeyiPlanla()
@@ -404,6 +412,11 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         }
         
         dinlemeAktif = true
+        if (mod == Mod.AKTIF) {
+            // Bildirim durumunu gerçek dinleme döngüsüyle eşleştir; eski
+            // "mikrofon kapalı" metni aktif dinlemeye geçince kalmasın.
+            bildirimGuncelle("🎙️ Aktif — Mikrofon dinliyor")
+        }
         val uykuModu = mod == Mod.UYKU
         val offlineDenensin = uykuModu && !offlineDestekYok
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -424,8 +437,23 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1500L)
         }
         try {
+            // Her seferinde temiz bir recognizer kullan - Android'in
+            // SpeechRecognizer'i birkac hatadan sonra kilitlenebiliyor.
+            try { speechRecognizer?.cancel() } catch (_: Exception) {}
+            try { speechRecognizer?.destroy() } catch (_: Exception) {}
+            speechRecognizer = null
+            speechRecognizer = createBestRecognizer()?.apply {
+                setRecognitionListener(recognitionListener)
+            }
+            if (speechRecognizer == null) {
+                android.util.Log.e("EdaService", "createBestRecognizer null dondurdu, dinleme kilidi aciliyor")
+                dinlemeAktif = false
+                yenidenDenemeyiPlanla()
+                return
+            }
             speechRecognizer?.startListening(intent)
         } catch (e: Exception) {
+            android.util.Log.e("EdaService", "startListening hata: ${e.message}")
             dinlemeAktif = false
             yenidenDenemeyiPlanla()
         }
@@ -573,17 +601,40 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         // cekiyor) - bu yuzden coroutine icinde cagiriyoruz, dinleme donguyu
         // bloklamiyor.
         val baslangicZaman = System.currentTimeMillis()
+        android.util.Log.i("EdaService", "metniIsle başladı; karakter sayısı=" + (metin?.length ?: 0))
         serviceScope.launch {
-            val sonuc = CommandProcessor.isle(this@EdaForegroundService, metin)
+            android.util.Log.i("EdaService", "CommandProcessor çağrılıyor")
+            val sonuc = try {
+                // Ses döngüsünü tek bir takılan AI/komut isteğinin sonsuza dek
+                // kilitlemesini önle. Uyku ve dinleme zamanlamasına dokunmaz.
+                withContext(Dispatchers.IO) {
+                    withTimeout(60_000L) {
+                        CommandProcessor.isle(this@EdaForegroundService, metin)
+                    }
+                }.also {
+                    android.util.Log.i("EdaService", "CommandProcessor tamamlandı: " + (System.currentTimeMillis() - baslangicZaman) + "ms")
+                }
+            } catch (e: TimeoutCancellationException) {
+                android.util.Log.e("EdaService", "Command processing timed out after 25s; voice loop will continue", e)
+                KomutSonucu.Cevap("Yanıt biraz gecikti ${Settings.kullaniciAdi}. Tekrar deneyelim.")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("EdaService", "Command processing failed; keep voice loop alive", e)
+                KomutSonucu.Cevap("Bir an sorun yaşadım ${Settings.kullaniciAdi}. Tekrar söyler misin?")
+            }
 
             // ═══ ثبت لاگ در فایل (بدون Room DB) ═══
             try {
                 val cevapMetni = (sonuc as? KomutSonucu.Cevap)?.metin ?: ""
+                val kaynakAdi = if (com.deniz.eda.ai.AiRouter.lastProvider.isNotBlank())
+                    com.deniz.eda.ai.AiRouter.lastProvider
+                else "komut"
                 com.deniz.eda.utils.EdaLog.ekle(
                     context = this@EdaForegroundService,
                     kullanici = metin,
                     eda = cevapMetni,
-                    kaynak = "komut",
+                    kaynak = kaynakAdi,
                     sleep = false
                 )
                 android.util.Log.d("EdaSvc", "log kaydedildi: $metin")
@@ -592,6 +643,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             }
 
             // ═══ پردازش نتیجه ═══
+            android.util.Log.i("EdaService", "Sonuç işleniyor; yanıt süresi=" + (System.currentTimeMillis() - baslangicZaman) + "ms")
             when (sonuc) {
                 is KomutSonucu.Cevap -> konus(sonuc.metin) { baslatDinleme() }
                 KomutSonucu.UykuyaDon -> {
@@ -669,19 +721,44 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private fun konus(metin: String, tamamlaninca: (() -> Unit)? = null) {
         val id = "eda_${System.currentTimeMillis()}"
         val temizMetin = ttsTemizle(metin)
+        // TTS callbacks and the watchdog can race; an atomic guard ensures the
+        // listener is restarted exactly once even when callbacks arrive late.
+        val completionUsed = java.util.concurrent.atomic.AtomicBoolean(false)
+        fun finishOnce(source: String) {
+            if (!completionUsed.compareAndSet(false, true)) return
+            android.util.Log.i("EDA-TTS", "utterance completion source=$source id=$id")
+            tamamlaninca?.invoke()
+        }
         tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) {}
             override fun onDone(utteranceId: String?) {
-                if (utteranceId == id) serviceScope.launch(Dispatchers.Main) { tamamlaninca?.invoke() }
+                if (utteranceId == id) serviceScope.launch(Dispatchers.Main) { finishOnce("onDone") }
             }
             @Deprecated("Deprecated in Java")
             override fun onError(utteranceId: String?) {
-                if (utteranceId == id) serviceScope.launch(Dispatchers.Main) { tamamlaninca?.invoke() }
+                if (utteranceId == id) serviceScope.launch(Dispatchers.Main) { finishOnce("onError") }
+            }
+            override fun onStop(utteranceId: String?, interrupted: Boolean) {
+                if (utteranceId == id) serviceScope.launch(Dispatchers.Main) { finishOnce("onStop") }
             }
         })
         val params = Bundle()
         android.util.Log.i("EDA-TTS", "TTS metin: $temizMetin")
-        tts.speak(temizMetin, TextToSpeech.QUEUE_FLUSH, params, id)
+        val speakResult = tts.speak(temizMetin, TextToSpeech.QUEUE_FLUSH, params, id)
+        if (speakResult == TextToSpeech.ERROR) {
+            android.util.Log.e("EDA-TTS", "TTS speak() failed; restarting listener")
+            serviceScope.launch(Dispatchers.Main) { finishOnce("speak-error") }
+        } else if (tamamlaninca != null) {
+            // Some TTS engines never send onDone/onError. Recover the voice loop
+            // if this utterance is still outstanding; do not alter sleep timing.
+            serviceScope.launch {
+                delay(30_000L)
+                if (!completionUsed.get()) {
+                    android.util.Log.e("EDA-TTS", "TTS callback timeout; recovering listener")
+                    finishOnce("watchdog")
+                }
+            }
+        }
     }
 
     override fun onDestroy() {

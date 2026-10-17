@@ -22,7 +22,7 @@ import com.deniz.eda.utils.DigitUtils
 class PanelServer(
     private val context: Context,
     port: Int = 8080
-) : NanoHTTPD(port) {
+) : NanoHTTPD("127.0.0.1", port) {
 
     companion object {
         private const val TAG = "PanelServer"
@@ -66,6 +66,36 @@ class PanelServer(
                else com.deniz.eda.service.EdaForegroundService.sonMod
     }
     
+    /**
+     * Reports EDA's in-process native Gemma runtime and private GGUF files.
+     * File presence is deliberately separate from runtime availability.
+     */
+    private fun gemmaRuntimeStatus(): JSONObject {
+        val live = com.deniz.eda.ai.AiRouter.nativeGemmaStatus(context)
+        val runtimeAvailable = live?.runtimeAvailable
+            ?: com.deniz.eda.ai.NativeGemmaEngine().isRuntimeBundled()
+        val modelsDir = java.io.File(context.filesDir, "models")
+        fun modelStatus(fileName: String, ready: Boolean?): JSONObject {
+            val file = java.io.File(modelsDir, fileName)
+            val present = ready ?: (file.isFile && file.length() > 1024L * 1024L)
+            return JSONObject().apply {
+                put("present", present)
+                put("sizeBytes", if (file.isFile) file.length() else 0L)
+                put("state", if (present) "file-present" else "file-missing")
+            }
+        }
+        val loaded = if (live?.loaded == true) "gemma3-1b.gguf" else null
+        return JSONObject().apply {
+            put("runtimeAvailable", runtimeAvailable)
+            put("runtimeState", if (runtimeAvailable) "available" else "unavailable")
+            put("runtimeMessage", live?.detail ?: if (runtimeAvailable) "EDA native runtime available; inference session not created" else "EDA native runtime library missing")
+            put("gemma3_1b", modelStatus("gemma3-1b.gguf", live?.modelReady))
+            put("loadedModel", loaded ?: JSONObject.NULL)
+            put("loadedStateKnown", live != null)
+            put("sessionDetail", live?.detail ?: "No active inference session yet")
+        }
+    }
+
     private fun serveStatus(): Response {
         return try {
             val pil = BatteryUtils.pilBilgisiAl(context)
@@ -93,7 +123,8 @@ class PanelServer(
                     put("log", logSayi)
                     put("hatirlatma", hatirlatmaSayi)
                 })
-                put("ai", Settings.aiSaglayici)
+                put("ai", Settings.aiSaglayici.ifBlank { Settings.aiProvider })
+                put("gemmaRuntime", gemmaRuntimeStatus())
                 put("gemma", Settings.gemmaModel ?: "gemma2:2b")
                 put("saat", DigitUtils.formatTime("HH:mm"))
                 put("tarih", SimpleDateFormat("dd MMM yyyy", Locale("tr", "TR")).format(Date()))
@@ -134,6 +165,7 @@ class PanelServer(
 
     private fun serveAction(uri: String): Response {
         val action = uri.removePrefix("/api/")
+        var success = true
         val sonuc = when {
             action == "wake" -> {
                 val intent = android.content.Intent(context, com.deniz.eda.service.EdaForegroundService::class.java).apply {
@@ -149,7 +181,7 @@ class PanelServer(
                             context.startForegroundService(intent)
                         }
                     }
-                } catch (e: Exception) { Log.e(TAG, "wake: ${e.message}") }
+                } catch (e: Exception) { success = false; Log.e(TAG, "wake failed", e) }
                 "EDA aktif"
             }
             action == "sleep" -> {
@@ -164,7 +196,7 @@ class PanelServer(
                             context.startForegroundService(intent)
                         }
                     }
-                } catch (e: Exception) { Log.e(TAG, "sleep: ${e.message}") }
+                } catch (e: Exception) { success = false; Log.e(TAG, "sleep failed", e) }
                 "EDA uyku moduna alındı"
             }
             action == "stop" -> {
@@ -179,7 +211,7 @@ class PanelServer(
                             context.startForegroundService(intent)
                         }
                     }
-                } catch (e: Exception) { Log.e(TAG, "stop: ${e.message}") }
+                } catch (e: Exception) { success = false; Log.e(TAG, "stop failed", e) }
                 "EDA durduruldu"
             }
             action.startsWith("gemma-") -> {
@@ -204,14 +236,15 @@ class PanelServer(
                 Settings.arabaModuAktif = deger
                 "Araba modu: ${if (deger) "AKTIF" else "PASIF"}"
             }
-            else -> "Bilinmeyen: $action"
+            else -> { success = false; "Bilinmeyen: $action" }
         }
 
         val json = JSONObject().apply {
-            put("ok", true)
+            put("ok", success)
             put("mesaj", sonuc)
         }
 
-        return newFixedLengthResponse(Response.Status.OK, "application/json; charset=utf-8", json.toString())
+        val status = if (success) Response.Status.OK else Response.Status.INTERNAL_ERROR
+        return newFixedLengthResponse(status, "application/json; charset=utf-8", json.toString())
     }
 }
