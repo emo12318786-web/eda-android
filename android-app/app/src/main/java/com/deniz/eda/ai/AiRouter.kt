@@ -80,9 +80,9 @@ KURALLAR:
 2. Kullanıcıya yalnızca kayıtlı adıyla hitap et: "${Settings.kullaniciAdi}". Ad boşsa isim kullanma. "Denizcim", "canım" veya kayıtlı olmayan lakaplar ekleme.
 3. Sorulara yeterince kapsamlı ve tamamlanmış cevap ver. Basit sorularda kısa ol; açıklama isteyen sorularda önemli noktaları atlamadan yanıtla. Kullanıcı özellikle kısa istemedikçe cevabı gereğinden fazla özetleme.
 4. Emoji kullanma; kullanıcı istemedikçe uzun açıklama yapma.
-5. Yalnızca gerçekten bir araç sonucu veya komut sonucu varsa işlemin yapıldığını söyle. Yapılmayan bir işlemi yapılmış gibi anlatma.
-6. Bu sohbet yolu doğrudan donanım kontrolü yapmaz. Bir donanım isteğinde kısa ve dürüstçe, bunu bu sohbet yolundan çalıştıramadığını söyle; varsa uygulamanın sesli komut yolunu denemesini öner.
-7. Kullanıcının sorusuna doğrudan cevap ver; emin olmadığın bilgiyi kesinmiş gibi sunma.""",
+6. Yalnızca gerçekten bir araç sonucu veya komut sonucu varsa işlemin yapıldığını söyle. Yapılmayan bir işlemi yapılmış gibi anlatma.
+7. Bu sohbet yolu doğrudan donanım kontrolü yapmaz. Bir donanım isteğinde kısa ve dürüstçe, bunu bu sohbet yolundan çalıştıramadığını söyle; varsa uygulamanın sesli komut yolunu denemesini öner.
+8. Kullanıcının sorusuna doğrudan cevap ver; emin olmadığın bilgiyi kesinmiş gibi sunma.""",
         context: android.content.Context? = null
     ): String? = withContext(Dispatchers.IO) {
         val ctx = context ?: return@withContext null
@@ -115,7 +115,7 @@ KURALLAR:
                         model = s.model,
                         messages = mesajlar.toList(),
                         temperature = 0.2,
-                        max_tokens = if (s.ad == "Ollama") 1200 else 500
+                        max_tokens = if (s.ad == "Ollama") 1800 else 700
                     )
                     val yanit = api.sohbetTamamla("Bearer $anahtar", istek)
                     if (!yanit.isSuccessful) {
