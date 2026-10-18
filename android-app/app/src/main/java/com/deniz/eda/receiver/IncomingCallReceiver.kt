@@ -10,10 +10,13 @@ import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.deniz.eda.service.EdaForegroundService
+import com.deniz.eda.core.Settings
 
 /** Gelen aramayı bir kez duyurur; arama bitince tekrar duyuruya hazır olur. */
 class IncomingCallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        Settings.init(context)
+        if (!Settings.incomingCallAnnouncementEnabled) return
         if (intent.action != TelephonyManager.ACTION_PHONE_STATE_CHANGED) return
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
             Log.w("EDA-CALL", "READ_PHONE_STATE izni yok")
@@ -47,9 +50,9 @@ class IncomingCallReceiver : BroadcastReceiver() {
                 val caller = contactName?.takeIf { it.isNotBlank() }
                     ?: number.takeIf { it.isNotBlank() }
                 val text = if (caller == null) {
-                    "Telefonunuz çalıyor. Aramayı cevaplamak mı, reddetmek mi istersiniz?"
+                    "Gelen bir telefon araması var."
                 } else {
-                    "$caller arıyor. Aramayı cevaplamak mı, reddetmek mi istersiniz?"
+                    "Gelen arama: $caller."
                 }
                 val serviceIntent = Intent(context, EdaForegroundService::class.java).apply {
                     action = "ACTION_SPEAK"
