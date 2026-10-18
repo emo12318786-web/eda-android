@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Switch
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
@@ -54,6 +55,19 @@ class SettingsActivity : AppCompatActivity() {
             gemmaModelPicker.launch(arrayOf("application/octet-stream", "*/*"))
         }
         refreshGemmaStatus()
+
+        findViewById<Switch>(R.id.smsAnnouncementSwitch).apply {
+            isChecked = Settings.smsAnnouncementEnabled
+            setOnCheckedChangeListener { _, checked -> Settings.smsAnnouncementEnabled = checked }
+        }
+        findViewById<Switch>(R.id.smsTranslationSwitch).apply {
+            isChecked = Settings.smsTranslationEnabled
+            setOnCheckedChangeListener { _, checked -> Settings.smsTranslationEnabled = checked }
+        }
+        findViewById<Switch>(R.id.incomingCallSwitch).apply {
+            isChecked = Settings.incomingCallAnnouncementEnabled
+            setOnCheckedChangeListener { _, checked -> Settings.incomingCallAnnouncementEnabled = checked }
+        }
 
         // ═══ Header ═══
         findViewById<TextView>(R.id.geriButon).setOnClickListener { finish() }
