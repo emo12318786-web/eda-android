@@ -46,8 +46,8 @@ class IncomingSmsReceiver : BroadcastReceiver() {
         }
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val translated = withTimeoutOrNull(13_000L) {
-                    SmsTranslator.translateToTurkish(body)
+                val translated = withTimeoutOrNull(75_000L) {
+                    SmsTranslator.translateToTurkish(appContext, body)
                 }?.trim()?.takeIf { it.isNotBlank() && it.length < 5000 }
                 val text = if (translated == null) {
                     "Mesaj geldi, ancak çeviri yapılamadı. Lütfen telefonunu kontrol et."
