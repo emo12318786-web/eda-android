@@ -113,6 +113,7 @@ KURALLAR:
                 )
                 var sonCevap: String? = null
                 var aracAdimi = 0
+                var kaliteTekrariYapildi = false
                 while (aracAdimi <= 3) {
                     val istek = ChatCompletionRequest(
                         model = s.model,
@@ -136,7 +137,18 @@ KURALLAR:
                     android.util.Log.d("AiRouter", "AI_RESPONSE_CHUNK provider=${s.ad} model=${s.model} agentStep=$aracAdimi chars=${cevap.length}")
                     val match = Regex("<TOOL>\\s*([A-Z_]+)(?:\\s*[:|]\\s*(.*?))?\\s*</TOOL>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)).find(cevap)
                     if (match == null || context == null || aracAdimi >= 3) {
-                        sonCevap = cevap.replace(Regex("<TOOL>.*?</TOOL>", RegexOption.DOT_MATCHES_ALL), "").trim()
+                        val temizCevap = cevap.replace(Regex("<TOOL>.*?</TOOL>", RegexOption.DOT_MATCHES_ALL), "").trim()
+                        val bosLaf = listOf(
+                            "bu sonuç doğru", "bu sonucu doğrular", "daha fazla bilgiye ihtiyacım var",
+                            "hangi konuda bilgilendirilmek", "daha fazla bilgi vermeniz"
+                        ).any { temizCevap.contains(it, ignoreCase = true) }
+                        if (bosLaf && !kaliteTekrariYapildi) {
+                            kaliteTekrariYapildi = true
+                            mesajlar.add(ChatMessage("assistant", cevap))
+                            mesajlar.add(ChatMessage("user", "Önceki yanıt soruyu cevaplamadı. Baştan yanıtla: Sorunun istediği kişi, olay, neden veya sonucu ilk cümlede açıkça belirt. Konuyla ilgisiz onay cümlesi yazma. Doğal İstanbul Türkçesi kullan, somut ve doğru bilgileri açıkla; bilmediğin bilgiyi uydurma. Markdown yıldızları kullanma."))
+                            continue
+                        }
+                        sonCevap = temizCevap
                         break
                     }
                     val toolName = match.groupValues[1].uppercase(Locale.ROOT)
