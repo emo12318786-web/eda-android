@@ -140,12 +140,14 @@ KURALLAR:
                         val temizCevap = cevap.replace(Regex("<TOOL>.*?</TOOL>", RegexOption.DOT_MATCHES_ALL), "").trim()
                         val bosLaf = listOf(
                             "bu sonuç doğru", "bu sonucu doğrular", "daha fazla bilgiye ihtiyacım var",
-                            "hangi konuda bilgilendirilmek", "daha fazla bilgi vermeniz"
+                            "hangi konuda bilgilendirilmek", "daha fazla bilgi vermeniz",
+                            "akıllı telefonların temel yapısı", "ollama tarafından geliştirilen",
+                            "gemma2:2b modeline dayanıyor", "gemma 2:2b modeline dayanıyor"
                         ).any { temizCevap.contains(it, ignoreCase = true) }
                         if (bosLaf && !kaliteTekrariYapildi) {
                             kaliteTekrariYapildi = true
                             mesajlar.add(ChatMessage("assistant", cevap))
-                            mesajlar.add(ChatMessage("user", "Önceki yanıt soruyu cevaplamadı. Baştan yanıtla: Sorunun istediği kişi, olay, neden veya sonucu ilk cümlede açıkça belirt. Konuyla ilgisiz onay cümlesi yazma. Doğal İstanbul Türkçesi kullan, somut ve doğru bilgileri açıkla; bilmediğin bilgiyi uydurma. Markdown yıldızları kullanma."))
+                            mesajlar.add(ChatMessage("user", "Önceki yanıt soruyu cevaplamadı veya konuyla ilgisiz bilgi verdi. Önceki yanıtı savunma ve onu tekrar etme. Yalnızca kullanıcının son sorusunu yanıtla. Soruda kim soruluyorsa kişiyi, ne soruluyorsa doğrudan cevabı ilk cümlede söyle; sonra konuyla ilgili açıklama ekle. Modelin veya Ollama'nın adını sorulmadıkça başka konularla ilişkilendirme. Doğal İstanbul Türkçesi kullan, somut ve doğru bilgileri açıkla; bilmediğin bilgiyi uydurma. Markdown yıldızları kullanma."))
                             continue
                         }
                         sonCevap = temizCevap
