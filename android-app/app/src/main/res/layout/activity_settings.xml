@@ -116,6 +116,49 @@
                 android:backgroundTint="@color/purple_start" />
         </LinearLayout>
 
+        <!-- CARD: Telefon duyuruları -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_settings"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📱  TELEFON DUYURULARI"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/purple_end"
+                android:layout_marginBottom="12dp" />
+
+            <Switch
+                android:id="@+id/smsAnnouncementSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Yeni mesaj geldi duyurusu"
+                android:textColor="@color/text_primary"
+                android:paddingVertical="8dp" />
+
+            <Switch
+                android:id="@+id/smsTranslationSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Mesajı Türkçeye çevirip sesli oku"
+                android:textColor="@color/text_primary"
+                android:paddingVertical="8dp" />
+
+            <Switch
+                android:id="@+id/incomingCallSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Gelen aramayı sesli duyur"
+                android:textColor="@color/text_primary"
+                android:paddingVertical="8dp" />
+        </LinearLayout>
+
         <!-- CARD: Offline Gemma models -->
         <LinearLayout
             android:layout_width="match_parent"
