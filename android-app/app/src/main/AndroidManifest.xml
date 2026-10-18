@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <queries>
+        <package android:name="com.termux" />
         <package android:name="com.android.chrome" />
         <package android:name="com.google.android.youtube" />
         <package android:name="com.google.android.apps.maps" />
@@ -20,6 +21,7 @@
 
     <!-- Ses dinleme (uyanma kelimesi + komutlar) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
     <!-- AI saglayicilarina (Groq/DeepSeek/OpenRouter) ve hava/dolar/altin icin -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -96,6 +98,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <receiver android:name=".ai.TermuxDeepChatReceiver" android:exported="false" />
 
         <!-- Control Panel — WebView + NanoHTTPD -->
         <activity
