@@ -240,7 +240,11 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") { }
             }
             
-            "ACTION_STOP_SPEAK" -> {\n                if (::tts.isInitialized) tts.stop()\n            }\n\n            "ACTION_SPEAK" -> {
+            "ACTION_STOP_SPEAK" -> {
+                if (::tts.isInitialized) tts.stop()
+            }
+
+            "ACTION_SPEAK" -> {
                 // 🔊 از HealthMonitor بیاد — TTS خودکار
                 val text = intent.getStringExtra("text") ?: ""
                 if (text.isNotBlank()) {
