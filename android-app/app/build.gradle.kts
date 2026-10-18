@@ -98,6 +98,10 @@ dependencies {
 
 
 
+    // Google ML Kit: on-device language identification + offline-capable translation
+    implementation("com.google.mlkit:translate:17.0.3")
+    implementation("com.google.mlkit:language-id:17.0.6")
+
     // ═══ Health Connect ═══
     implementation("androidx.health.connect:connect-client:1.1.0-alpha10")
 }
