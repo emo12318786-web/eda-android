@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -263,23 +265,47 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
     }
 
     if (deepChatOpen) {
-        AlertDialog(
-            onDismissRequest = { if (!deepChatBusy) deepChatOpen = false },
-            title = { Text("Eda · Derin sohbet") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(deepChatReply, color = Color.White)
+        Dialog(onDismissRequest = { if (!deepChatBusy) deepChatOpen = false }) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().fillMaxHeight(0.88f),
+                shape = RoundedCornerShape(28.dp),
+                color = Panel,
+                border = BorderStroke(1.dp, Violet.copy(alpha = 0.35f))
+            ) {
+                Column(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("EDA · DERİN SOHBET", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                            Text("Gemma 2:2B · Yerel yapay zekâ", color = Muted, fontSize = 11.sp)
+                        }
+                        Text("✕", color = Muted, modifier = Modifier.clickable { if (!deepChatBusy) deepChatOpen = false }.padding(8.dp))
+                    }
+                    HorizontalDivider(color = Violet.copy(alpha = 0.22f))
+                    Column(Modifier.weight(1f).fillMaxWidth().background(PanelRaised, RoundedCornerShape(18.dp))
+                        .verticalScroll(rememberScrollState()).padding(15.dp)) {
+                        Text(deepChatReply, color = Color.White, fontSize = 15.sp, lineHeight = 23.sp)
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = {
+                            val stop = Intent(context, EdaForegroundService::class.java).setAction("ACTION_STOP_SPEAK")
+                            runCatching { context.startService(stop) }
+                        }, modifier = Modifier.weight(1f)) { Text("■ Durdur", fontSize = 12.sp) }
+                        OutlinedButton(onClick = {
+                            if (deepChatReply.isNotBlank() && deepChatReply != "Düşünüyorum…") {
+                                val speak = Intent(context, EdaForegroundService::class.java).apply {
+                                    action = "ACTION_SPEAK"; putExtra("text", deepChatReply)
+                                }
+                                runCatching { context.startService(speak) }
+                            }
+                        }, modifier = Modifier.weight(1f)) { Text("↻ Tekrar dinle", fontSize = 12.sp) }
+                    }
                     OutlinedTextField(
-                        value = deepChatInput,
-                        onValueChange = { deepChatInput = it },
-                        label = { Text("Mesajın") },
-                        placeholder = { Text("Eda'ya ne sormak istiyorsun?") },
-                        enabled = !deepChatBusy,
-                        modifier = Modifier.fillMaxWidth()
+                        value = deepChatInput, onValueChange = { deepChatInput = it },
+                        label = { Text("Mesajın") }, placeholder = { Text("Eda'ya ne sormak istiyorsun?") },
+                        enabled = !deepChatBusy, modifier = Modifier.fillMaxWidth(), maxLines = 3
                     )
-                    OutlinedButton(
-                        enabled = !deepChatBusy,
-                        onClick = {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedButton(enabled = !deepChatBusy, onClick = {
                             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, "tr-TR")
@@ -289,49 +315,23 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                             }
                             runCatching { voiceInput.launch(intent) }
                                 .onFailure { android.widget.Toast.makeText(context, "Ses tanıma açılamadı.", android.widget.Toast.LENGTH_SHORT).show() }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("🎙️ Sesle konuş") }
-                    if (deepChatBusy) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Gemma yanıt hazırlıyor…", color = Muted, fontSize = 12.sp)
-                        }
+                        }, modifier = Modifier.weight(0.85f)) { Text("🎙 Ses") }
+                        Button(enabled = deepChatInput.isNotBlank() && !deepChatBusy, onClick = {
+                            val question = deepChatInput.trim()
+                            deepChatInput = ""; deepChatBusy = true; deepChatReply = "Düşünüyorum…"
+                            TermuxDeepChat.run(context, question) { answer ->
+                                deepChatReply = answer; deepChatBusy = false
+                                val speakIntent = Intent(context, EdaForegroundService::class.java).apply {
+                                    action = "ACTION_SPEAK"; putExtra("text", answer)
+                                }
+                                runCatching { context.startService(speakIntent) }
+                            }
+                        }, modifier = Modifier.weight(1.15f)) { Text(if (deepChatBusy) "Bekle…" else "Gönder") }
                     }
+                    if (deepChatBusy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = Cyan)
                 }
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = deepChatInput.isNotBlank() && !deepChatBusy,
-                    onClick = {
-                        val question = deepChatInput.trim()
-                        deepChatInput = ""
-                        deepChatBusy = true
-                        deepChatReply = "Düşünüyorum…"
-                        // Run the same local Gemma 2:2B command in the visible Termux terminal.
-                        TermuxDeepChat.run(context, question) { answer ->
-                            deepChatReply = answer
-                            deepChatBusy = false
-                            val speakIntent = Intent(context, EdaForegroundService::class.java).apply {
-                                action = "ACTION_SPEAK"
-                                putExtra("text", answer)
-                            }
-                            runCatching {
-                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) context.startForegroundService(speakIntent)
-                                else context.startService(speakIntent)
-                            }
-                        }
-                    }
-                ) { Text("Gönder") }
-            },
-            dismissButton = {
-                TextButton(onClick = { if (!deepChatBusy) deepChatOpen = false }) { Text("Kapat") }
-            },
-            containerColor = Panel,
-            titleContentColor = Color.White,
-            textContentColor = Color.White
-        )
+            }
+        }
     }
 }
 
