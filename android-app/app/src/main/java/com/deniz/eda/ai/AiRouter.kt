@@ -80,10 +80,12 @@ KURALLAR:
 2. Kullanıcıya yalnızca kayıtlı adıyla hitap et: "${Settings.kullaniciAdi}". Ad boşsa isim kullanma. "Denizcim", "canım" veya kayıtlı olmayan lakaplar ekleme.
 3. Önce sorunun özüne doğrudan cevap ver. Kim, ne zaman veya nedir sorularında ilk cümlede kişi, tarih ya da tanımı açıkça söyle; sonra gerekli açıklamayı ekle. Asıl soruyu cevapsız bırakıp yalnızca şirketleri sıralama.
 4. Kullanıcı açıklama istiyorsa tamamlanmış ve ayrıntılı yanıt ver; önemli bilgileri atlama. Yanıtı başka bilgi isteme cümlesiyle bitirme; yalnızca gerçekten gerekli bir ayrıntı olmadan cevaplanamıyorsa soru sor. Bilmediğin bilgiyi uydurma, belirsizliği açıkça belirt.
-5. Emoji veya Markdown biçimlendirme işaretleri kullanma. Doğal, akıcı İstanbul Türkçesiyle düz metin yaz; cevabında yıldız, etiket veya anlamsız karakter bırakma.
-6. Yalnızca gerçekten bir araç sonucu veya komut sonucu varsa işlemin yapıldığını söyle. Yapılmayan bir işlemi yapılmış gibi anlatma.
+5. Her cevabın ilk cümlesi kullanıcının sorusunu gerçekten yanıtlamalıdır. Örneğin "Akıllı telefonu kim yarattı?" sorusunda "tek bir mucidi yoktur" de ve hemen IBM Simon'ın 1994'te satışa çıkan ilk akıllı telefonlardan biri olduğunu açıkla. Martin Cooper'ın 1973'te yaptığı ilk elde taşınabilir cep telefonu görüşmesini akıllı telefon icadıyla karıştırma. Apple ve Samsung'u tek başına mucit diye gösterme.
+6. "Elbette", "bu sonuç doğru", "bu sonucu doğrular" gibi içi boş onay cümleleriyle başlama. Kullanıcı sormadıysa bir sonucu doğruladığını iddia etme. Soruyu cevaplayamıyorsan konudan bağımsız cümle kurmak yerine bilmediğini açıkça söyle.
+7. Emoji veya Markdown biçimlendirme işaretleri kullanma. Doğal, akıcı İstanbul Türkçesiyle düz metin yaz; cevabında yıldız, etiket veya anlamsız karakter bırakma.
+8. Yalnızca gerçekten bir araç sonucu veya komut sonucu varsa işlemin yapıldığını söyle. Yapılmayan bir işlemi yapılmış gibi anlatma.
 7. Bu sohbet yolu doğrudan donanım kontrolü yapmaz. Bir donanım isteğinde kısa ve dürüstçe, bunu bu sohbet yolundan çalıştıramadığını söyle; varsa uygulamanın sesli komut yolunu denemesini öner.
-8. Kullanıcının sorusuna doğrudan cevap ver; emin olmadığın bilgiyi kesinmiş gibi sunma.""",
+10. Kullanıcının sorusuna doğrudan cevap ver; emin olmadığın bilgiyi kesinmiş gibi sunma.""",
         context: android.content.Context? = null
     ): String? = withContext(Dispatchers.IO) {
         val ctx = context ?: return@withContext null
@@ -115,7 +117,7 @@ KURALLAR:
                     val istek = ChatCompletionRequest(
                         model = s.model,
                         messages = mesajlar.toList(),
-                        temperature = 0.2,
+                        temperature = 0.1,
                         max_tokens = if (s.ad == "Ollama") 1800 else 700
                     )
                     val yanit = api.sohbetTamamla("Bearer $anahtar", istek)
