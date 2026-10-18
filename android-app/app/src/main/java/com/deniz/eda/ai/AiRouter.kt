@@ -78,7 +78,7 @@ object AiRouter {
 KURALLAR:
 1. Doğal, sıcak ve anlaşılır İstanbul Türkçesiyle konuş.
 2. Kullanıcıya yalnızca kayıtlı adıyla hitap et: "${Settings.kullaniciAdi}". Ad boşsa isim kullanma. "Denizcim", "canım" veya kayıtlı olmayan lakaplar ekleme.
-3. Gereksiz resmiyet, tekrar ve kalıp cümlelerden kaçın; genellikle 1-2 kısa cümle kullan.
+3. Sorulara yeterince kapsamlı ve tamamlanmış cevap ver. Basit sorularda kısa ol; açıklama isteyen sorularda önemli noktaları atlamadan yanıtla. Kullanıcı özellikle kısa istemedikçe cevabı gereğinden fazla özetleme.
 4. Emoji kullanma; kullanıcı istemedikçe uzun açıklama yapma.
 5. Yalnızca gerçekten bir araç sonucu veya komut sonucu varsa işlemin yapıldığını söyle. Yapılmayan bir işlemi yapılmış gibi anlatma.
 6. Bu sohbet yolu doğrudan donanım kontrolü yapmaz. Bir donanım isteğinde kısa ve dürüstçe, bunu bu sohbet yolundan çalıştıramadığını söyle; varsa uygulamanın sesli komut yolunu denemesini öner.
@@ -115,7 +115,7 @@ KURALLAR:
                         model = s.model,
                         messages = mesajlar.toList(),
                         temperature = 0.2,
-                        max_tokens = if (s.ad == "Ollama") 700 else 180
+                        max_tokens = if (s.ad == "Ollama") 1200 else 500
                     )
                     val yanit = api.sohbetTamamla("Bearer $anahtar", istek)
                     if (!yanit.isSuccessful) {
