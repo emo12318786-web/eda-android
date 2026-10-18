@@ -140,4 +140,16 @@ object Settings {
     var beepAktif: Boolean
         get() = getBool("beep_aktif", false)
         set(v) = setBool("beep_aktif", v)
+
+    var smsAnnouncementEnabled: Boolean
+        get() = getBool("sms_announcement_enabled", true)
+        set(v) = setBool("sms_announcement_enabled", v)
+
+    var smsTranslationEnabled: Boolean
+        get() = getBool("sms_translation_enabled", true)
+        set(v) = setBool("sms_translation_enabled", v)
+
+    var incomingCallAnnouncementEnabled: Boolean
+        get() = getBool("incoming_call_announcement_enabled", true)
+        set(v) = setBool("incoming_call_announcement_enabled", v)
 }
