@@ -144,10 +144,17 @@ KURALLAR:
                             "akıllı telefonların temel yapısı", "ollama tarafından geliştirilen",
                             "gemma2:2b modeline dayanıyor", "gemma 2:2b modeline dayanıyor"
                         ).any { temizCevap.contains(it, ignoreCase = true) }
-                        if (bosLaf && !kaliteTekrariYapildi) {
+                        // Soruda "kim" isteniyorsa yanıtın kişi/kurum adı vermesi gerekir.
+                        // Aksi halde Gemma'nın genel ve konudan kaçan cevabını kullanıcıya gösterme.
+                        val soruKisiIcin = Regex("(?i)\\bkim\\b|\\bkimdir\\b").containsMatchIn(kullaniciSorusu)
+                        val cevapKisiAdiIceriyor = Regex(
+                            "(?i)\\b(IBM|Martin Cooper|Frank Canova|Steve Jobs|Alexander Graham Bell|Nokia|Apple|Samsung|Google|Motorola|Bell Labs|Ericsson|BlackBerry)\\b"
+                        ).containsMatchIn(temizCevap)
+                        val soruyaCevapVermiyor = soruKisiIcin && !cevapKisiAdiIceriyor
+                        if ((bosLaf || soruyaCevapVermiyor) && !kaliteTekrariYapildi) {
                             kaliteTekrariYapildi = true
                             mesajlar.add(ChatMessage("assistant", cevap))
-                            mesajlar.add(ChatMessage("user", "Önceki yanıt soruyu cevaplamadı veya konuyla ilgisiz bilgi verdi. Önceki yanıtı savunma ve onu tekrar etme. Yalnızca kullanıcının son sorusunu yanıtla. Soruda kim soruluyorsa kişiyi, ne soruluyorsa doğrudan cevabı ilk cümlede söyle; sonra konuyla ilgili açıklama ekle. Modelin veya Ollama'nın adını sorulmadıkça başka konularla ilişkilendirme. Doğal İstanbul Türkçesi kullan, somut ve doğru bilgileri açıkla; bilmediğin bilgiyi uydurma. Markdown yıldızları kullanma."))
+                            mesajlar.add(ChatMessage("user", "Önceki yanıt soruyu cevaplamadı veya konuyla ilgisiz bilgi verdi. Önceki yanıtı savunma ve onu tekrar etme. Yalnızca kullanıcının son sorusunu yanıtla. Soruda 'kim' soruluyorsa ilgili kişi veya kuruluşun adını ilk cümlede açıkça söyle; genel sözlerle kaçamak yapma. Örneğin akıllı telefonun tek bir mucidi olmadığını, IBM Simon ve Frank Canova'nın öncü rolünü; Martin Cooper'ın ise elde taşınabilir cep telefonu görüşmesini yaptığını doğru biçimde ayırt et. Sonra soruyla ilgili ayrıntılı açıklama ekle. Modelin veya Ollama'nın adını sorulmadıkça başka konularla ilişkilendirme. Doğal İstanbul Türkçesi kullan, somut ve doğru bilgileri açıkla; bilmediğin bilgiyi uydurma. Markdown yıldızları kullanma."))
                             continue
                         }
                         sonCevap = temizCevap
