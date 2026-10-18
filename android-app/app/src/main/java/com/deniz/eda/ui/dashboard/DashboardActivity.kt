@@ -2,6 +2,7 @@ package com.deniz.eda.ui.dashboard
 
 import com.deniz.eda.core.Settings
 import com.deniz.eda.ai.AiRouter
+import com.deniz.eda.ai.TermuxDeepChat
 import kotlinx.coroutines.launch
 
 import android.content.Intent
@@ -308,26 +309,18 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                         deepChatInput = ""
                         deepChatBusy = true
                         deepChatReply = "Düşünüyorum…"
-                        chatScope.launch {
-                            val answer = runCatching {
-                                AiRouter.sor(
-                                    kullaniciSorusu = question,
-                                    sistemMesaji = "Sen Eda'sın. Doğal, sıcak ve anlaşılır İstanbul Türkçesiyle cevap ver. Derin sohbet modundasın; soruyu dikkatle ele al, gerektiğinde ayrıntılı ama anlaşılır cevap ver. Bu sohbet yolundan donanım kontrolü yapma ve yapmış gibi söyleme.",
-                                    context = viewModel.getApplication()
-                                )
-                            }.getOrNull()
-                            deepChatReply = answer ?: "Şu an yanıt alamadım. Termux'ta ~/ollama-start.sh çalışıyor mu kontrol et."
-                            if (!answer.isNullOrBlank()) {
-                                val speakIntent = Intent(context, EdaForegroundService::class.java).apply {
-                                    action = "ACTION_SPEAK"
-                                    putExtra("text", answer)
-                                }
-                                runCatching {
-                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) context.startForegroundService(speakIntent)
-                                    else context.startService(speakIntent)
-                                }
-                            }
+                        // Run the same local Gemma 2:2B command in the visible Termux terminal.
+                        TermuxDeepChat.run(context, question) { answer ->
+                            deepChatReply = answer
                             deepChatBusy = false
+                            val speakIntent = Intent(context, EdaForegroundService::class.java).apply {
+                                action = "ACTION_SPEAK"
+                                putExtra("text", answer)
+                            }
+                            runCatching {
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) context.startForegroundService(speakIntent)
+                                else context.startService(speakIntent)
+                            }
                         }
                     }
                 ) { Text("Gönder") }
