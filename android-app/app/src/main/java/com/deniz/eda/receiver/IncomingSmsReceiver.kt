@@ -7,6 +7,7 @@ import android.os.Build
 import android.provider.Telephony
 import android.util.Log
 import com.deniz.eda.ai.SmsTranslator
+import com.deniz.eda.core.Settings
 import com.deniz.eda.service.EdaForegroundService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,7 +17,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 /** Gelen SMS metnini mümkünse Ollama/Termux ile İstanbul Türkçesine çevirip sesli okur. */
 class IncomingSmsReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        Settings.init(context)
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
+        if (!Settings.smsAnnouncementEnabled && !Settings.smsTranslationEnabled) return
         val messages = try {
             Telephony.Sms.Intents.getMessagesFromIntent(intent)
         } catch (e: Exception) {
@@ -39,10 +42,16 @@ class IncomingSmsReceiver : BroadcastReceiver() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) appContext.startForegroundService(serviceIntent)
             else appContext.startService(serviceIntent)
         }
-        try {
-            speak("Yeni mesajınız var.")
-        } catch (e: Exception) {
-            Log.e("EDA-SMS", "Mesaj bildirimi başlatılamadı: " + e.message, e)
+        if (Settings.smsAnnouncementEnabled) {
+            try {
+                speak("Yeni mesajınız var.")
+            } catch (e: Exception) {
+                Log.e("EDA-SMS", "Mesaj bildirimi başlatılamadı: " + e.message, e)
+            }
+        }
+        if (!Settings.smsTranslationEnabled) {
+            pending.finish()
+            return
         }
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -52,9 +61,9 @@ class IncomingSmsReceiver : BroadcastReceiver() {
                 val text = if (translated == null) {
                     "Mesaj geldi, ancak çeviri yapılamadı. Lütfen telefonunu kontrol et."
                 } else if (sender.isBlank()) {
-                    "Yeni mesaj geldi. Mesaj şöyle: $translated"
+                    "Mesajın Türkçe çevirisi: $translated"
                 } else {
-                    "Yeni mesaj, $sender tarafından: $translated"
+                    "$sender kişisinden gelen mesajın Türkçe çevirisi: $translated"
                 }
                 speak(text)
                 Log.i("EDA-SMS", if (translated != null) "SMS translated to Turkish and sent to speech service" else "Translation failed; source text was not spoken")
