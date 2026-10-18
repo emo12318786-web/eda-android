@@ -1,71 +1,82 @@
 package com.deniz.eda.ai
 
+import android.content.Context
 import android.util.Log
+import com.google.android.gms.tasks.Tasks
+import com.google.mlkit.common.model.DownloadConditions
+import com.google.mlkit.nl.languageid.LanguageIdentification
+import com.google.mlkit.nl.translate.TranslateLanguage
+import com.google.mlkit.nl.translate.Translation
+import com.google.mlkit.nl.translate.Translator
+import com.google.mlkit.nl.translate.TranslatorOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.URLEncoder
+import java.util.concurrent.TimeUnit
 
 /**
- * SMS translation only. Uses Google's unofficial public web-translate endpoint;
- * it may be rate-limited or unavailable. Failure is represented by null.
- * Never return the original source as a fallback.
+ * On-device Google ML Kit SMS translator. Target language is always Turkish.
+ * A missing/unsupported language model is a failure: never return source text as a fallback.
  */
 object SmsTranslator {
-    suspend fun translateToTurkish(originalText: String): String? = withContext(Dispatchers.IO) {
-        val source = originalText.trim()
-        if (source.isBlank()) return@withContext null
-        var connection: HttpURLConnection? = null
+    suspend fun translateToTurkish(context: Context, originalText: String): String? = withContext(Dispatchers.IO) {
+        val sourceText = originalText.trim()
+        if (sourceText.isBlank()) return@withContext null
+
+        var translator: Translator? = null
         try {
-            val encoded = URLEncoder.encode(source, "UTF-8")
-            val endpoint = URL(
-                "https://translate.googleapis.com/translate_a/single" +
-                    "?client=gtx&sl=auto&tl=tr&dt=t&q=$encoded"
-            )
-            connection = (endpoint.openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = 5000
-                readTimeout = 7000
-                setRequestProperty("Accept", "application/json")
-                setRequestProperty("User-Agent", "Mozilla/5.0")
+            val languageIdentifier = LanguageIdentification.getClient()
+            val sourceTag = try {
+                Tasks.await(languageIdentifier.identifyLanguage(sourceText), 8, TimeUnit.SECONDS)
+            } finally {
+                languageIdentifier.close()
             }
-            if (connection.responseCode !in 200..299) {
-                Log.w("SmsTranslator", "Translation HTTP status=${connection.responseCode}")
+            if (sourceTag.isNullOrBlank() || sourceTag == "und") {
+                Log.w("SmsTranslator", "Could not identify SMS source language")
                 return@withContext null
             }
-            val response = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-            val root = JSONArray(response)
-            val chunks = root.optJSONArray(0) ?: return@withContext null
-            val translated = buildString {
-                for (i in 0 until chunks.length()) {
-                    val chunk = chunks.optJSONArray(i) ?: continue
-                    append(chunk.optString(0, ""))
-                }
-            }.trim()
+
+            val sourceLanguage = TranslateLanguage.fromLanguageTag(sourceTag)
+                ?: return@withContext null
+            val targetLanguage = TranslateLanguage.TURKISH
+            if (sourceLanguage == targetLanguage) return@withContext sourceText
+
+            val options = TranslatorOptions.Builder()
+                .setSourceLanguage(sourceLanguage)
+                .setTargetLanguage(targetLanguage)
+                .build()
+            translator = Translation.getClient(options)
+
+            // First use may download a language model. Allow a bounded wait; failures are safe.
+            Tasks.await(
+                translator.downloadModelIfNeeded(DownloadConditions.Builder().build()),
+                45,
+                TimeUnit.SECONDS
+            )
+            val translated = Tasks.await(translator.translate(sourceText), 20, TimeUnit.SECONDS).trim()
             if (translated.isBlank()) return@withContext null
 
-            // Never speak an untranslated non-Latin source as if it were Turkish.
-            val hasNonLatinSource = source.any { Character.UnicodeScript.of(it.code) in setOf(
-                Character.UnicodeScript.ARABIC,
-                Character.UnicodeScript.CYRILLIC,
-                Character.UnicodeScript.HEBREW,
-                Character.UnicodeScript.DEVANAGARI,
-                Character.UnicodeScript.HAN,
-                Character.UnicodeScript.HIRAGANA,
-                Character.UnicodeScript.KATAKANA
-            ) }
-            if (hasNonLatinSource && translated.equals(source, ignoreCase = true)) {
-                Log.w("SmsTranslator", "Translation output identical to non-Latin source; refusing to speak source")
+            // Defensive check: do not present unchanged Arabic-script/Cyrillic/etc. as Turkish.
+            val nonLatinSource = sourceText.any {
+                Character.UnicodeScript.of(it.code) in setOf(
+                    Character.UnicodeScript.ARABIC,
+                    Character.UnicodeScript.CYRILLIC,
+                    Character.UnicodeScript.HEBREW,
+                    Character.UnicodeScript.DEVANAGARI,
+                    Character.UnicodeScript.HAN,
+                    Character.UnicodeScript.HIRAGANA,
+                    Character.UnicodeScript.KATAKANA
+                )
+            }
+            if (nonLatinSource && translated.equals(sourceText, ignoreCase = true)) {
+                Log.w("SmsTranslator", "Output identical to non-Latin source; refusing to speak source")
                 return@withContext null
             }
             translated
         } catch (e: Exception) {
-            Log.w("SmsTranslator", "Translation failed: ${e.javaClass.simpleName}: ${e.message}")
+            Log.w("SmsTranslator", "On-device translation failed: ${e.javaClass.simpleName}: ${e.message}")
             null
         } finally {
-            connection?.disconnect()
+            translator?.close()
         }
     }
 }
