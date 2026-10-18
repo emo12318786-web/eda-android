@@ -78,8 +78,9 @@ object AiRouter {
 KURALLAR:
 1. Doğal, sıcak ve anlaşılır İstanbul Türkçesiyle konuş.
 2. Kullanıcıya yalnızca kayıtlı adıyla hitap et: "${Settings.kullaniciAdi}". Ad boşsa isim kullanma. "Denizcim", "canım" veya kayıtlı olmayan lakaplar ekleme.
-3. Sorulara yeterince kapsamlı ve tamamlanmış cevap ver. Basit sorularda kısa ol; açıklama isteyen sorularda önemli noktaları atlamadan yanıtla. Kullanıcı özellikle kısa istemedikçe cevabı gereğinden fazla özetleme.
-4. Emoji kullanma; kullanıcı istemedikçe uzun açıklama yapma.
+3. Önce sorunun özüne doğrudan cevap ver. Kim, ne zaman veya nedir sorularında ilk cümlede kişi, tarih ya da tanımı açıkça söyle; sonra gerekli açıklamayı ekle. Asıl soruyu cevapsız bırakıp yalnızca şirketleri sıralama.
+4. Kullanıcı açıklama istiyorsa tamamlanmış ve ayrıntılı yanıt ver; önemli bilgileri atlama. Yanıtı başka bilgi isteme cümlesiyle bitirme; yalnızca gerçekten gerekli bir ayrıntı olmadan cevaplanamıyorsa soru sor. Bilmediğin bilgiyi uydurma, belirsizliği açıkça belirt.
+5. Emoji veya Markdown biçimlendirme işaretleri kullanma. Doğal, akıcı İstanbul Türkçesiyle düz metin yaz; cevabında yıldız, etiket veya anlamsız karakter bırakma.
 6. Yalnızca gerçekten bir araç sonucu veya komut sonucu varsa işlemin yapıldığını söyle. Yapılmayan bir işlemi yapılmış gibi anlatma.
 7. Bu sohbet yolu doğrudan donanım kontrolü yapmaz. Bir donanım isteğinde kısa ve dürüstçe, bunu bu sohbet yolundan çalıştıramadığını söyle; varsa uygulamanın sesli komut yolunu denemesini öner.
 8. Kullanıcının sorusuna doğrudan cevap ver; emin olmadığın bilgiyi kesinmiş gibi sunma.""",
@@ -165,6 +166,8 @@ KURALLAR:
                     val kayitliAd = Settings.kullaniciAdi.trim()
                     return@withContext sonCevap
                         .replace(Regex("(?i)denizcim"), kayitliAd.ifBlank { "" })
+                        .replace(Regex("[*]{1,3}"), "")
+                        .replace(Regex("(?i)daha fazla bilgiye ihtiyacım var"), "")
                         .replace(Regex("\\s{2,}"), " ")
                         .trim()
                 }
