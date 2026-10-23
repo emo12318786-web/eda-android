@@ -57,6 +57,10 @@ class PhoneControlService : AccessibilityService() {
     fun tapText(target: String): String? = onMain {
         val query = target.trim()
         if (query.isBlank()) return@onMain "متن هدف خالی است."
+        val sensitive = listOf("send", "submit", "delete", "remove", "pay", "purchase", "buy", "confirm", "transfer", "ارسال", "فرستادن", "حذف", "پرداخت", "خرید", "انتقال", "تأیید", "تایید", "ثبت نهایی")
+        if (sensitive.any { query.contains(it, ignoreCase = true) }) {
+            return@onMain "برای ایمنی، EDA این اقدام حساس را انجام نمی‌دهد. خودت دکمه را بررسی و لمس کن."
+        }
         val nodes = visibleNodes()
         val node = nodes.firstOrNull {
             it.isVisibleToUser && ((it.text?.toString()?.contains(query, true) == true) ||
