@@ -64,6 +64,19 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             setOnClickListener { startSpeech() }
         })
         root.addView(Button(this).apply {
+            text = "📱 فعال‌سازی کنترل صفحهٔ گوشی"
+            setOnClickListener {
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("کنترل صفحه توسط EDA")
+                    .setMessage("برای خواندن متن صفحه، لمس، تایپ و اسکرول، باید سرویس دسترس‌پذیری Eda Phone Agent را خودت فعال کنی. این دسترسی قدرتمند است؛ فقط اگر به برنامه اعتماد داری فعالش کن. قفل گوشی، برنامه‌های بانکی و تأییدهای حساس دور زده نمی‌شوند.")
+                    .setNegativeButton("لغو", null)
+                    .setPositiveButton("بازکردن تنظیمات") { _, _ ->
+                        try { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+                        catch (_: Exception) { show("تنظیمات دسترس‌پذیری باز نشد.") }
+                    }.show()
+            }
+        })
+        root.addView(Button(this).apply {
             text = "اجرا / پرسش از هوش مصنوعی"
             setOnClickListener { handleCommand(input.text.toString()) }
         })
