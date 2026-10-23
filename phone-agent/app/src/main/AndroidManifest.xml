@@ -6,7 +6,7 @@
     <application android:allowBackup="false" android:label="Eda Phone Agent"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="true">
-        <activity android:name=".MainActivity" android:exported="true">
+        <service android:name=".PhoneControlService" android:label="Eda Phone Agent screen control" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" android:exported="true">\n            <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>\n            <meta-data android:name="android.accessibilityservice" android:resource="@xml/phone_control_service" />\n        </service>\n        <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
