@@ -80,6 +80,14 @@ internal class AgentRuntime(private val context: Context) {
             "open_wifi_settings" -> openSystemPanel("wifi")
             "open_sound_settings" -> openSystemPanel("sound")
             "open_display_settings" -> openSystemPanel("display")
+            "screen_text" -> PhoneControlService.runTool("screen_text")
+            "tap_text" -> PhoneControlService.runTool("tap_text", args.optString("text"))
+            "type_text" -> PhoneControlService.runTool("type_text", args.optString("text"))
+            "scroll_up" -> PhoneControlService.runTool("scroll_up")
+            "scroll_down" -> PhoneControlService.runTool("scroll_down")
+            "back" -> PhoneControlService.runTool("back")
+            "home" -> PhoneControlService.runTool("home")
+            "notifications" -> PhoneControlService.runTool("notifications")
             "save_note" -> {
                 val note = args.optString("text").trim()
                 if (note.isBlank()) "خطا: متن یادداشت خالی است."
@@ -204,6 +212,12 @@ internal class AgentRuntime(private val context: Context) {
 - open_wifi_settings: open Android's Wi-Fi panel; Android may require the user to toggle Wi-Fi manually.
 - open_sound_settings: open Android sound settings.
 - open_display_settings: open Android display settings.
+- screen_text: read visible UI text when screen-control accessibility is enabled.
+- tap_text with {"text":"exact visible label"}: tap a matching visible UI label; never use it for sending, deleting, purchasing, confirming payments, or other sensitive actions.
+- type_text with {"text":"..."}: type into the currently focused editable field only.
+- scroll_up / scroll_down: scroll the visible page.
+- back / home / notifications: perform Android navigation.
+Use screen_text before interacting with a screen and verify the result after each action. If accessibility is not enabled, tell the user to enable Eda Phone Agent in Android Accessibility settings. Never bypass lock screens, authentication, CAPTCHAs, or protected/banking screens. Never send messages, delete data, purchase, or confirm payments; leave the final sensitive action for the user.
 - save_note with {"text":"..."} only when the user clearly asks to remember/save something.
 - search_notes with {"query":"..."} when the user asks about saved notes.
 Never claim an action succeeded before the tool result. Never invent tools, open arbitrary packages, run shell/code, send messages, or change sensitive settings silently. A request to send a message must not be treated as merely opening an app. Ask a short clarification if the requested app/action is ambiguous. Respond in the user's language, naturally and briefly. Return exactly one JSON object, no markdown: {"type":"tool_call","tool":"TOOL_NAME","arguments":{...}} when a tool is necessary, or {"type":"final","answer":"..."} otherwise."""
