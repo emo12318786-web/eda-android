@@ -255,14 +255,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-            <service android:name=".phone.PhoneControlService" android:label="Eda · Kontrol edilebilir ekran" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" android:exported="true">
-            <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>
-            <meta-data android:name="android.accessibilityservice" android:resource="@xml/phone_control_service" />
-        </service>
-            <service android:name=".phone.PhoneControlService" android:label="Eda · Kontrol edilebilir ekran" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" android:exported="true">
-            <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>
-            <meta-data android:name="android.accessibilityservice" android:resource="@xml/phone_control_service" />
-        </service>
     </application>
 
 </manifest>
