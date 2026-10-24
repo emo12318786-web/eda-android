@@ -106,7 +106,6 @@ class ScreenReaderService : AccessibilityService() {
                         val buffer = screenshot.hardwareBuffer
                         val wrapped = Bitmap.wrapHardwareBuffer(buffer, screenshot.colorSpace)
                         output.set(wrapped?.copy(Bitmap.Config.ARGB_8888, false))
-                        wrapped?.recycle()
                         buffer.close()
                     } catch (_: Exception) {
                         output.set(null)
