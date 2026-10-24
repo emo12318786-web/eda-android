@@ -128,7 +128,7 @@ KURALLAR:
                         "MEDIA_PLAY", "MEDIA_PAUSE", "MEDIA_NEXT", "MEDIA_PREVIOUS",
                         "OPEN_SETTINGS", "OPEN_TTS_SETTINGS", "OPEN_CAMERA", "FIND_PHONE",
                         "STOP_FIND_PHONE", "LOCK_PHONE", "RUN_SYSTEM_TEST", "LEARNING_ON", "LEARNING_OFF",
-                        "OPEN_APP", "OPEN_WIFI_SETTINGS", "OPEN_SOUND_SETTINGS", "OPEN_DISPLAY_SETTINGS"
+                        "OPEN_APP", "OPEN_WIFI_SETTINGS", "OPEN_SOUND_SETTINGS", "OPEN_DISPLAY_SETTINGS", "READ_SCREEN"
                     )
                     if (toolName == "READ_SCREEN" && !screenReadRequested) {
                         sonCevap = "Ekranı yalnızca açıkça okumamı istediğinde okuyabilirim."
