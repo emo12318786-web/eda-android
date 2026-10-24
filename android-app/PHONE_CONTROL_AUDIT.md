@@ -10,13 +10,15 @@ Scope: the Android app under `android-app/`. This is an implementation audit, no
 - Accessibility-tree text reading from the active window.
 - Android 11+ screenshot capture through `AccessibilityService.takeScreenshot`, enabled in the service metadata.
 - Bundled ML Kit Latin text recognition for local/offline OCR; the result includes text and screen coordinates.
-- Tap by accessible text and OCR-matched text (gesture dispatch), with checks against visible labels commonly associated with sending, deleting, buying, paying, confirming, or transferring money.
-- Type only into the currently focused editable node; refuse password fields. Typing does not click Send/Submit/Confirm.
+- Tap by accessible text and OCR-matched text (gesture dispatch); OCR text is matched to visible screen coordinates and the panel re-reads the screen after the action.
+- Type only into the focused editable field. A separate pure Kotlin `PhoneActionSafety` policy blocks password/PIN/OTP/verification/card fields and blocks taps/typing when a detected financial/checkout screen appears sensitive. Consequential button labels are also blocked in multiple languages.
 - Scroll up/down and global Back, Home, and Notifications actions.
-- Eight screen-action tool routes wired through `SystemTools` and the main `AiRouter` allowlist, plus the OCR read and visual-tap routes.
-- The agent prompt instructs a read → explicit user-requested action → read-back pattern. The existing bounded tool loop limits an interaction sequence rather than allowing an unbounded action loop.
-- Screen-control tools are restricted to the local Ollama provider to avoid sending visible screen content such as private notifications to cloud providers.
-- The main dashboard's Phone Harness panel now offers accessibility text read and visual OCR read/tap. OCR work is sent to a background dispatcher so it does not intentionally block Compose's UI thread.
+- Ten screen tool routes are wired through `SystemTools` and the main `AiRouter` allowlist: accessible read, local visual OCR, accessible tap, OCR tap, type, up/down scroll, Back, Home, and Notifications.
+- A dedicated Jarvis task panel is in the main dashboard. A user can type or dictate a task, see its result, and choose to speak the reply. It uses the existing allowlisted `AiRouter` / `SystemTools` tool loop rather than shell execution or arbitrary Android intents.
+- Jarvis uses an explicit local-only provider policy: it calls only Termux/Ollama `gemma2:2b` and does not fall back to Pollinations/Groq if local inference is unavailable. This is important because the agent may read private on-screen data.
+- The agent is bounded to five tool actions. If a model asks for another tool after reaching the limit, EDA requests a final explanation instead of silently stripping the tool call into an empty answer.
+- The panel includes an accessibility-status refresh action. Dashboard provider labels and online indicators were corrected to match the actual provider/status text.
+- JVM tests cover consequential labels, financial/checkout context cues, and password/OTP/card-field cues.
 
 ## Security and user control
 
@@ -24,16 +26,16 @@ The accessibility service must be explicitly enabled by the phone owner. The age
 
 ## Still not certified / known limitations
 
-1. **Build and device verification are separate.** A successful GitHub Actions APK build verifies packaging/compilation only. It does not verify accessibility permissions, Samsung One UI behavior, touch coordinates, or voice-driven operation on the user's Galaxy A71. The latest commit's Actions run must finish green before this branch is called build-verified.
+1. **Build and device verification are separate.** A successful GitHub Actions APK build verifies compilation, tests, and packaging only. It does not verify accessibility permissions, Samsung One UI behavior, touch coordinates, or voice-driven operation on a Galaxy A71. The latest commit's Actions run must finish green before this branch is called build-verified.
 2. **Secure screens can refuse screenshots.** Android reports a secure-window screenshot failure for protected content; banking/DRM apps may show no OCR result. The tool reports a failure instead of trying to bypass it.
 3. **OCR is Latin-script only.** It should be suited to Turkish and Azerbaijani Latin-script UI labels, but visual OCR does not currently read Persian/Arabic script. Accessibility-provided text may still be readable when the app exposes it.
 4. **Not a full host-side Phone Harness clone.** EDA is operating locally through Android accessibility; it does not use host ADB, browser-host automation, arbitrary coordinates without a matched label, image-based icon classification, multi-finger gestures, or an unrestricted autonomous planner.
-5. **Text-label safety filters are best-effort.** Different apps and languages can label consequential controls in unexpected ways. Sensitive transactions and messages must remain user-controlled; never rely on label filtering as the sole safety boundary.
+5. **Text-label safety filters are best-effort.** Third-party apps use inconsistent labels and some sensitive screens may not expose useful text. EDA deliberately blocks detected financial screens and password/OTP/verification fields, but this is not a formal security boundary. Sensitive transactions and messages must remain user-controlled.
 6. **The app has not been physically tested as part of this code change.** Manual acceptance should cover enabling/disabling the service, accessible text read, OCR read, OCR-label tap and re-read, typing into a normal field, refusal to type into a password field, scrolling, Back/Home/Notifications, secure screens, UI responsiveness, and the existing EDA wake/sleep and SMS behavior.
 
 ## Acceptance checklist
 
-- [ ] Latest branch commit passes the Android debug build in GitHub Actions.
+- [ ] Latest branch commit passes `testDebugUnitTest assembleDebug` in GitHub Actions.
 - [ ] Install and launch on Samsung Galaxy A71 / Android 13.
 - [ ] EDA screen service appears in Accessibility settings and connects only after the owner enables it.
 - [ ] Text read, visual OCR read, accessibility tap, OCR tap, type, scroll, Back, Home, and Notifications each return truthful results.
@@ -46,4 +48,4 @@ The accessibility service must be explicitly enabled by the phone owner. The age
 
 ## Verdict
 
-The screen-control code paths are now integrated into the main Android app: accessibility text, local visual OCR, guarded text taps, and bounded agent tool routing. This is broader than the earlier manual-only control panel, but it is **not yet certified as a complete autonomous phone operator**. CI and physical-device acceptance are required before calling the feature fully verified.
+The main Android app now has an actual bounded Jarvis task path alongside manual Phone Harness controls: local accessibility text, on-device Latin OCR, guarded tap/type actions, and up to five allowlisted tool calls. Jarvis tasks stay on local Ollama and never silently switch their task to a cloud provider. This is materially more useful than a manual-only panel, but it is **not a full host-side Phone Harness clone and is not yet certified as a fully autonomous phone operator**. CI and physical-device acceptance remain required before calling the feature fully verified.
