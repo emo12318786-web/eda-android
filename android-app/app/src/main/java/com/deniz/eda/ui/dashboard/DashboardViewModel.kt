@@ -148,13 +148,13 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                 sirali.add("Ollama · Termux (gemma2:2b)")
             }
             "ollama" -> {
-                sirali.add("Gemma 3 1B")
+                sirali.add("Ollama · Termux (gemma2:2b)")
                 sirali.add("Pollinations")
                 if (Settings.groqApiKey.isNotBlank()) sirali.add("Groq")
             }
             else -> {
                 sirali.add("Pollinations")
-                sirali.add("Gemma 3 1B")
+                sirali.add("Ollama · Termux (gemma2:2b)")
                 if (Settings.groqApiKey.isNotBlank()) sirali.add("Groq")
             }
         }
