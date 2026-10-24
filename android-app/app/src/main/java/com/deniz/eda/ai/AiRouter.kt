@@ -9,6 +9,8 @@ import java.util.Locale
 
 object AiRouter {
 
+    private const val MAX_AGENT_TOOL_STEPS = 5
+
     // Son basarili AI saglayicisinin adi (dashboard log icin)
     @Volatile
     var lastProvider: String = ""
@@ -86,12 +88,22 @@ KURALLAR:
 8. Yalnızca gerçekten bir araç sonucu veya komut sonucu varsa işlemin yapıldığını söyle. Yapılmayan bir işlemi yapılmış gibi anlatma.
 7. Bu sohbet yolu doğrudan donanım kontrolü yapmaz. Bir donanım isteğinde kısa ve dürüstçe, bunu bu sohbet yolundan çalıştıramadığını söyle; varsa uygulamanın sesli komut yolunu denemesini öner.
 10. Kullanıcının sorusuna doğrudan cevap ver; emin olmadığın bilgiyi kesinmiş gibi sunma.""",
-        context: android.content.Context? = null
+        context: android.content.Context? = null,
+        localOnly: Boolean = false
     ): String? = withContext(Dispatchers.IO) {
         val ctx = context ?: return@withContext null
 
-        // Seçilen sağlayıcı ilk sıradadır; Ollama çalışmıyorsa çevrimiçi yedekler denenir.
-        for (s in saglayicilar(ctx)) {
+        // Görev ajanı ekran içeriği için yalnızca yerel Ollama kullanabilir; buluta düşmez.
+        val providers = saglayicilar(ctx).let { configured ->
+            if (localOnly) configured.filter { it.ad == "Ollama" } else configured
+        }
+        if (localOnly && providers.isEmpty()) {
+            android.util.Log.w("AiRouter", "LOCAL_ONLY_NO_PROVIDER")
+            return@withContext null
+        }
+
+        // Normal sohbet seçili sağlayıcıdan başlayabilir; localOnly açıkken çevrimiçi yedek yoktur.
+        for (s in providers) {
             val anahtar = s.apiKey()
             if (s.needsKey && anahtar.isBlank()) {
                 android.util.Log.w("AiRouter", "SKIP ${s.ad}: API key boş")
@@ -105,16 +117,16 @@ KURALLAR:
                     sistemMesaji + "\n\n" + com.deniz.eda.utils.SystemTools.listTools()
                 } else sistemMesaji
 
-                // EDA V5 Agent: en fazla 3 araç adımı; değişmeyen allowlist uygulanır.
+                // EDA V5 Agent: en fazla $MAX_AGENT_TOOL_STEPS araç adımı; değişmeyen allowlist uygulanır.
                 // Ekran eylemleri açık kullanıcı isteği ve güvenlik kontrolleri gerektirir.
                 val mesajlar = mutableListOf(
-                    ChatMessage("system", sistemTam + "\n\nAGENT KURALLARI: En fazla 3 araç adımı kullan. Bilgi araçlarını <TOOL>ARAÇ_ADI</TOOL> biçiminde çağır. Kullanıcı açıkça bir bilgiyi hafızaya kaydet derse <TOOL>SAVE_MEMORY: metin</TOOL>; günlüğe yaz derse <TOOL>ADD_DIARY: metin</TOOL>; belirli saatli hatırlatma isterse <TOOL>ADD_REMINDER|SAAT|DAKİKA|metin</TOOL> biçimini kullan. Kayıt araçlarını ve telefon eylemlerini yalnızca kullanıcı açıkça istediğinde çalıştır. Ekran kontrolü için önce SCREEN_READ veya SCREEN_VISION ile ekranı oku; kullanıcı açıkça bir dokunma, yazma, kaydırma veya navigasyon eylemi istemişse yalnızca o eylemi yap; sonra SCREEN_READ ile sonucu doğrula. SCREEN_TAP veya SCREEN_TAP_VISUAL yalnızca hassas olmayan görünen etiketlere dokunabilir; SCREEN_TYPE sadece kullanıcının verdiği metni etkin, parola olmayan alana yazabilir. Parola, OTP, kilit ekranı, banka/ödeme/transfer, mesaj gönderme, satın alma, silme veya nihai onay işlemlerini yapma; hassas son adımı kullanıcıya bırak. Erişilebilirlik hizmeti kapalıysa kullanıcıya ayarlardan etkinleştirmesini söyle. Araç sonucunu görmeden işlem yapıldığını iddia etme. SMS gönderme veya konum paylaşma araçları bu Agent içinde yoktur; bunları yaptığını söyleme. Kamera aracı yalnızca kamera uygulamasını açar. Güvenlik/car modunu yalnızca bayrak değiştirerek etkinleştirdiğini iddia et."),
+                    ChatMessage("system", sistemTam + "\n\nAGENT KURALLARI: En fazla $MAX_AGENT_TOOL_STEPS araç adımı kullan. Bilgi araçlarını <TOOL>ARAÇ_ADI</TOOL> biçiminde çağır. Kullanıcı açıkça bir bilgiyi hafızaya kaydet derse <TOOL>SAVE_MEMORY: metin</TOOL>; günlüğe yaz derse <TOOL>ADD_DIARY: metin</TOOL>; belirli saatli hatırlatma isterse <TOOL>ADD_REMINDER|SAAT|DAKİKA|metin</TOOL> biçimini kullan. Kayıt araçlarını ve telefon eylemlerini yalnızca kullanıcı açıkça istediğinde çalıştır. Ekran kontrolü için önce SCREEN_READ veya SCREEN_VISION ile ekranı oku; kullanıcı açıkça bir dokunma, yazma, kaydırma veya navigasyon eylemi istemişse yalnızca o eylemi yap; sonra SCREEN_READ ile sonucu doğrula. SCREEN_TAP veya SCREEN_TAP_VISUAL yalnızca hassas olmayan görünen etiketlere dokunabilir; SCREEN_TYPE sadece kullanıcının verdiği metni etkin, parola olmayan alana yazabilir. Parola, OTP, kilit ekranı, banka/ödeme/transfer, mesaj gönderme, satın alma, silme veya nihai onay işlemlerini yapma; hassas son adımı kullanıcıya bırak. Erişilebilirlik hizmeti kapalıysa kullanıcıya ayarlardan etkinleştirmesini söyle. Araç sonucunu görmeden işlem yapıldığını iddia etme. SMS gönderme veya konum paylaşma araçları bu Agent içinde yoktur; bunları yaptığını söyleme. Kamera aracı yalnızca kamera uygulamasını açar. Güvenlik/car modunu yalnızca bayrak değiştirerek etkinleştirdiğini iddia et."),
                     ChatMessage("user", kullaniciSorusu)
                 )
                 var sonCevap: String? = null
                 var aracAdimi = 0
                 var kaliteTekrariYapildi = false
-                while (aracAdimi <= 3) {
+                while (aracAdimi <= MAX_AGENT_TOOL_STEPS) {
                     val istek = ChatCompletionRequest(
                         model = s.model,
                         messages = mesajlar.toList(),
@@ -136,7 +148,7 @@ KURALLAR:
                     }
                     android.util.Log.d("AiRouter", "AI_RESPONSE_CHUNK provider=${s.ad} model=${s.model} agentStep=$aracAdimi chars=${cevap.length}")
                     val match = Regex("<TOOL>\\s*([A-Z_]+)(?:\\s*[:|]\\s*(.*?))?\\s*</TOOL>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)).find(cevap)
-                    if (match == null || context == null || aracAdimi >= 3) {
+                    if (match == null || context == null) {
                         val temizCevap = cevap.replace(Regex("<TOOL>.*?</TOOL>", RegexOption.DOT_MATCHES_ALL), "").trim()
                         val bosLaf = listOf(
                             "bu sonuç doğru", "bu sonucu doğrular", "daha fazla bilgiye ihtiyacım var",
@@ -158,6 +170,28 @@ KURALLAR:
                             continue
                         }
                         sonCevap = temizCevap
+                        break
+                    }
+                    if (aracAdimi >= MAX_AGENT_TOOL_STEPS) {
+                        android.util.Log.w("AiRouter", "AGENT_TOOL_LIMIT reached=$MAX_AGENT_TOOL_STEPS")
+                        mesajlar.add(ChatMessage("assistant", cevap))
+                        mesajlar.add(ChatMessage("user",
+                            "Güvenli araç adımı sınırına ulaşıldı. Başka hiçbir araç çağırma. Şu ana kadarki araç sonuçlarını esas alarak Türkçe nihai yanıt ver; hangi adımların gerçekten gerçekleştiğini ve kullanıcıya hangi adımın kaldığını açıkla. Düz metin kullan, <TOOL> etiketi üretme."))
+                        val finalRequest = ChatCompletionRequest(
+                            model = s.model,
+                            messages = mesajlar.toList(),
+                            temperature = 0.1,
+                            max_tokens = if (s.ad == "Ollama") 900 else 500
+                        )
+                        val finalResponse = api.sohbetTamamla("Bearer $anahtar", finalRequest)
+                        val finalText = if (finalResponse.isSuccessful) {
+                            finalResponse.body()?.choices?.firstOrNull()?.message?.content?.trim()
+                        } else null
+                        sonCevap = finalText
+                            ?.replace(Regex("<TOOL>.*?</TOOL>", RegexOption.DOT_MATCHES_ALL), "")
+                            ?.trim()
+                            ?.takeIf { it.isNotBlank() }
+                            ?: "Araç adımı sınırına ulaşıldı. Güvenli şekilde durdum; mevcut ekrandan devam etmek için yeni ve daha küçük bir görev ver."
                         break
                     }
                     val toolName = match.groupValues[1].uppercase(Locale.ROOT)
