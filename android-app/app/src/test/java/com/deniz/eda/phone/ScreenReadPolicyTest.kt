@@ -11,6 +11,7 @@ class ScreenReadPolicyTest {
         assertTrue(ScreenReadPolicy.isExplicitReadRequest("Ekranı oku"))
         assertTrue(ScreenReadPolicy.isExplicitReadRequest("Read the screen"))
         assertTrue(ScreenReadPolicy.isExplicitReadRequest("What is on the screen?"))
+        assertTrue(ScreenReadPolicy.isExplicitReadRequest("روی صفحه چی نوشته"))
     }
 
     @Test
