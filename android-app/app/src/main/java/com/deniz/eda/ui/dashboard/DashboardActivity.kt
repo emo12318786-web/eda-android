@@ -131,6 +131,10 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
     var phoneTarget by remember { mutableStateOf("") }
     var phoneTypedText by remember { mutableStateOf("") }
     var phoneControlStatus by remember { mutableStateOf("") }
+    var jarvisOpen by remember { mutableStateOf(false) }
+    var jarvisTask by remember { mutableStateOf("") }
+    var jarvisReply by remember { mutableStateOf("") }
+    var jarvisBusy by remember { mutableStateOf(false) }
     val chatScope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
     val voiceInput = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -138,7 +142,9 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
     ) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
             val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
-            if (!spoken.isNullOrBlank()) deepChatInput = spoken
+            if (!spoken.isNullOrBlank()) {
+                if (jarvisOpen) jarvisTask = spoken else deepChatInput = spoken
+            }
         }
     }
     // Use observable dashboard state; Compose cannot observe mutable Settings directly.
@@ -233,6 +239,11 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 ControlTile("✧", "Derin sohbeti aç", "Uzun sorularını yerel Gemma modeliyle konuş", Violet) {
                     onAction("ACTION_AI_OLLAMA")
                     deepChatOpen = true
+                }
+                SectionHeader("JARVIS · GÖREV AJANI", "Yerel Ollama · En fazla 5 güvenli araç adımı")
+                ControlTile("⌘", "Jarvis ile görev yürüt", "İsteğini doğal dille yaz veya söyle; izinli işlemleri adım adım uygular", Violet) {
+                    jarvisOpen = true
+                    jarvisReply = ""
                 }
                 SectionHeader("PHONE HARNESS", "Ekran kontrolü · Android erişilebilirlik")
                 ControlTile("▣", "Telefon ekranını kontrol et", "Ekranı oku, metinle dokun, seçili alana yaz ve kaydır", Cyan) {
@@ -356,6 +367,117 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                         }, modifier = Modifier.weight(1f)) { Text("Bildirimler") }
                     }
                     Text("Yazmadan önce hedef alanı kendin seç. OCR görsel metni tanır; korumalı ekranlarda Android görüntü vermeyebilir.", color = Muted, fontSize = 11.sp)
+                }
+            }
+        }
+    }
+
+    if (jarvisOpen) {
+        Dialog(onDismissRequest = { if (!jarvisBusy) jarvisOpen = false }) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().fillMaxHeight(0.88f),
+                shape = RoundedCornerShape(26.dp),
+                color = Panel,
+                border = BorderStroke(1.dp, Violet.copy(alpha = 0.4f))
+            ) {
+                Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("EDA · JARVIS GÖREV AJANI", color = Cyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Gemma 2:2B · Yalnızca yerel Ollama", color = Muted, fontSize = 11.sp)
+                        }
+                        Text("✕", color = Muted,
+                            modifier = Modifier.clickable(enabled = !jarvisBusy) { jarvisOpen = false }.padding(8.dp))
+                    }
+                    Text(
+                        "Görevini açıkça belirt. Eda en fazla 5 izinli araç adımı kullanır; gerektiğinde ekranı okuyup sonucu kontrol eder. Banka/ödeme, parola, OTP, mesaj gönderme, satın alma ve silme gibi son adımları sen yaparsın. Ekran içeriği bulut sağlayıcısına gönderilmez.",
+                        color = Warn, fontSize = 12.sp, lineHeight = 17.sp
+                    )
+                    OutlinedTextField(
+                        value = jarvisTask,
+                        onValueChange = { jarvisTask = it },
+                        label = { Text("Yapılacak görev") },
+                        placeholder = { Text("Örn. YouTube'u aç ve arama kutusuna ... yaz; aramayı gönderme.") },
+                        enabled = !jarvisBusy,
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2,
+                        maxLines = 4
+                    )
+                    Column(
+                        Modifier.weight(1f).fillMaxWidth()
+                            .background(PanelRaised, RoundedCornerShape(14.dp))
+                            .verticalScroll(rememberScrollState()).padding(12.dp)
+                    ) {
+                        Text(
+                            jarvisReply.ifBlank { "Henüz görev çalıştırılmadı. Görevi yazıp Jarvis ile yürüt düğmesine bas." },
+                            color = Color.White, fontSize = 14.sp, lineHeight = 21.sp
+                        )
+                    }
+                    if (jarvisBusy) {
+                        LinearProgressIndicator(Modifier.fillMaxWidth(), color = Cyan)
+                        Text("Yerel model görev üzerinde çalışıyor. İşlem sayısı sınırlandırılmıştır.", color = Muted, fontSize = 11.sp)
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            enabled = !jarvisBusy,
+                            onClick = {
+                                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, "tr-TR")
+                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "tr-TR")
+                                    putExtra(RecognizerIntent.EXTRA_PROMPT, "Eda'ya vermek istediğin görevi söyle")
+                                    putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                                }
+                                runCatching { voiceInput.launch(intent) }
+                                    .onFailure { jarvisReply = "Ses tanıma açılamadı. Görevi yazarak girebilirsin." }
+                            },
+                            modifier = Modifier.weight(0.8f)
+                        ) { Text("🎙 Ses") }
+                        OutlinedButton(
+                            enabled = jarvisReply.isNotBlank() && !jarvisBusy,
+                            onClick = {
+                                val speak = Intent(context, EdaForegroundService::class.java).apply {
+                                    action = "ACTION_SPEAK"
+                                    putExtra("text", jarvisReply)
+                                }
+                                runCatching { context.startService(speak) }
+                            },
+                            modifier = Modifier.weight(0.9f)
+                        ) { Text("Yanıtı oku") }
+                        Button(
+                            enabled = jarvisTask.isNotBlank() && !jarvisBusy,
+                            onClick = {
+                                val request = jarvisTask.trim()
+                                jarvisBusy = true
+                                jarvisReply = "Yerel Jarvis görevi planlıyor ve izinli adımları uyguluyor…"
+                                chatScope.launch {
+                                    val result = runCatching {
+                                        AiRouter.sor(
+                                            kullaniciSorusu = request,
+                                            sistemMesaji = """
+                                                Sen Eda'nın Jarvis görev ajanısın. Kullanıcının son isteğini Türkçe olarak yerine getir.
+                                                Yalnızca uygulamanın verdiği izinli araçları kullan; kod, shell, rastgele paket veya serbest Intent çalıştırma.
+                                                Telefon görevinde önce ekranı oku, sonra kullanıcının açıkça istediği tek adımı uygula ve ekranı yeniden okuyarak sonucu doğrula.
+                                                Erişilebilirlik hizmeti kapalıysa bunu açıkça söyle. Model veya araç sonucunu görmeden işlemin yapıldığını iddia etme.
+                                                Parola, PIN, OTP, kimlik doğrulama, banka/ödeme/transfer, mesaj gönderme, satın alma, silme veya nihai onay adımını yapma; o noktada dur ve kullanıcıya bırak.
+                                                Gereksiz adım ekleme; belirsiz bir uygulama veya hedef varsa tahmin yürütmek yerine sor.
+                                                Doğal Türkçe kullan; kısa ama sonucu ve varsa başarısız adımı doğru anlat.
+                                            """.trimIndent(),
+                                            context = context,
+                                            localOnly = true
+                                        )
+                                    }.getOrElse { error ->
+                                        android.util.Log.e("EDA-Jarvis", "Local task failed", error)
+                                        null
+                                    }
+                                    jarvisReply = result?.takeIf { it.isNotBlank() }
+                                        ?: "Yerel Ollama yanıt vermedi. Termux'ta Ollama ve gemma2:2b modelinin çalıştığını kontrol et. Bu görev için bulut sağlayıcısına geçilmedi."
+                                    jarvisBusy = false
+                                }
+                            },
+                            modifier = Modifier.weight(1.3f)
+                        ) { Text(if (jarvisBusy) "Çalışıyor…" else "Jarvis ile yürüt") }
+                    }
                 }
             }
         }
