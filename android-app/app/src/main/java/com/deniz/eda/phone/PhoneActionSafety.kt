@@ -54,18 +54,18 @@ object PhoneActionSafety {
 
     fun isDangerousTarget(target: String): Boolean {
         val text = normalize(target)
-        return text.isBlank() || dangerousActions.any(text::contains)
+        return text.isBlank() || dangerousActions.any { cue -> text.contains(cue) }
     }
 
     fun isSensitiveScreen(visibleText: String): Boolean {
         val text = normalize(visibleText)
         if (text.isBlank()) return false
-        return sensitiveScreenCues.any(text::contains)
+        return sensitiveScreenCues.any { cue -> text.contains(cue) }
     }
 
     fun isSensitiveField(fieldContext: String): Boolean {
         val text = normalize(fieldContext)
         if (text.isBlank()) return false
-        return sensitiveFieldCues.any(text::contains)
+        return sensitiveFieldCues.any { cue -> text.contains(cue) }
     }
 }
