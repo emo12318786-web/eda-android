@@ -3,7 +3,9 @@ package com.deniz.eda.ui.dashboard
 import com.deniz.eda.core.Settings
 import com.deniz.eda.ai.AiRouter
 import com.deniz.eda.ai.TermuxDeepChat
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 import android.content.Intent
 import android.speech.RecognizerIntent
@@ -294,6 +296,16 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                         phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("read")
                         phoneScreenText = phoneControlStatus
                     }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻ Ekranı oku") }
+                    OutlinedButton(onClick = {
+                        phoneControlStatus = "Görsel OCR çalışıyor…"
+                        chatScope.launch {
+                            val visualText = withContext(Dispatchers.IO) {
+                                com.deniz.eda.phone.PhoneControlService.run("vision")
+                            }
+                            phoneControlStatus = "Görsel OCR tamamlandı."
+                            phoneScreenText = visualText
+                        }
+                    }, modifier = Modifier.fillMaxWidth()) { Text("⌕ Ekranı görsel OCR ile oku") }
                     Text(phoneControlStatus, color = Muted, fontSize = 12.sp)
                     Column(Modifier.weight(1f).fillMaxWidth().background(PanelRaised, RoundedCornerShape(12.dp))
                         .verticalScroll(rememberScrollState()).padding(10.dp)) {
@@ -306,6 +318,18 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("tap", phoneTarget)
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
                         }, modifier = Modifier.weight(1f)) { Text("Metne dokun") }
+                        OutlinedButton(enabled = phoneTarget.isNotBlank(), onClick = {
+                            phoneControlStatus = "OCR metin eşleşmesi aranıyor…"
+                            chatScope.launch {
+                                val (actionResult, visualText) = withContext(Dispatchers.IO) {
+                                    val action = com.deniz.eda.phone.PhoneControlService.run("tap_visual", phoneTarget)
+                                    delay(1100)
+                                    action to com.deniz.eda.phone.PhoneControlService.run("vision")
+                                }
+                                phoneControlStatus = actionResult
+                                phoneScreenText = visualText
+                            }
+                        }, modifier = Modifier.weight(1f)) { Text("OCR ile dokun") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("up")
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
@@ -331,7 +355,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
                         }, modifier = Modifier.weight(1f)) { Text("Bildirimler") }
                     }
-                    Text("برای Yaz، ابتدا کادر مقصد را خودت انتخاب کن؛ سپس صفحه را دوباره بخوان تا نتیجه بررسی شود.", color = Muted, fontSize = 11.sp)
+                    Text("Yazmadan önce hedef alanı kendin seç. OCR görsel metni tanır; korumalı ekranlarda Android görüntü vermeyebilir.", color = Muted, fontSize = 11.sp)
                 }
             }
         }
