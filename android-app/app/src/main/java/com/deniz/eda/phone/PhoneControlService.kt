@@ -139,24 +139,33 @@ class PhoneControlService : AccessibilityService() {
         return lines.joinToString("\n") { "${it.text} [${it.centerX},${it.centerY}]" }.take(7000)
     }
 
-    private fun blockedTarget(target: String): Boolean {
-        val blocked = listOf(
-            "send", "submit", "delete", "remove", "pay", "purchase", "buy", "confirm", "transfer",
-            "gönder", "göndər", "sil", "öde", "ödeme", "satın al", "onayla", "havale",
-            "para gönder", "mesaj gönder", "ارسال", "فرستادن", "حذف", "پرداخت", "خرید",
-            "انتقال", "تأیید", "تایید", "ثبت نهایی", "پرداخت نهایی", "تراکنش", "انتقال وجه",
-            "təsdiq et", "pul köçür", "ödəniş"
-        )
-        return blocked.any { target.contains(it, ignoreCase = true) }
-    }
+    private fun blockedTarget(target: String): Boolean =
+        PhoneActionSafety.isDangerousTarget(target)
+
+    private fun visibleScreenText(nodes: List<AccessibilityNodeInfo>): String =
+        nodes.asSequence()
+            .filter { it.isVisibleToUser }
+            .mapNotNull { node ->
+                listOfNotNull(
+                    node.text?.toString(),
+                    node.contentDescription?.toString(),
+                    node.hintText?.toString()
+                ).joinToString(" ").takeIf { it.isNotBlank() }
+            }
+            .distinct()
+            .joinToString("\n")
 
     fun tap(target: String): String? = main {
         val query = target.trim()
         if (query.isBlank()) return@main "Dokunulacak metin boş."
         if (blockedTarget(query)) {
-            return@main "Güvenlik için hassas işlem engellendi. Gönderme, silme, satın alma, ödeme veya para transferi işlemini kendin kontrol et."
+            return@main "Güvenlik için gönderme, silme, satın alma, ödeme, transfer veya nihai onay düğmesine dokunulmadı."
         }
-        val node = nodes().firstOrNull {
+        val screenNodes = nodes()
+        if (PhoneActionSafety.isSensitiveScreen(visibleScreenText(screenNodes))) {
+            return@main "Güvenlik nedeniyle banka, ödeme veya finansal işlem ekranında otomatik dokunma kapalı. Bu adımı kendin kontrol et."
+        }
+        val node = screenNodes.firstOrNull {
             it.isVisibleToUser &&
                 (it.text?.toString()?.contains(query, true) == true ||
                     it.contentDescription?.toString()?.contains(query, true) == true)
@@ -172,9 +181,14 @@ class PhoneControlService : AccessibilityService() {
         val query = target.trim()
         if (query.isBlank()) return "Görsel olarak bulunacak metni belirt."
         if (blockedTarget(query)) {
-            return "Güvenlik için hassas işlem engellendi. Son gönderme, silme, satın alma, ödeme veya transfer adımını kendin yap."
+            return "Güvenlik için gönderme, silme, satın alma, ödeme, transfer veya nihai onay düğmesine dokunulmadı."
         }
-        val match = recognizeVisualLines()?.firstOrNull { it.text.contains(query, ignoreCase = true) }
+        val visualLines = recognizeVisualLines()
+            ?: return "Görsel OCR başarısız oldu. Ekran korumalı olabilir veya Android ekran görüntüsüne izin vermemiş olabilir."
+        if (PhoneActionSafety.isSensitiveScreen(visualLines.joinToString(" ") { it.text })) {
+            return "Güvenlik nedeniyle banka, ödeme veya finansal işlem ekranında OCR ile otomatik dokunma kapalı."
+        }
+        val match = visualLines.firstOrNull { it.text.contains(query, ignoreCase = true) }
             ?: return "Görsel OCR'de «$query» bulunamadı. Ekran korumalı olabilir veya metin net olmayabilir."
         val accepted = main {
             val path = Path().apply { moveTo(match.centerX.toFloat(), match.centerY.toFloat()) }
@@ -189,9 +203,25 @@ class PhoneControlService : AccessibilityService() {
     }
 
     fun type(value: String): String? = main {
-        val node = nodes().firstOrNull { it.isVisibleToUser && it.isFocused && it.isEditable }
+        val screenNodes = nodes()
+        val node = screenNodes.firstOrNull { it.isVisibleToUser && it.isFocused && it.isEditable }
             ?: return@main "Önce metin alanını kendin seç."
-        if (node.isPassword) return@main "Güvenlik için EDA parola veya güvenlik kodu alanına metin yazmaz."
+        val fieldLabels = StringBuilder()
+        var fieldNode: AccessibilityNodeInfo? = node
+        var ancestorDepth = 0
+        while (fieldNode != null && ancestorDepth < 4) {
+            fieldLabels.append(' ')
+                .append(fieldNode.text?.toString().orEmpty()).append(' ')
+                .append(fieldNode.contentDescription?.toString().orEmpty()).append(' ')
+                .append(fieldNode.hintText?.toString().orEmpty()).append(' ')
+                .append(fieldNode.viewIdResourceName.orEmpty())
+            fieldNode = fieldNode.parent
+            ancestorDepth++
+        }
+        if (node.isPassword || PhoneActionSafety.isSensitiveField(fieldLabels.toString()) ||
+            PhoneActionSafety.isSensitiveScreen(visibleScreenText(screenNodes))) {
+            return@main "Güvenlik için EDA parola, OTP, doğrulama kodu, kart veya finansal bilgi alanına metin yazmaz."
+        }
         val safeValue = value.take(2000)
         if (safeValue.isBlank()) return@main "Yazılacak metin boş."
         val args = android.os.Bundle().apply {
