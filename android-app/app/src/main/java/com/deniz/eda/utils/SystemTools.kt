@@ -63,6 +63,12 @@ Kullanıcı şu tür sorular sorarsa, sadece <TOOL>ADI</TOOL> yaz:
 - Kullanıcı açıkça "hafızana kaydet/hatırla" derse → <TOOL>SAVE_MEMORY: kaydedilecek metin</TOOL>
 - Kullanıcı açıkça "günlüğüme yaz" derse → <TOOL>ADD_DIARY: günlük metni</TOOL>
 - Kullanıcı belirli saatli hatırlatma isterse → <TOOL>ADD_REMINDER|SAAT|DAKİKA|hatırlatma metni</TOOL>
+- Kullanıcı açıkça ekrandaki metni okumamı isterse → <TOOL>SCREEN_READ</TOOL>
+- Kullanıcı ekranda görünen, hassas olmayan bir etikete dokunmamı isterse → <TOOL>SCREEN_TAP: görünen etiket</TOOL>
+- Kullanıcı açıkça seçili metin alanına verdiği metni yazmamı isterse → <TOOL>SCREEN_TYPE: yazılacak metin</TOOL>
+- Kullanıcı ekranı yukarı/aşağı kaydırmamı isterse → <TOOL>SCREEN_SCROLL_UP</TOOL> / <TOOL>SCREEN_SCROLL_DOWN</TOOL>
+- Kullanıcı geri, ana ekran veya bildirim panelini isterse → <TOOL>SCREEN_BACK</TOOL> / <TOOL>SCREEN_HOME</TOOL> / <TOOL>SCREEN_NOTIFICATIONS</TOOL>
+- Ekran araçları için Android erişilebilirlik hizmeti kullanıcı tarafından önceden etkinleştirilmiş olmalı. Önce ekranı oku, sonra yalnızca istenen işlemi yap ve tekrar okuyarak sonucu doğrula. Bankacılık, kimlik doğrulama, parola, ödeme, para transferi, mesaj gönderme, satın alma veya silme işlemlerini tamamlama; son onayı kullanıcıya bırak.
 
 ÖRNEK:
 Kullanıcı: "internete erişimin var mı?"
@@ -97,6 +103,14 @@ Sen: Merhaba ${Settings.kullaniciAdi}, iyiyim. Sen nasılsın?
                 "OPEN_WIFI_SETTINGS" -> openSettingsPanel(context, "wifi")
                 "OPEN_SOUND_SETTINGS" -> openSettingsPanel(context, "sound")
                 "OPEN_DISPLAY_SETTINGS" -> openSettingsPanel(context, "display")
+                "SCREEN_READ" -> com.deniz.eda.phone.PhoneControlService.run("read")
+                "SCREEN_TAP" -> if (arguments.isBlank()) "لمس için ekrandaki tam etiketi belirt." else com.deniz.eda.phone.PhoneControlService.run("tap", arguments)
+                "SCREEN_TYPE" -> if (arguments.isBlank()) "Yazılacak metin boş." else com.deniz.eda.phone.PhoneControlService.run("type", arguments)
+                "SCREEN_SCROLL_UP" -> com.deniz.eda.phone.PhoneControlService.run("up")
+                "SCREEN_SCROLL_DOWN" -> com.deniz.eda.phone.PhoneControlService.run("down")
+                "SCREEN_BACK" -> com.deniz.eda.phone.PhoneControlService.run("back")
+                "SCREEN_HOME" -> com.deniz.eda.phone.PhoneControlService.run("home")
+                "SCREEN_NOTIFICATIONS" -> com.deniz.eda.phone.PhoneControlService.run("notifications")
                 "SAVE_MEMORY" -> arguments.trim().takeIf { it.isNotBlank() }?.let {
                     MemoryStore.ekle(context, it, "agent")
                     "Bilgi hafızaya kaydedildi."
