@@ -49,6 +49,7 @@ Kullanıcı şu tür sorular sorarsa, sadece <TOOL>ADI</TOOL> yaz:
 - "ne öğrendin?" → <TOOL>GET_LEARNED</TOOL>
 - "saat kaç?" → <TOOL>GET_TIME</TOOL>
 - "bugünün tarihi" → <TOOL>GET_DATE</TOOL>
+- Kullanıcı açıkça “ekranda ne yazıyor?”, “ekranı oku” veya “bu sayfada ne var?” derse, yalnızca cihaz içindeki yerel modelle → <TOOL>READ_SCREEN</TOOL>
 - Kullanıcı açıkça feneri aç/kapat derse → <TOOL>FLASHLIGHT_ON</TOOL> / <TOOL>FLASHLIGHT_OFF</TOOL>
 - Kullanıcı YouTube, Chrome, WhatsApp, Telegram, Haritalar, Telefon, Mesajlar veya Kamera aç derse → <TOOL>OPEN_APP: uygulama</TOOL>
 - Kullanıcı Wi-Fi, ses veya ekran ayarlarını aç derse → <TOOL>OPEN_WIFI_SETTINGS</TOOL> / <TOOL>OPEN_SOUND_SETTINGS</TOOL> / <TOOL>OPEN_DISPLAY_SETTINGS</TOOL>
@@ -93,6 +94,7 @@ Sen: Merhaba ${Settings.kullaniciAdi}, iyiyim. Sen nasılsın?
                 "GET_LEARNED" -> learnedText(context)
                 "GET_TIME" -> timeText()
                 "GET_DATE" -> dateText()
+                "READ_SCREEN" -> com.deniz.eda.phone.ScreenReaderService.readVisibleScreen()
                 "OPEN_APP" -> openAllowedApp(context, arguments)
                 "OPEN_WIFI_SETTINGS" -> openSettingsPanel(context, "wifi")
                 "OPEN_SOUND_SETTINGS" -> openSettingsPanel(context, "sound")
