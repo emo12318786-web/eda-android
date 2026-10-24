@@ -92,6 +92,20 @@
             </intent-filter>
         </activity>
 
+        <!-- Optional read-only screen reader; the user must explicitly enable it in Accessibility settings. -->
+        <service
+            android:name=".phone.ScreenReaderService"
+            android:label="EDA Ekran Okuyucu"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/phone_control_service" />
+        </service>
+
         <!-- Control Panel — WebView + NanoHTTPD -->
         <activity
             android:name=".panel.PanelActivity"
