@@ -4,4 +4,5 @@
     <string name="notif_sleeping">💤 Eda uyku modunda dinliyor…</string>
     <string name="notif_active">✅ Eda dinliyor…</string>
     <string name="phone_control_description">EDA, kullanıcı izin verdiğinde ekrandaki metni okuyabilir ve seçilen temel ekran işlemlerini yapabilir.</string>
+    <string name="phone_control_service_description">Eda'nın yalnızca kullanıcı etkinleştirdiğinde ekrandaki metni okuması ve izin verilen dokunma, yazma ve kaydırma işlemlerini yapması.</string>
 </resources>
