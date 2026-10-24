@@ -344,53 +344,53 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                         }
                         Text("✕", Modifier.clickable { phoneControlOpen = false }.padding(8.dp), color = Muted)
                     }
-                    Text("این دسترسی قدرتمند است. قفل گوشی دور زده نمی‌شود و لمس خودکار دکمه‌های ارسال، حذف، پرداخت و خرید مسدود است.", color = Warn, fontSize = 12.sp)
+                    Text("Bu güçlü bir izindir. Telefon kilidi aşılmaz; gönderme, silme, ödeme ve satın alma işlemleri otomatik yapılmaz.", color = Warn, fontSize = 12.sp)
                     Button(onClick = {
                         runCatching { context.startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
-                            .onFailure { phoneControlStatus = "تنظیمات دسترس‌پذیری باز نشد." }
-                    }, modifier = Modifier.fillMaxWidth()) { Text("فعال‌سازی EDA در تنظیمات دسترس‌پذیری") }
+                            .onFailure { phoneControlStatus = "Erişilebilirlik ayarları açılamadı." }
+                    }, modifier = Modifier.fillMaxWidth()) { Text("Erişilebilirlik ayarlarında EDA'yı etkinleştir") }
                     Button(onClick = {
                         phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("read")
                         phoneScreenText = phoneControlStatus
-                    }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻ خواندن صفحه") }
+                    }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻ Ekranı oku") }
                     Text(phoneControlStatus, color = Muted, fontSize = 12.sp)
                     Column(Modifier.weight(1f).fillMaxWidth().background(PanelRaised, RoundedCornerShape(12.dp))
                         .verticalScroll(rememberScrollState()).padding(10.dp)) {
                         Text(phoneScreenText, color = Color.White, fontSize = 13.sp, lineHeight = 19.sp)
                     }
-                    OutlinedTextField(value = phoneTarget, onValueChange = { phoneTarget = it }, label = { Text("متن دقیق عنصر برای لمس") },
+                    OutlinedTextField(value = phoneTarget, onValueChange = { phoneTarget = it }, label = { Text("Dokunulacak öğenin metni") },
                         modifier = Modifier.fillMaxWidth(), maxLines = 1)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Button(enabled = phoneTarget.isNotBlank(), onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("tap", phoneTarget)
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
-                        }, modifier = Modifier.weight(1f)) { Text("لمس متن") }
+                        }, modifier = Modifier.weight(1f)) { Text("Metne dokun") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("up")
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
-                        }, modifier = Modifier.weight(1f)) { Text("↑ بالا") }
+                        }, modifier = Modifier.weight(1f)) { Text("↑ Yukarı") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("down")
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
-                        }, modifier = Modifier.weight(1f)) { Text("↓ پایین") }
+                        }, modifier = Modifier.weight(1f)) { Text("↓ Aşağı") }
                     }
                     OutlinedTextField(value = phoneTypedText, onValueChange = { phoneTypedText = it },
-                        label = { Text("متن برای کادر فعال") }, modifier = Modifier.fillMaxWidth(), maxLines = 2)
+                        label = { Text("Etkin alana yazılacak metin") }, modifier = Modifier.fillMaxWidth(), maxLines = 2)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         OutlinedButton(enabled = phoneTypedText.isNotBlank(), onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("type", phoneTypedText)
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
-                        }, modifier = Modifier.weight(1f)) { Text("تایپ") }
+                        }, modifier = Modifier.weight(1f)) { Text("Yaz") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("back")
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
-                        }, modifier = Modifier.weight(1f)) { Text("بازگشت") }
+                        }, modifier = Modifier.weight(1f)) { Text("Geri") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("notifications")
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
-                        }, modifier = Modifier.weight(1f)) { Text("اعلان‌ها") }
+                        }, modifier = Modifier.weight(1f)) { Text("Bildirimler") }
                     }
-                    Text("برای تایپ، ابتدا کادر مقصد را خودت انتخاب کن؛ سپس صفحه را دوباره بخوان تا نتیجه بررسی شود.", color = Muted, fontSize = 11.sp)
+                    Text("برای Yaz، ابتدا کادر مقصد را خودت انتخاب کن؛ سپس صفحه را دوباره بخوان تا نتیجه بررسی شود.", color = Muted, fontSize = 11.sp)
                 }
             }
         }
