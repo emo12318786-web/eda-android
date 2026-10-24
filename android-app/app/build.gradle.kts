@@ -79,6 +79,9 @@ dependencies {
 
 
 
+    // Bundled, offline-capable OCR for locally reading accessible screenshots.
+    implementation("com.google.mlkit:text-recognition:16.0.1")
+
     // ═══ Health Connect ═══
     implementation("androidx.health.connect:connect-client:1.1.0-alpha10")
 }
