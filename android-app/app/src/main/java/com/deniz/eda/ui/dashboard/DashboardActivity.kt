@@ -29,6 +29,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.deniz.eda.core.Settings
 import com.deniz.eda.service.EdaForegroundService
 
@@ -100,6 +103,13 @@ class DashboardActivity : ComponentActivity() {
 private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Unit, onShareLog: () -> Unit) {
     val state by viewModel.state.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val screenReaderScope = rememberCoroutineScope()
+    var screenReaderOpen by remember { mutableStateOf(false) }
+    var screenReaderBusy by remember { mutableStateOf(false) }
+    var screenReaderOutput by remember {
+        mutableStateOf("Ekran okuyucuyu kullanmak için önce erişilebilirlik iznini etkinleştir.")
+    }
     val active = Settings.sonMod == "AKTIF"
     val sleeping = Settings.sonMod == "UYKU"
 
@@ -191,6 +201,15 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 ControlTile("▶", "Eda’yı başlat", "Eda’yı dinlemeye hazır hâle getir", Good) { onAction("ACTION_AKTIF") }
                 ControlTile("☾", "Uyku moduna al", "Uyandırma kelimesiyle yeniden etkinleşir", Cyan) { onAction("ACTION_UYKU") }
                 ControlTile("■", "Eda'yı durdur", "Arka plan servisini kapat", Bad) { onAction("ACTION_STOP") }
+                SectionHeader("EKRAN OKUYUCU", "Ekrandaki metni cihaz içinde oku")
+                ControlTile("▣", "Ekran okuyucuyu aç", "Görünür metni yerel olarak oku; ekran içeriği çevrimiçi servise gönderilmez", Cyan) {
+                    screenReaderOpen = true
+                    screenReaderOutput = if (com.deniz.eda.phone.ScreenReaderService.isEnabled()) {
+                        "Okuyucu etkin. Ekranı okumak için aşağıdaki düğmeye bas."
+                    } else {
+                        "Önce Android erişilebilirlik ayarlarından EDA Ekran Okuyucu hizmetini etkinleştir."
+                    }
+                }
                 SectionHeader("ÖZEL MODLAR", "Sesli komutla güvenli kontrol")
                 InfoNotice("🚘  Araba modu", "Eda'ya “araba modunu aç” diyebilirsin. Bu panel mevcut durumu gösterir.")
                 InfoNotice("🛡  Güvenlik modu", "Eda’ya “güvenlik modunu aç” diyerek etkinleştirebilirsin.")
@@ -221,6 +240,64 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             Text("EDA • YARDIMA HAZIR", Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 14.dp),
                 color = Muted, fontSize = 9.sp, letterSpacing = 2.sp, textAlign = TextAlign.Center)
         }
+    }
+
+    if (screenReaderOpen) {
+        AlertDialog(
+            onDismissRequest = { screenReaderOpen = false },
+            containerColor = Panel,
+            title = { Text("EDA Ekran Okuyucu", color = Color.White) },
+            text = {
+                Column(
+                    Modifier.fillMaxWidth().heightIn(max = 380.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        "Yalnızca açıkça istediğinde ekran okunur. Görüntü ve OCR cihazda işlenir; parola alanları okunmaz ve ekran metni çevrimiçi sağlayıcılara gönderilmez.",
+                        color = Muted, fontSize = 12.sp, lineHeight = 17.sp
+                    )
+                    OutlinedButton(
+                        onClick = {
+                            runCatching {
+                                context.startActivity(
+                                    Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                )
+                            }.onFailure {
+                                screenReaderOutput = "Android erişilebilirlik ayarları açılamadı."
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Erişilebilirlik ayarlarını aç") }
+                    Button(
+                        onClick = {
+                            if (!com.deniz.eda.phone.ScreenReaderService.isEnabled()) {
+                                screenReaderOutput = "Önce Android ayarlarından EDA Ekran Okuyucu hizmetini etkinleştir."
+                            } else {
+                                screenReaderScope.launch {
+                                    screenReaderBusy = true
+                                    screenReaderOutput = withContext(Dispatchers.IO) {
+                                        com.deniz.eda.phone.ScreenReaderService.readVisibleScreen()
+                                    }
+                                    screenReaderBusy = false
+                                }
+                            }
+                        },
+                        enabled = !screenReaderBusy,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (screenReaderBusy) CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp
+                        ) else Text("Ekranı oku")
+                    }
+                    Text(screenReaderOutput, color = Color.White, fontSize = 12.sp, lineHeight = 18.sp)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { screenReaderOpen = false }) { Text("Kapat") }
+            }
+        )
     }
 }
 
