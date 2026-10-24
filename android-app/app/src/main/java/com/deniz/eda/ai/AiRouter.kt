@@ -63,16 +63,24 @@ object AiRouter {
         sistemMesaji: String = """Sen Eda'sın; kullanıcının kişisel sesli asistanısın.
 KURALLAR:
 1. Doğal, sıcak ve anlaşılır İstanbul Türkçesiyle konuş.
-2. Kullanıcıya yalnızca kayıtlı adıyla hitap et: "${Settings.kullaniciAdi}". Ad boşsa isim kullanma. "Denizcim", "canım" veya kayıtlı olmayan lakaplar ekleme.
-3. Gereksiz resmiyet, tekrar ve kalıp cümlelerden kaçın; genellikle 1-2 kısa cümle kullan.
-4. Emoji kullanma; kullanıcı istemedikçe uzun açıklama yapma.
-5. Yalnızca gerçekten bir araç sonucu veya komut sonucu varsa işlemin yapıldığını söyle. Yapılmayan bir işlemi yapılmış gibi anlatma.
-6. Bu sohbet yolu doğrudan donanım kontrolü yapmaz. Bir donanım isteğinde kısa ve dürüstçe, bunu bu sohbet yolundan çalıştıramadığını söyle; varsa uygulamanın sesli komut yolunu denemesini öner.
-7. Kullanıcının sorusuna doğrudan cevap ver; emin olmadığın bilgiyi kesinmiş gibi sunma.""",
+2. Kullanıcı ekrandaki metni açıkça okumamı istediğinde READ_SCREEN aracını kullan. Ekran içeriği özel olabilir; bu isteği yalnızca yerel Ollama sağlayıcısında işle ve asla çevrimiçi sağlayıcıya düşme. Parola alanları okunmaz.\n3. Kullanıcıya yalnızca kayıtlı adıyla hitap et: "${Settings.kullaniciAdi}". Ad boşsa isim kullanma. "Denizcim", "canım" veya kayıtlı olmayan lakaplar ekleme.
+4. Gereksiz resmiyet, tekrar ve kalıp cümlelerden kaçın; genellikle 1-2 kısa cümle kullan.
+5. Emoji kullanma; kullanıcı istemedikçe uzun açıklama yapma.
+6. Yalnızca gerçekten bir araç sonucu veya komut sonucu varsa işlemin yapıldığını söyle. Yapılmayan bir işlemi yapılmış gibi anlatma.
+7. Bu sohbet yolu doğrudan donanım kontrolü yapmaz. Bir donanım isteğinde kısa ve dürüstçe, bunu bu sohbet yolundan çalıştıramadığını söyle; varsa uygulamanın sesli komut yolunu denemesini öner.
+8. Kullanıcının sorusuna doğrudan cevap ver; emin olmadığın bilgiyi kesinmiş gibi sunma.""",
         context: android.content.Context? = null
     ): String? = withContext(Dispatchers.IO) {
         val ctx = context ?: return@withContext null
-        for (s in saglayicilar(ctx)) {
+        val screenReadRequested = com.deniz.eda.phone.ScreenReadPolicy.isExplicitReadRequest(kullaniciSorusu)
+        val availableProviders = saglayicilar(ctx)
+        val candidates = if (screenReadRequested) {
+            availableProviders.filter { it.ad.contains("Ollama", ignoreCase = true) }
+        } else availableProviders
+        if (screenReadRequested && candidates.isEmpty()) {
+            return@withContext "Ekran okuma gizlilik için yalnızca yerel modelle kullanılabilir."
+        }
+        for (s in candidates) {
             val anahtar = s.apiKey()
             if (s.needsKey && anahtar.isBlank()) continue
             try {
@@ -122,6 +130,10 @@ KURALLAR:
                         "STOP_FIND_PHONE", "LOCK_PHONE", "RUN_SYSTEM_TEST", "LEARNING_ON", "LEARNING_OFF",
                         "OPEN_APP", "OPEN_WIFI_SETTINGS", "OPEN_SOUND_SETTINGS", "OPEN_DISPLAY_SETTINGS"
                     )
+                    if (toolName == "READ_SCREEN" && !screenReadRequested) {
+                        sonCevap = "Ekranı yalnızca açıkça okumamı istediğinde okuyabilirim."
+                        break
+                    }
                     if (toolName !in allowlist) {
                         sonCevap = "Bu araç EDA'da izinli değil."
                         break
