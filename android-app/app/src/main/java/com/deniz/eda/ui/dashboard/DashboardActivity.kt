@@ -124,6 +124,10 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
     var deepChatInput by remember { mutableStateOf("") }
     var deepChatReply by remember { mutableStateOf("Ollama · Termux üzerinden yerel sohbet.") }
     var deepChatBusy by remember { mutableStateOf(false) }
+    var screenControlOpen by remember { mutableStateOf(false) }
+    var screenControlResult by remember { mutableStateOf("Ekran kontrolünü kullanmak için önce erişilebilirlik iznini etkinleştir.") }
+    var screenTapTarget by remember { mutableStateOf("") }
+    var screenTypeText by remember { mutableStateOf("") }
     val chatScope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
     val voiceInput = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -227,6 +231,11 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     onAction("ACTION_AI_OLLAMA")
                     deepChatOpen = true
                 }
+                SectionHeader("TELEFON EKRANI", "Kullanıcı izniyle çalışan yerel kontrol")
+                ControlTile("📱", "Ekran kontrolünü aç", "Ekrandaki metni oku, kaydır, geri dön veya seçili metne dokun", Cyan) {
+                    screenControlOpen = true
+                    screenControlResult = "Hazır. Erişilebilirlik izni kapalıysa önce etkinleştir."
+                }
                 SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
                 ControlTile("▶", "Eda’yı başlat", "Eda’yı dinlemeye hazır hâle getir", Good) { onAction("ACTION_AKTIF") }
                 ControlTile("☾", "Uyku moduna al", "Uyandırma kelimesiyle yeniden etkinleşir", Cyan) { onAction("ACTION_UYKU") }
@@ -261,6 +270,56 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             Text("EDA • YARDIMA HAZIR", Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 14.dp),
                 color = Muted, fontSize = 9.sp, letterSpacing = 2.sp, textAlign = TextAlign.Center)
         }
+    }
+
+    if (screenControlOpen) {
+        AlertDialog(
+            onDismissRequest = { screenControlOpen = false },
+            title = { Text("EDA · Telefon ekranı") },
+            text = {
+                Column(
+                    Modifier.fillMaxWidth().heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(9.dp)
+                ) {
+                    Text("Ekran kontrolü yalnızca Android erişilebilirlik iznini sen açtığında çalışır. Bankacılık, ödeme, gönderme ve silme gibi hassas son işlemler EDA tarafından yapılmaz.", fontSize = 12.sp)
+                    Button(onClick = {
+                        runCatching {
+                            context.startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        }.onFailure { screenControlResult = "Erişilebilirlik ayarları açılamadı." }
+                    }, modifier = Modifier.fillMaxWidth()) { Text("⚙ Erişilebilirlik iznini etkinleştir") }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedButton(onClick = { screenControlResult = com.deniz.eda.phonecontrol.PhoneControlService.runTool("read") }, modifier = Modifier.weight(1f)) { Text("Ekranı oku") }
+                        OutlinedButton(onClick = { screenControlResult = com.deniz.eda.phonecontrol.PhoneControlService.runTool("back") }, modifier = Modifier.weight(1f)) { Text("← Geri") }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedButton(onClick = { screenControlResult = com.deniz.eda.phonecontrol.PhoneControlService.runTool("home") }, modifier = Modifier.weight(1f)) { Text("Ana ekran") }
+                        OutlinedButton(onClick = { screenControlResult = com.deniz.eda.phonecontrol.PhoneControlService.runTool("notifications") }, modifier = Modifier.weight(1f)) { Text("Bildirimler") }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedButton(onClick = { screenControlResult = com.deniz.eda.phonecontrol.PhoneControlService.runTool("scroll_up") }, modifier = Modifier.weight(1f)) { Text("↑ Yukarı") }
+                        OutlinedButton(onClick = { screenControlResult = com.deniz.eda.phonecontrol.PhoneControlService.runTool("scroll_down") }, modifier = Modifier.weight(1f)) { Text("↓ Aşağı") }
+                    }
+                    OutlinedTextField(value = screenTapTarget, onValueChange = { screenTapTarget = it },
+                        label = { Text("Ekranda dokunulacak metin") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                    OutlinedButton(onClick = {
+                        screenControlResult = com.deniz.eda.phonecontrol.PhoneControlService.runTool("tap", screenTapTarget)
+                    }, modifier = Modifier.fillMaxWidth(), enabled = screenTapTarget.isNotBlank()) { Text("Metne dokun") }
+                    OutlinedTextField(value = screenTypeText, onValueChange = { screenTypeText = it },
+                        label = { Text("Seçili alana yazılacak metin") }, modifier = Modifier.fillMaxWidth(), maxLines = 3)
+                    OutlinedButton(onClick = {
+                        screenControlResult = com.deniz.eda.phonecontrol.PhoneControlService.runTool("type", screenTypeText)
+                    }, modifier = Modifier.fillMaxWidth(), enabled = screenTypeText.isNotBlank()) { Text("Seçili alana yaz") }
+                    HorizontalDivider(color = Violet.copy(alpha = .22f))
+                    Text("Sonuç", color = Cyan, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text(screenControlResult, color = Color.White, fontSize = 12.sp, lineHeight = 18.sp)
+                }
+            },
+            confirmButton = { TextButton(onClick = { screenControlOpen = false }) { Text("Kapat") }
+            },
+            containerColor = Panel,
+            titleContentColor = Color.White,
+            textContentColor = Muted
+        )
     }
 
     if (deepChatOpen) {
