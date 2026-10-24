@@ -262,7 +262,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 HeroMini("SİSTEM DURUMU", "Bağlantıları ve kayıtlarını buradan kontrol et.")
                 SectionHeader("YAPAY ZEKÂ BAĞLANTILARI", "Son bağlantı kontrolünün sonucu")
                 StatusLine("🌐 İnternet", if (state.internetStatus) "Bağlı" else "Bağlı değil", state.internetStatus)
-                StatusLine("💎 Gemma Native", state.ollamaStatus, state.ollamaStatus.contains("hazır", true) && !state.ollamaStatus.contains("yok", true))
+                StatusLine("🦙 Ollama · Termux", state.ollamaStatus, state.ollamaStatus.contains("hazır", true) && !state.ollamaStatus.contains("yok", true))
                 StatusLine("⚡ Groq", state.groqStatus, state.groqStatus.contains("bağlı", true) && !state.groqStatus.contains("yok", true))
                 StatusLine("🌸 Pollinations", state.pollinationsStatus, state.pollinationsStatus.contains("açık", true) || state.pollinationsStatus.contains("çalışıyor", true))
                 SectionHeader("KAYITLARIN", "Bu telefonda saklanan bilgiler")
@@ -303,6 +303,13 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                         runCatching { context.startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
                             .onFailure { phoneControlStatus = "Erişilebilirlik ayarları açılamadı." }
                     }, modifier = Modifier.fillMaxWidth()) { Text("Erişilebilirlik ayarlarında EDA'yı etkinleştir") }
+                    OutlinedButton(onClick = {
+                        phoneControlStatus = if (com.deniz.eda.phone.PhoneControlService.isEnabled()) {
+                            "Ekran kontrolü etkin. Şimdi ekranı okuyabilir veya görevi Jarvis'e verebilirsin."
+                        } else {
+                            "EDA'nın erişilebilirlik izni henüz etkin değil. Ayarlardan EDA hizmetini açıp geri dön."
+                        }
+                    }, modifier = Modifier.fillMaxWidth()) { Text("Erişilebilirlik iznini kontrol et") }
                     Button(onClick = {
                         phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("read")
                         phoneScreenText = phoneControlStatus
