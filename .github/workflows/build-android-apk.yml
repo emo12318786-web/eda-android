@@ -44,7 +44,7 @@ jobs:
           gradle --version
           echo ""
           echo "=== build ==="
-          gradle assembleDebug --stacktrace --no-daemon
+          gradle testDebugUnitTest assembleDebug --stacktrace --no-daemon
 
       - name: Upload APK
         if: success()
