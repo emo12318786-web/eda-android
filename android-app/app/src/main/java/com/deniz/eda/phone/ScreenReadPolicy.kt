@@ -15,8 +15,12 @@ object ScreenReadPolicy {
             "ekranda ne yaz", "ekranda ne var", "ekrani oku", "ekrandaki yazi",
             "ekrandaki metin", "bu sayfada ne yaz", "bu sayfada ne var",
             "ekrani bana anlat", "ekrani analiz et", "ekran goruntusunu oku",
-            "ekranda gordugunu oku", "read the screen", "what is on the screen",
-            "what's on the screen", "what does the screen say"
+            "ekranda gordugunu oku", "burda ne yaziyor", "burada ne yaziyor",
+            "su ekranda ne yaziyor", "ekranda ne gorunuyor", "ekranda ne yazilib",
+            "ekranda neler yazir", "read the screen", "what is on the screen",
+            "what's on the screen", "what does the screen say",
+            "read what's on this page", "روی صفحه چی نوشته", "روی صفحه چه نوشته",
+            "صفحه را بخوان", "متن صفحه را بخوان"
         )
         return phrases.any(text::contains)
     }
