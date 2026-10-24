@@ -262,9 +262,15 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 HeroMini("SİSTEM DURUMU", "Bağlantıları ve kayıtlarını buradan kontrol et.")
                 SectionHeader("YAPAY ZEKÂ BAĞLANTILARI", "Son bağlantı kontrolünün sonucu")
                 StatusLine("🌐 İnternet", if (state.internetStatus) "Bağlı" else "Bağlı değil", state.internetStatus)
-                StatusLine("🦙 Ollama · Termux", state.ollamaStatus, state.ollamaStatus.contains("hazır", true) && !state.ollamaStatus.contains("yok", true))
-                StatusLine("⚡ Groq", state.groqStatus, state.groqStatus.contains("bağlı", true) && !state.groqStatus.contains("yok", true))
-                StatusLine("🌸 Pollinations", state.pollinationsStatus, state.pollinationsStatus.contains("açık", true) || state.pollinationsStatus.contains("çalışıyor", true))
+                StatusLine("🦙 Ollama · Termux", state.ollamaStatus,
+                    state.ollamaStatus.contains("açık", true) || state.ollamaStatus.contains("acik", true) ||
+                        state.ollamaStatus.contains("hazır", true))
+                StatusLine("⚡ Groq", state.groqStatus,
+                    (state.groqStatus.contains("bağlı", true) || state.groqStatus.contains("bagli", true)) &&
+                        !state.groqStatus.contains("yok", true) && !state.groqStatus.contains("hata", true))
+                StatusLine("🌸 Pollinations", state.pollinationsStatus,
+                    state.pollinationsStatus.contains("açık", true) || state.pollinationsStatus.contains("acik", true) ||
+                        state.pollinationsStatus.contains("çalışıyor", true) || state.pollinationsStatus.contains("calisiyor", true))
                 SectionHeader("KAYITLARIN", "Bu telefonda saklanan bilgiler")
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıt", Violet, Modifier.weight(1f))
