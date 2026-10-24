@@ -108,7 +108,7 @@ KURALLAR:
                 // EDA V5 Agent: en fazla 3 araç adımı; değişmeyen allowlist uygulanır.
                 // Ekran eylemleri açık kullanıcı isteği ve güvenlik kontrolleri gerektirir.
                 val mesajlar = mutableListOf(
-                    ChatMessage("system", sistemTam + "\n\nAGENT KURALLARI: En fazla 3 araç adımı kullan. Bilgi araçlarını <TOOL>ARAÇ_ADI</TOOL> biçiminde çağır. Kullanıcı açıkça bir bilgiyi hafızaya kaydet derse <TOOL>SAVE_MEMORY: metin</TOOL>; günlüğe yaz derse <TOOL>ADD_DIARY: metin</TOOL>; belirli saatli hatırlatma isterse <TOOL>ADD_REMINDER|SAAT|DAKİKA|metin</TOOL> biçimini kullan. Kayıt araçlarını ve telefon eylemlerini yalnızca kullanıcı açıkça istediğinde çalıştır. Ekran kontrolü için önce SCREEN_READ ile ekranı oku; kullanıcı açıkça bir dokunma, yazma, kaydırma veya navigasyon eylemi istemişse yalnızca o eylemi yap; sonra SCREEN_READ ile sonucu doğrula. SCREEN_TAP yalnızca hassas olmayan görünen etiketlere dokunabilir; SCREEN_TYPE sadece kullanıcının verdiği metni etkin, parola olmayan alana yazabilir. Parola, OTP, kilit ekranı, banka/ödeme/transfer, mesaj gönderme, satın alma, silme veya nihai onay işlemlerini yapma; hassas son adımı kullanıcıya bırak. Erişilebilirlik hizmeti kapalıysa kullanıcıya ayarlardan etkinleştirmesini söyle. Araç sonucunu görmeden işlem yapıldığını iddia etme. SMS gönderme veya konum paylaşma araçları bu Agent içinde yoktur; bunları yaptığını söyleme. Kamera aracı yalnızca kamera uygulamasını açar. Güvenlik/car modunu yalnızca bayrak değiştirerek etkinleştirdiğini iddia et."),
+                    ChatMessage("system", sistemTam + "\n\nAGENT KURALLARI: En fazla 3 araç adımı kullan. Bilgi araçlarını <TOOL>ARAÇ_ADI</TOOL> biçiminde çağır. Kullanıcı açıkça bir bilgiyi hafızaya kaydet derse <TOOL>SAVE_MEMORY: metin</TOOL>; günlüğe yaz derse <TOOL>ADD_DIARY: metin</TOOL>; belirli saatli hatırlatma isterse <TOOL>ADD_REMINDER|SAAT|DAKİKA|metin</TOOL> biçimini kullan. Kayıt araçlarını ve telefon eylemlerini yalnızca kullanıcı açıkça istediğinde çalıştır. Ekran kontrolü için önce SCREEN_READ veya SCREEN_VISION ile ekranı oku; kullanıcı açıkça bir dokunma, yazma, kaydırma veya navigasyon eylemi istemişse yalnızca o eylemi yap; sonra SCREEN_READ ile sonucu doğrula. SCREEN_TAP veya SCREEN_TAP_VISUAL yalnızca hassas olmayan görünen etiketlere dokunabilir; SCREEN_TYPE sadece kullanıcının verdiği metni etkin, parola olmayan alana yazabilir. Parola, OTP, kilit ekranı, banka/ödeme/transfer, mesaj gönderme, satın alma, silme veya nihai onay işlemlerini yapma; hassas son adımı kullanıcıya bırak. Erişilebilirlik hizmeti kapalıysa kullanıcıya ayarlardan etkinleştirmesini söyle. Araç sonucunu görmeden işlem yapıldığını iddia etme. SMS gönderme veya konum paylaşma araçları bu Agent içinde yoktur; bunları yaptığını söyleme. Kamera aracı yalnızca kamera uygulamasını açar. Güvenlik/car modunu yalnızca bayrak değiştirerek etkinleştirdiğini iddia et."),
                     ChatMessage("user", kullaniciSorusu)
                 )
                 var sonCevap: String? = null
@@ -171,14 +171,19 @@ KURALLAR:
                         "OPEN_SETTINGS", "OPEN_TTS_SETTINGS", "OPEN_CAMERA", "FIND_PHONE",
                         "STOP_FIND_PHONE", "LOCK_PHONE", "RUN_SYSTEM_TEST", "LEARNING_ON", "LEARNING_OFF",
                         "OPEN_APP", "OPEN_WIFI_SETTINGS", "OPEN_SOUND_SETTINGS", "OPEN_DISPLAY_SETTINGS",
-                        "SCREEN_READ", "SCREEN_TAP", "SCREEN_TYPE", "SCREEN_SCROLL_UP", "SCREEN_SCROLL_DOWN",
-                        "SCREEN_BACK", "SCREEN_HOME", "SCREEN_NOTIFICATIONS"
+                        "SCREEN_READ", "SCREEN_VISION", "SCREEN_TAP", "SCREEN_TAP_VISUAL", "SCREEN_TYPE",
+                        "SCREEN_SCROLL_UP", "SCREEN_SCROLL_DOWN", "SCREEN_BACK", "SCREEN_HOME", "SCREEN_NOTIFICATIONS"
                     )
                     if (toolName !in allowlist) {
                         sonCevap = "Bu araç EDA'da izinli değil."
                         break
                     }
                     val toolArgs = match.groupValues.getOrNull(2).orEmpty().trim()
+                    // Screen text may contain private notifications or account data. Never pass it to a cloud provider.
+                    if (toolName.startsWith("SCREEN_") && s.ad != "Ollama") {
+                        sonCevap = "Gizlilik için ekran kontrolü yalnızca yerel Ollama üzerinden çalışır. Yerel Ollama'yı seçip yeniden dene."
+                        break
+                    }
                     val toolResult = com.deniz.eda.utils.SystemTools.runTool(toolName, context, toolArgs)
                     android.util.Log.i("AiRouter", "🔧 Agent tool=$toolName")
                     mesajlar.add(ChatMessage("assistant", cevap))
