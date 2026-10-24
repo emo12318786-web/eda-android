@@ -100,7 +100,7 @@
         </activity>
 
         <service
-            android:name=".phonecontrol.PhoneControlService"
+            android:name=".phone.PhoneControlService"
             android:label="EDA Ekran Kontrolü"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:exported="true">
