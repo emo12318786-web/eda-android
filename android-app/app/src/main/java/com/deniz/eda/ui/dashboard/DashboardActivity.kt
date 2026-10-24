@@ -124,6 +124,11 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
     var deepChatInput by remember { mutableStateOf("") }
     var deepChatReply by remember { mutableStateOf("Ollama · Termux üzerinden yerel sohbet.") }
     var deepChatBusy by remember { mutableStateOf(false) }
+    var phoneControlOpen by remember { mutableStateOf(false) }
+    var phoneScreenText by remember { mutableStateOf("Ekranı okumak için düğmeye bas.") }
+    var phoneTarget by remember { mutableStateOf("") }
+    var phoneTypedText by remember { mutableStateOf("") }
+    var phoneControlStatus by remember { mutableStateOf("") }
     var screenControlOpen by remember { mutableStateOf(false) }
     var screenControlResult by remember { mutableStateOf("Ekran kontrolünü kullanmak için önce erişilebilirlik iznini etkinleştir.") }
     var screenTapTarget by remember { mutableStateOf("") }
@@ -236,6 +241,11 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     screenControlOpen = true
                     screenControlResult = "Hazır. Erişilebilirlik izni kapalıysa önce etkinleştir."
                 }
+                SectionHeader("PHONE HARNESS", "Ekran kontrolü · Android erişilebilirlik")
+                ControlTile("▣", "Telefon ekranını kontrol et", "Ekranı oku, metinle dokun, seçili alana yaz ve kaydır", Cyan) {
+                    phoneControlOpen = true
+                    phoneControlStatus = if (com.deniz.eda.phone.PhoneControlService.isEnabled()) "Ekran kontrolü etkin." else "Önce erişilebilirlik ayarlarından EDA hizmetini etkinleştir."
+                }
                 SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
                 ControlTile("▶", "Eda’yı başlat", "Eda’yı dinlemeye hazır hâle getir", Good) { onAction("ACTION_AKTIF") }
                 ControlTile("☾", "Uyku moduna al", "Uyandırma kelimesiyle yeniden etkinleşir", Cyan) { onAction("ACTION_UYKU") }
@@ -320,6 +330,70 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             titleContentColor = Color.White,
             textContentColor = Muted
         )
+    }
+
+    if (phoneControlOpen) {
+        Dialog(onDismissRequest = { phoneControlOpen = false }) {
+            Surface(Modifier.fillMaxWidth().fillMaxHeight(0.9f), shape = RoundedCornerShape(24.dp),
+                color = Panel, border = BorderStroke(1.dp, Cyan.copy(alpha = 0.35f))) {
+                Column(Modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("EDA · PHONE CONTROL", color = Cyan, fontWeight = FontWeight.Bold)
+                            Text("Phone Harness esinli · Yerel erişilebilirlik", color = Muted, fontSize = 11.sp)
+                        }
+                        Text("✕", Modifier.clickable { phoneControlOpen = false }.padding(8.dp), color = Muted)
+                    }
+                    Text("این دسترسی قدرتمند است. قفل گوشی دور زده نمی‌شود و لمس خودکار دکمه‌های ارسال، حذف، پرداخت و خرید مسدود است.", color = Warn, fontSize = 12.sp)
+                    Button(onClick = {
+                        runCatching { context.startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+                            .onFailure { phoneControlStatus = "تنظیمات دسترس‌پذیری باز نشد." }
+                    }, modifier = Modifier.fillMaxWidth()) { Text("فعال‌سازی EDA در تنظیمات دسترس‌پذیری") }
+                    Button(onClick = {
+                        phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("read")
+                        phoneScreenText = phoneControlStatus
+                    }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻ خواندن صفحه") }
+                    Text(phoneControlStatus, color = Muted, fontSize = 12.sp)
+                    Column(Modifier.weight(1f).fillMaxWidth().background(PanelRaised, RoundedCornerShape(12.dp))
+                        .verticalScroll(rememberScrollState()).padding(10.dp)) {
+                        Text(phoneScreenText, color = Color.White, fontSize = 13.sp, lineHeight = 19.sp)
+                    }
+                    OutlinedTextField(value = phoneTarget, onValueChange = { phoneTarget = it }, label = { Text("متن دقیق عنصر برای لمس") },
+                        modifier = Modifier.fillMaxWidth(), maxLines = 1)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Button(enabled = phoneTarget.isNotBlank(), onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("tap", phoneTarget)
+                            phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
+                        }, modifier = Modifier.weight(1f)) { Text("لمس متن") }
+                        OutlinedButton(onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("up")
+                            phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
+                        }, modifier = Modifier.weight(1f)) { Text("↑ بالا") }
+                        OutlinedButton(onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("down")
+                            phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
+                        }, modifier = Modifier.weight(1f)) { Text("↓ پایین") }
+                    }
+                    OutlinedTextField(value = phoneTypedText, onValueChange = { phoneTypedText = it },
+                        label = { Text("متن برای کادر فعال") }, modifier = Modifier.fillMaxWidth(), maxLines = 2)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedButton(enabled = phoneTypedText.isNotBlank(), onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("type", phoneTypedText)
+                            phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
+                        }, modifier = Modifier.weight(1f)) { Text("تایپ") }
+                        OutlinedButton(onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("back")
+                            phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
+                        }, modifier = Modifier.weight(1f)) { Text("بازگشت") }
+                        OutlinedButton(onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("notifications")
+                            phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
+                        }, modifier = Modifier.weight(1f)) { Text("اعلان‌ها") }
+                    }
+                    Text("برای تایپ، ابتدا کادر مقصد را خودت انتخاب کن؛ سپس صفحه را دوباره بخوان تا نتیجه بررسی شود.", color = Muted, fontSize = 11.sp)
+                }
+            }
+        }
     }
 
     if (deepChatOpen) {
