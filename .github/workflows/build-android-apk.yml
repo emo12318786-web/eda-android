@@ -1,4 +1,5 @@
 name: Build Android APK
+run-name: EDA Android tests and debug APK (${{ github.ref_name }})
 
 on:
   push:
