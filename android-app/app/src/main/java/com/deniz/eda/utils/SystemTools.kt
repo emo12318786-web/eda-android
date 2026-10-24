@@ -63,8 +63,10 @@ Kullanıcı şu tür sorular sorarsa, sadece <TOOL>ADI</TOOL> yaz:
 - Kullanıcı açıkça "hafızana kaydet/hatırla" derse → <TOOL>SAVE_MEMORY: kaydedilecek metin</TOOL>
 - Kullanıcı açıkça "günlüğüme yaz" derse → <TOOL>ADD_DIARY: günlük metni</TOOL>
 - Kullanıcı belirli saatli hatırlatma isterse → <TOOL>ADD_REMINDER|SAAT|DAKİKA|hatırlatma metni</TOOL>
-- Kullanıcı açıkça ekrandaki metni okumamı isterse → <TOOL>SCREEN_READ</TOOL>
+- Kullanıcı açıkça erişilebilir metni okumamı isterse → <TOOL>SCREEN_READ</TOOL>
+- Kullanıcı ekrandaki görünür metinleri OCR ile okumamı isterse → <TOOL>SCREEN_VISION</TOOL>
 - Kullanıcı ekranda görünen, hassas olmayan bir etikete dokunmamı isterse → <TOOL>SCREEN_TAP: görünen etiket</TOOL>
+- Kullanıcı erişilebilirlik ağacında bulunmayan görünür bir etikete dokunmamı isterse → <TOOL>SCREEN_TAP_VISUAL: OCR'de görünen etiket</TOOL>
 - Kullanıcı açıkça seçili metin alanına verdiği metni yazmamı isterse → <TOOL>SCREEN_TYPE: yazılacak metin</TOOL>
 - Kullanıcı ekranı yukarı/aşağı kaydırmamı isterse → <TOOL>SCREEN_SCROLL_UP</TOOL> / <TOOL>SCREEN_SCROLL_DOWN</TOOL>
 - Kullanıcı geri, ana ekran veya bildirim panelini isterse → <TOOL>SCREEN_BACK</TOOL> / <TOOL>SCREEN_HOME</TOOL> / <TOOL>SCREEN_NOTIFICATIONS</TOOL>
@@ -104,7 +106,9 @@ Sen: Merhaba ${Settings.kullaniciAdi}, iyiyim. Sen nasılsın?
                 "OPEN_SOUND_SETTINGS" -> openSettingsPanel(context, "sound")
                 "OPEN_DISPLAY_SETTINGS" -> openSettingsPanel(context, "display")
                 "SCREEN_READ" -> com.deniz.eda.phone.PhoneControlService.run("read")
+                "SCREEN_VISION" -> com.deniz.eda.phone.PhoneControlService.run("vision")
                 "SCREEN_TAP" -> if (arguments.isBlank()) "Dokunulacak ekrandaki etiketi belirt." else com.deniz.eda.phone.PhoneControlService.run("tap", arguments)
+                "SCREEN_TAP_VISUAL" -> if (arguments.isBlank()) "Görsel olarak bulunacak etiketi belirt." else com.deniz.eda.phone.PhoneControlService.run("tap_visual", arguments)
                 "SCREEN_TYPE" -> if (arguments.isBlank()) "Yazılacak metin boş." else com.deniz.eda.phone.PhoneControlService.run("type", arguments)
                 "SCREEN_SCROLL_UP" -> com.deniz.eda.phone.PhoneControlService.run("up")
                 "SCREEN_SCROLL_DOWN" -> com.deniz.eda.phone.PhoneControlService.run("down")
