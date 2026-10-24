@@ -104,7 +104,7 @@ Sen: Merhaba ${Settings.kullaniciAdi}, iyiyim. Sen nasılsın?
                 "OPEN_SOUND_SETTINGS" -> openSettingsPanel(context, "sound")
                 "OPEN_DISPLAY_SETTINGS" -> openSettingsPanel(context, "display")
                 "SCREEN_READ" -> com.deniz.eda.phone.PhoneControlService.run("read")
-                "SCREEN_TAP" -> if (arguments.isBlank()) "لمس için ekrandaki tam etiketi belirt." else com.deniz.eda.phone.PhoneControlService.run("tap", arguments)
+                "SCREEN_TAP" -> if (arguments.isBlank()) "Dokunulacak ekrandaki etiketi belirt." else com.deniz.eda.phone.PhoneControlService.run("tap", arguments)
                 "SCREEN_TYPE" -> if (arguments.isBlank()) "Yazılacak metin boş." else com.deniz.eda.phone.PhoneControlService.run("type", arguments)
                 "SCREEN_SCROLL_UP" -> com.deniz.eda.phone.PhoneControlService.run("up")
                 "SCREEN_SCROLL_DOWN" -> com.deniz.eda.phone.PhoneControlService.run("down")
