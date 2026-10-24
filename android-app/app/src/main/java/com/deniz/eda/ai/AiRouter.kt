@@ -105,10 +105,10 @@ KURALLAR:
                     sistemMesaji + "\n\n" + com.deniz.eda.utils.SystemTools.listTools()
                 } else sistemMesaji
 
-                // EDA V5 Agent: en fazla 3 salt-okunur araç adımı; sağlayıcıya göre
-                // değişmeyen allowlist SystemTools.runTool içinde uygulanır.
+                // EDA V5 Agent: en fazla 3 araç adımı; değişmeyen allowlist uygulanır.
+                // Ekran eylemleri açık kullanıcı isteği ve güvenlik kontrolleri gerektirir.
                 val mesajlar = mutableListOf(
-                    ChatMessage("system", sistemTam + "\n\nAGENT KURALLARI: En fazla 3 araç adımı kullan. Salt okunur araçları <TOOL>ARAÇ_ADI</TOOL> biçiminde çağır. Kullanıcı açıkça bir bilgiyi hafızaya kaydet derse <TOOL>SAVE_MEMORY: metin</TOOL>; günlüğe yaz derse <TOOL>ADD_DIARY: metin</TOOL>; belirli saatli hatırlatma isterse <TOOL>ADD_REMINDER|SAAT|DAKİKA|metin</TOOL> biçimini kullan. Kayıt araçlarını ve telefon eylemlerini yalnızca kullanıcı açıkça istediğinde çalıştır. Araç sonucunu görmeden işlem yapıldığını iddia etme. SMS gönderme veya konum paylaşma araçları bu Agent içinde yoktur; bunları yaptığını söyleme. Kamera aracı yalnızca kamera uygulamasını açar. Güvenlik/car modunu yalnızca bayrak değiştirerek etkinleştirdiğini iddia etme."),
+                    ChatMessage("system", sistemTam + "\\n\\nAGENT KURALLARI: En fazla 3 araç adımı kullan. Bilgi araçlarını <TOOL>ARAÇ_ADI</TOOL> biçiminde çağır. Kullanıcı açıkça bir bilgiyi hafızaya kaydet derse <TOOL>SAVE_MEMORY: metin</TOOL>; günlüğe yaz derse <TOOL>ADD_DIARY: metin</TOOL>; belirli saatli hatırlatma isterse <TOOL>ADD_REMINDER|SAAT|DAKİKA|metin</TOOL> biçimini kullan. Kayıt araçlarını ve telefon eylemlerini yalnızca kullanıcı açıkça istediğinde çalıştır. Ekran kontrolü için önce SCREEN_READ ile ekranı oku; kullanıcı açıkça bir dokunma, yazma, kaydırma veya navigasyon eylemi istemişse yalnızca o eylemi yap; sonra SCREEN_READ ile sonucu doğrula. SCREEN_TAP yalnızca hassas olmayan görünen etiketlere dokunabilir; SCREEN_TYPE sadece kullanıcının verdiği metni etkin, parola olmayan alana yazabilir. Parola, OTP, kilit ekranı, banka/ödeme/transfer, mesaj gönderme, satın alma, silme veya nihai onay işlemlerini yapma; hassas son adımı kullanıcıya bırak. Erişilebilirlik hizmeti kapalıysa kullanıcıya ayarlardan etkinleştirmesini söyle. Araç sonucunu görmeden işlem yapıldığını iddia etme. SMS gönderme veya konum paylaşma araçları bu Agent içinde yoktur; bunları yaptığını söyleme. Kamera aracı yalnızca kamera uygulamasını açar. Güvenlik/car modunu yalnızca bayrak değiştirerek etkinleştirdiğini iddia et."),
                     ChatMessage("user", kullaniciSorusu)
                 )
                 var sonCevap: String? = null
@@ -170,7 +170,9 @@ KURALLAR:
                         "MEDIA_PLAY", "MEDIA_PAUSE", "MEDIA_NEXT", "MEDIA_PREVIOUS",
                         "OPEN_SETTINGS", "OPEN_TTS_SETTINGS", "OPEN_CAMERA", "FIND_PHONE",
                         "STOP_FIND_PHONE", "LOCK_PHONE", "RUN_SYSTEM_TEST", "LEARNING_ON", "LEARNING_OFF",
-                        "OPEN_APP", "OPEN_WIFI_SETTINGS", "OPEN_SOUND_SETTINGS", "OPEN_DISPLAY_SETTINGS"
+                        "OPEN_APP", "OPEN_WIFI_SETTINGS", "OPEN_SOUND_SETTINGS", "OPEN_DISPLAY_SETTINGS",
+                        "SCREEN_READ", "SCREEN_TAP", "SCREEN_TYPE", "SCREEN_SCROLL_UP", "SCREEN_SCROLL_DOWN",
+                        "SCREEN_BACK", "SCREEN_HOME", "SCREEN_NOTIFICATIONS"
                     )
                     if (toolName !in allowlist) {
                         sonCevap = "Bu araç EDA'da izinli değil."
