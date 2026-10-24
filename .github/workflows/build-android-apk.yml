@@ -20,6 +20,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Keep one repository-local debug signing identity across CI builds so Android
+      # can update the installed APK instead of reporting a signature conflict.
+      - name: Restore stable debug keystore
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: eda-debug-signing-key-v1
+
+      - name: Ensure debug keystore exists
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:

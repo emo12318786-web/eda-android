@@ -461,10 +461,32 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                             enabled = jarvisTask.isNotBlank() && !jarvisBusy,
                             onClick = {
                                 val request = jarvisTask.trim()
+                                // Common, low-risk app launches should not wait for the local LLM.
+                                // Resolve them deterministically, then use Gemma only for other tasks.
+                                val normalizedRequest = request.lowercase(java.util.Locale.ROOT)
+                                val asksToOpen = Regex("\\b(aç|ac|başlat|baslat|open|launch)\\b").containsMatchIn(normalizedRequest)
+                                val quickOpenApp = if (asksToOpen) when {
+                                    normalizedRequest.contains("youtube") || normalizedRequest.contains("یوتیوب") -> "youtube"
+                                    normalizedRequest.contains("chrome") || normalizedRequest.contains("tarayıcı") || normalizedRequest.contains("browser") -> "chrome"
+                                    normalizedRequest.contains("whatsapp") || normalizedRequest.contains("واتساپ") -> "whatsapp"
+                                    normalizedRequest.contains("telegram") || normalizedRequest.contains("تلگرام") -> "telegram"
+                                    normalizedRequest.contains("harita") || normalizedRequest.contains("maps") || normalizedRequest.contains("نقشه") -> "maps"
+                                    normalizedRequest.contains("kamera") || normalizedRequest.contains("camera") -> "camera"
+                                    normalizedRequest.contains("mesaj") || normalizedRequest.contains("message") -> "messages"
+                                    normalizedRequest.contains("telefon") || normalizedRequest.contains("phone") -> "phone"
+                                    else -> null
+                                } else null
                                 jarvisBusy = true
-                                jarvisReply = "Yerel Jarvis görevi planlıyor ve izinli adımları uyguluyor…"
+                                jarvisReply = if (quickOpenApp != null) "Uygulama doğrudan açılıyor…" else "Yerel Jarvis görevi planlıyor ve izinli adımları uyguluyor…"
                                 chatScope.launch {
-                                    val result = runCatching {
+                                    val result: String? = if (quickOpenApp != null) {
+                                        runCatching {
+                                            com.deniz.eda.utils.SystemTools.runTool("OPEN_APP", context, quickOpenApp)
+                                        }.getOrElse { error ->
+                                            android.util.Log.e("EDA-Jarvis", "Quick app launch failed", error)
+                                            "Uygulama açılamadı. Telefonun uygulama listesini kontrol et."
+                                        }
+                                    } else runCatching {
                                         AiRouter.sor(
                                             kullaniciSorusu = request,
                                             sistemMesaji = """
