@@ -101,6 +101,8 @@ dependencies {
     // Google ML Kit: on-device language identification + offline-capable translation
     implementation("com.google.mlkit:translate:17.0.3")
     implementation("com.google.mlkit:language-id:17.0.6")
+    // Bundled Latin OCR model: local/offline visual screen reading (Turkish/Azerbaijani UI).
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 
     // ═══ Health Connect ═══
     implementation("androidx.health.connect:connect-client:1.1.0-alpha10")
