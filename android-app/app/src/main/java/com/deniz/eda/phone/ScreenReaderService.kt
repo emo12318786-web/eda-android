@@ -28,6 +28,9 @@ class ScreenReaderService : AccessibilityService() {
     override fun onDestroy() { if (instance === this) instance = null; super.onDestroy() }
 
     fun readScreen(): String {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            return "Ekran okuma ana arayüz iş parçacığında çalıştırılamaz; arka planda yeniden dene."
+        }
         val text = readAccessibleTree()
         if (text.isNotBlank()) return "Ekranda görünen metin (erişilebilirlik):\n$text"
         if (Looper.myLooper() == Looper.getMainLooper()) {
