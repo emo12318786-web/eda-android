@@ -29,16 +29,25 @@ class PhoneControlService : AccessibilityService() {
  }
  fun tap(target:String):String?=main {
   val q=target.trim(); if(q.isBlank())return@main "متن هدف خالی است."
-  val blocked=listOf("send","submit","delete","remove","pay","purchase","buy","confirm","transfer","ارسال","فرستادن","حذف","پرداخت","خرید","انتقال","تأیید","تایید","ثبت نهایی")
-  if(blocked.any{q.contains(it,true)})return@main "اقدام حساس مسدود است؛ خودت دکمه را بررسی کن."
+  // Refuse consequential UI controls in several common languages. The agent must leave the final action to the user.
+  val blocked=listOf(
+   "send","submit","delete","remove","pay","purchase","buy","confirm","transfer",
+   "gönder","göndər","sil","öde","ödeme","satın al","onayla","havale","para gönder","mesaj gönder",
+   "ارسال","فرستادن","حذف","پرداخت","خرید","انتقال","تأیید","تایید","ثبت نهایی",
+   "پرداخت نهایی","تراکنش","انتقال وجه","تایید پرداخت"
+  )
+  if(blocked.any{q.contains(it,true)})return@main "اقدام حساس مسدود است؛ ارسال، حذف، خرید، پرداخت یا انتقال وجه را خودت بررسی و انجام بده."
   val n=nodes().firstOrNull{it.isVisibleToUser&&(it.text?.toString()?.contains(q,true)==true||it.contentDescription?.toString()?.contains(q,true)==true)}?:return@main "عنصر «$q» پیدا نشد."
   var c:AccessibilityNodeInfo?=n; while(c!=null&&!c.isClickable)c=c.parent
   if((c?:n).performAction(AccessibilityNodeInfo.ACTION_CLICK))"روی «$q» لمس شد." else "اندروید لمس را نپذیرفت."
  }
  fun type(value:String):String?=main {
   val n=nodes().firstOrNull{it.isVisibleToUser&&it.isFocused&&it.isEditable}?:return@main "کادر متنی فعال نیست؛ اول خودت آن را انتخاب کن."
-  val args=android.os.Bundle().apply{putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,value.take(2000))}
-  if(n.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,args))"متن وارد شد." else "ورود متن انجام نشد."
+  if(n.isPassword)return@main "برای محافظت از رمز عبور و کدهای امنیتی، EDA در کادر رمز چیزی وارد نمی‌کند."
+  val safeValue=value.take(2000)
+  if(safeValue.isBlank())return@main "متن ورودی خالی است."
+  val args=android.os.Bundle().apply{putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,safeValue)}
+  if(n.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,args))"متن وارد شد؛ هیچ دکمه‌ای ارسال یا تأیید نشد." else "ورود متن انجام نشد."
  }
  fun scroll(up:Boolean):String?=main {
   val n=nodes().firstOrNull{it.isVisibleToUser&&it.isScrollable}?:return@main "ناحیهٔ اسکرول پیدا نشد."
