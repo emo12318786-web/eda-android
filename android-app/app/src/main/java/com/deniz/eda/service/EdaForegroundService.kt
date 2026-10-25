@@ -9,6 +9,9 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import androidx.core.app.ServiceCompat
 import android.content.pm.ServiceInfo
 import com.deniz.eda.core.CommandProcessor
@@ -225,6 +228,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             
             "ACTION_UYKU" -> {
                 // 💤 Uyku (کنترل پنل)
+                releaseMicrophoneAudioFocus("ACTION_UYKU")
                 mod = Mod.UYKU
                 sonMod = "UYKU"; Settings.sonMod = "UYKU"
                 Settings.derinUyku = true
@@ -255,6 +259,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
             "ACTION_STOP" -> {
                 // ❌ کامل ببند
+                releaseMicrophoneAudioFocus("ACTION_STOP")
                 android.util.Log.d("EdaService", "Durduruldu")
                 healthMonitorDurdur()
                 stopSelf()
@@ -262,6 +267,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             
             "ACTION_DERIN_UYKU" -> {
                 // 💤 Uyku — mod'u UYKU yap، میکروفون خاموش
+                releaseMicrophoneAudioFocus("ACTION_DERIN_UYKU")
                 mod = Mod.UYKU
                 sonMod = "UYKU"; Settings.sonMod = "UYKU"
                 Settings.derinUyku = true
@@ -374,7 +380,50 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     }
 
     // --- DINLEME DONGUSU ---
-    private val audioManager by lazy { getSystemService(AUDIO_SERVICE) as android.media.AudioManager }
+    private val audioManager by lazy { getSystemService(AUDIO_SERVICE) as AudioManager }
+
+    // Mikrofon dinlerken medya uygulamalarından geçici ve özel ses odağı ister.
+    // Odak bırakılınca Android, odak kaybında duran müzik uygulamalarının devam etmesine izin verir.
+    private var microphoneAudioFocusHeld = false
+    private var microphoneAudioFocusRequest: AudioFocusRequest? = null
+
+    private fun acquireMicrophoneAudioFocus() {
+        if (microphoneAudioFocusHeld) return
+        try {
+            val request = microphoneAudioFocusRequest ?: AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build()
+                )
+                .setAcceptsDelayedFocusGain(false)
+                .setWillPauseWhenDucked(true)
+                .setOnAudioFocusChangeListener { change ->
+                    android.util.Log.d("EDA-AudioFocus", "Mikrofon ses odağı değişti: $change")
+                }
+                .build()
+                .also { microphoneAudioFocusRequest = it }
+            val result = audioManager.requestAudioFocus(request)
+            microphoneAudioFocusHeld = result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+            android.util.Log.i("EDA-AudioFocus", "Mikrofon ses odağı: $result")
+        } catch (e: Exception) {
+            microphoneAudioFocusHeld = false
+            android.util.Log.w("EDA-AudioFocus", "Ses odağı alınamadı; mikrofon çalışmaya devam edecek: ${e.message}")
+        }
+    }
+
+    private fun releaseMicrophoneAudioFocus(reason: String) {
+        if (!microphoneAudioFocusHeld) return
+        try {
+            microphoneAudioFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+            android.util.Log.i("EDA-AudioFocus", "Mikrofon ses odağı bırakıldı: $reason")
+        } catch (e: Exception) {
+            android.util.Log.w("EDA-AudioFocus", "Ses odağı bırakılamadı: ${e.message}")
+        } finally {
+            microphoneAudioFocusHeld = false
+        }
+    }
 
     // Cihazda offline Turkce konusma tanima paketi yoksa (ERROR_LANGUAGE_UNAVAILABLE/
     // ERROR_LANGUAGE_NOT_SUPPORTED), bunu bir kez tespit edip bir daha offline
@@ -385,6 +434,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         if (dinlemeAktif) return
 
         if (sttFallbackAktif) {
+            acquireMicrophoneAudioFocus()
             dinlemeAktif = true
             try {
                 val i = Intent(this, SttActivity::class.java).apply {
@@ -415,6 +465,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             return
         }
         
+        acquireMicrophoneAudioFocus()
         dinlemeAktif = true
         if (mod == Mod.AKTIF) {
             // Bildirim durumunu gerçek dinleme döngüsüyle eşleştir; eski
@@ -513,6 +564,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             
             if (list.isNullOrEmpty()) {
                 android.util.Log.d("EdaService", "STT: boş sonuç")
+                releaseMicrophoneAudioFocus("boş tanıma sonucu")
                 yenidenDenemeyiPlanla()
                 return
             }
@@ -534,6 +586,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
         override fun onError(error: Int) {
             dinlemeAktif = false
+            releaseMicrophoneAudioFocus("SpeechRecognizer hata: ${hataAdi(error)}")
             ardisikHataSayisi++
             android.util.Log.e("EdaService", "SpeechRecognizer hata kodu: $error (${hataAdi(error)}) ardisik=$ardisikHataSayisi")
             if (ardisikHataSayisi >= 5 && !sttFallbackAktif &&
@@ -766,6 +819,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     }
 
     override fun onDestroy() {
+        releaseMicrophoneAudioFocus("servis kapandı")
         try {
             panelServer?.stop()
             android.util.Log.i("EDA-Panel", "PanelServer durduruldu")
