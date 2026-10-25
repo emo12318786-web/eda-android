@@ -202,7 +202,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 // EDA monogram: luminous double-tone ring and signature dot.
                 Box(
                     Modifier.size(54.dp).background(
-                        Brush.linearGradient(listOf(Color(0xFF292047), Color(0xFF102B35))), CircleShape
+                        Brush.linearGradient(listOf(PanelRaised, Panel, Violet.copy(alpha = 0.55f))), CircleShape
                     ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -632,7 +632,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
 @Composable
 private fun HeroPanel(name: String, time: String, date: String, status: Color, active: Boolean, sleeping: Boolean, onAction: (String) -> Unit) {
     Box(Modifier.fillMaxWidth().background(
-        Brush.linearGradient(listOf(Color(0xFF292047), Color(0xFF151C32), Color(0xFF102B35))),
+        Brush.linearGradient(listOf(PanelRaised, Panel, Color(ThemeConfig.current.background).copy(alpha = 0.96f))),
         RoundedCornerShape(26.dp)
     ).padding(20.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -663,7 +663,7 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
 
 @Composable
 private fun HeroMini(title: String, subtitle: String) {
-    Column(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Color(0xFF292047), Panel)),
+    Column(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(PanelRaised, Panel)),
         RoundedCornerShape(22.dp)).padding(20.dp)) {
         Text(title, color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
@@ -715,7 +715,7 @@ private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
                 }
                 val isSelected = main.contains(provider, true)
                 OutlinedButton(onClick = { onAction(action) }, modifier = Modifier.weight(1f),
-                    border = BorderStroke(1.dp, if (isSelected) Violet else Color(0xFF30384E)),
+                    border = BorderStroke(1.dp, if (isSelected) Violet else Violet.copy(alpha = 0.35f)),
                     colors = ButtonDefaults.outlinedButtonColors(containerColor = if (isSelected) Violet.copy(alpha = .16f) else PanelRaised),
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
                     shape = RoundedCornerShape(12.dp)) {
