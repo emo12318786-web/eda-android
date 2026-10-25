@@ -83,6 +83,7 @@ class DashboardActivity : ComponentActivity() {
             Manifest.permission.RECEIVE_SMS,
             Manifest.permission.READ_SMS,
             Manifest.permission.READ_PHONE_STATE,
+            Manifest.permission.READ_CALL_LOG,
             Manifest.permission.READ_CONTACTS
         )
         if (requiredPhonePermissions.any {
@@ -240,16 +241,9 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     onAction("ACTION_AI_OLLAMA")
                     deepChatOpen = true
                 }
-                SectionHeader("JARVIS · GÖREV AJANI", "Yerel Ollama · En fazla 5 güvenli araç adımı")
-                ControlTile("⌘", "Jarvis ile görev yürüt", "İsteğini doğal dille yaz veya söyle; izinli işlemleri adım adım uygular", Violet) {
-                    jarvisOpen = true
-                    jarvisReply = ""
-                }
-                SectionHeader("PHONE HARNESS", "Ekran kontrolü · Android erişilebilirlik")
-                ControlTile("▣", "Telefon ekranını kontrol et", "Ekranı oku, metinle dokun, seçili alana yaz ve kaydır", Cyan) {
-                    phoneControlOpen = true
-                    phoneControlStatus = if (com.deniz.eda.phone.PhoneControlService.isEnabled()) "Ekran kontrolü etkin." else "Önce erişilebilirlik ayarlarından EDA hizmetini etkinleştir."
-                }
+                SectionHeader("EDA · SESLİ TELEFON KOMUTLARI", "Ayrı Jarvis veya kontrol ekranı açmadan")
+                InfoNotice("📱  Telefonu Eda ile yönet", "Eda aktifken doğrudan söyle: “Eda, aşağı kaydır ve ekrandakini oku”, “Eda, ekranı oku”, “Eda, bildirimleri aç”, “Eda, geri git” veya “Eda, ekrandaki metne dokun, Ayarlar”. Basit komutlar yerel erişilebilirlik üzerinden doğrudan çalışır; normal sohbet ve derin sohbet akışı değişmez.")
+                InfoNotice("🔐  İlk kurulum", "Yalnızca bir kez Android Erişilebilirlik ayarlarında EDA hizmetini aç. Kilidi aşma, parola/OTP okuma, mesaj gönderme, silme, ödeme veya son onay işlemleri otomatik yapılmaz.")
                 SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
                 ControlTile("▶", "Eda’yı başlat", "Eda’yı dinlemeye hazır hâle getir", Good) { onAction("ACTION_AKTIF") }
                 ControlTile("☾", "Uyku moduna al", "Uyandırma kelimesiyle yeniden etkinleşir", Cyan) { onAction("ACTION_UYKU") }
@@ -379,7 +373,36 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
                         }, modifier = Modifier.weight(1f)) { Text("Bildirimler") }
                     }
-                    Text("Yazmadan önce hedef alanı kendin seç. OCR görsel metni tanır; korumalı ekranlarda Android görüntü vermeyebilir.", color = Muted, fontSize = 11.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedButton(onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("home")
+                            phoneScreenText = phoneControlStatus
+                        }, modifier = Modifier.weight(1f)) { Text("Ana ekran") }
+                        OutlinedButton(onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("recents")
+                            phoneScreenText = phoneControlStatus
+                        }, modifier = Modifier.weight(1f)) { Text("Son uygulamalar") }
+                        OutlinedButton(onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("quick_settings")
+                            phoneScreenText = phoneControlStatus
+                        }, modifier = Modifier.weight(1f)) { Text("Hızlı ayarlar") }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedButton(onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("power_dialog")
+                            phoneScreenText = phoneControlStatus
+                        }, modifier = Modifier.weight(1f)) { Text("Güç menüsü") }
+                        OutlinedButton(onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("screenshot")
+                            phoneControlStatus += "\n" + com.deniz.eda.phone.PhoneControlService.run("vision")
+                            phoneScreenText = phoneControlStatus
+                        }, modifier = Modifier.weight(1f)) { Text("Ekran görüntüsü") }
+                        OutlinedButton(onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("lock_screen")
+                            phoneScreenText = phoneControlStatus
+                        }, modifier = Modifier.weight(1f)) { Text("Kilitle") }
+                    }
+                    Text("EDA normal uygulama izinleriyle korumalı alanları, kilit ekranını aşamaz; para transferi, silme ve gönderme gibi son işlemleri kendisi onaylamaz.", color = Muted, fontSize = 11.sp)
                 }
             }
         }

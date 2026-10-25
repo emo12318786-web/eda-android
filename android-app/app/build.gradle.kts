@@ -12,8 +12,22 @@ android {
         applicationId = "com.deniz.eda"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 5
+        versionName = "1.3"
+    }
+
+    // Two install choices: normal update package and side-by-side preview package.
+    // The preview package avoids signature conflicts with an already-installed EDA.
+    flavorDimensions += "installMode"
+    productFlavors {
+        create("standard") {
+            dimension = "installMode"
+        }
+        create("preview") {
+            dimension = "installMode"
+            applicationIdSuffix = ".preview"
+            versionNameSuffix = "-preview"
+        }
     }
 
     defaultConfig {

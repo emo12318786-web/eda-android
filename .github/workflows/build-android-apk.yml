@@ -1,5 +1,4 @@
 name: Build Android APK
-run-name: EDA Android tests and debug APK (${{ github.ref_name }})
 
 on:
   push:
@@ -60,14 +59,22 @@ jobs:
           gradle --version
           echo ""
           echo "=== build ==="
-          gradle testDebugUnitTest assembleDebug --stacktrace --no-daemon
+          gradle testStandardDebugUnitTest assembleStandardDebug assemblePreviewDebug --stacktrace --no-daemon
 
-      - name: Upload APK
+      - name: Upload standard APK (updates matching-signature install)
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: eda-debug-apk
-          path: android-app/app/build/outputs/apk/debug/*.apk
+          name: eda-standard-apk
+          path: android-app/app/build/outputs/apk/standard/debug/*.apk
+          retention-days: 30
+
+      - name: Upload preview APK (installs alongside existing EDA)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eda-preview-apk
+          path: android-app/app/build/outputs/apk/preview/debug/*.apk
           retention-days: 30
 
 # Rebuild requested after the Gemma 3 1B-only changes.
