@@ -174,8 +174,6 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             viewModel.yenile()
         }
     }
-    val context = LocalContext.current
-
     val statusColor = when {
         active -> Good
         sleeping -> Warn
