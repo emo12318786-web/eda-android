@@ -1,6 +1,8 @@
 package com.deniz.eda.ui.dashboard
 
 import com.deniz.eda.core.Settings
+import com.deniz.eda.ui.ThemeConfig
+import com.deniz.eda.ui.ThemeActivity
 import com.deniz.eda.ai.AiRouter
 import com.deniz.eda.ai.TermuxDeepChat
 import kotlinx.coroutines.Dispatchers
@@ -40,18 +42,19 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import com.deniz.eda.service.EdaForegroundService
 
-private val VoidBlack = Color(0xFF080A12)
-private val Panel = Color(0xFF121626)
-private val PanelRaised = Color(0xFF191F33)
-private val Violet = Color(0xFFB49AFF)
-private val Cyan = Color(0xFF64E5E0)
-private val Muted = Color(0xFF98A2B9)
+private val VoidBlack: Color get() = Color(ThemeConfig.current.background)
+private val Panel: Color get() = Color(ThemeConfig.current.panel)
+private val PanelRaised: Color get() = Color(ThemeConfig.current.raised)
+private val Violet: Color get() = Color(ThemeConfig.current.accent)
+private val Cyan: Color get() = Color(ThemeConfig.current.secondary)
+private val Muted: Color get() = Color(ThemeConfig.current.muted)
 private val Good = Color(0xFF69E6A6)
 private val Warn = Color(0xFFFFC36E)
 private val Bad = Color(0xFFFF788B)
 
 class DashboardActivity : ComponentActivity() {
     private var pendingStartAction: String? = null
+    private var appliedThemeId: String = ""
     private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         val action = pendingStartAction
         pendingStartAction = null
@@ -66,6 +69,8 @@ class DashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Settings.init(this)
+        ThemeConfig.refresh(this)
+        appliedThemeId = ThemeConfig.selectedId(this)
         viewModel.yenile()
         setContent {
             MaterialTheme(colorScheme = darkColorScheme(
@@ -90,6 +95,16 @@ class DashboardActivity : ComponentActivity() {
                 ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
             }) {
             phonePermissions.launch(requiredPhonePermissions)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        ThemeConfig.refresh(this)
+        val latestTheme = ThemeConfig.selectedId(this)
+        if (appliedThemeId.isNotEmpty() && latestTheme != appliedThemeId) {
+            appliedThemeId = latestTheme
+            recreate()
         }
     }
 
@@ -205,6 +220,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     Text("EDA", fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
                     Text("KİŞİSEL ASİSTAN • V5", fontSize = 9.sp, color = Muted, letterSpacing = 1.4.sp)
                 }
+                Text("◐", modifier = Modifier.clickable { startActivity(Intent(this@DashboardActivity, ThemeActivity::class.java)) }.padding(8.dp), color = Cyan, fontSize = 22.sp)
                 Text("⚙", modifier = Modifier.clickable { onAction("ACTION_SETTINGS") }.padding(8.dp), color = Violet, fontSize = 24.sp)
                 Surface(shape = RoundedCornerShape(50), color = statusColor.copy(alpha = 0.12f),
                     border = BorderStroke(1.dp, statusColor.copy(alpha = 0.5f))) {
