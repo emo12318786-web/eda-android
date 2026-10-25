@@ -72,6 +72,8 @@ class DashboardActivity : ComponentActivity() {
         Settings.init(this)
         ThemeConfig.refresh(this)
         appliedThemeId = ThemeConfig.selectedId(this)
+        window.statusBarColor = ThemeConfig.current.background.toInt()
+        window.navigationBarColor = ThemeConfig.current.background.toInt()
         viewModel.yenile()
         setContent {
             MaterialTheme(colorScheme = darkColorScheme(
