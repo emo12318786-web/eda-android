@@ -80,9 +80,35 @@ class DashboardActivity : ComponentActivity() {
         window.navigationBarColor = ThemeConfig.current.background.toInt()
         viewModel.yenile()
         setContent {
+            // Build the Material palette from the currently selected theme.
+            // Keeping this dynamic prevents Material3 controls from falling back to violet/cyan
+            // when the user selects one of the other 13 themes.
+            val palette = ThemeConfig.current
+            val themeBackground = Color(palette.background)
+            val themePanel = Color(palette.panel)
+            val themeRaised = Color(palette.raised)
+            val themeAccent = Color(palette.accent)
+            val themeSecondary = Color(palette.secondary)
+            val themeMuted = Color(palette.muted)
             MaterialTheme(colorScheme = darkColorScheme(
-                primary = Violet, secondary = Cyan, background = VoidBlack, surface = Panel,
-                onBackground = Color.White, onSurface = Color.White
+                primary = themeAccent,
+                onPrimary = themeBackground,
+                primaryContainer = themeRaised,
+                onPrimaryContainer = Color.White,
+                secondary = themeSecondary,
+                onSecondary = themeBackground,
+                secondaryContainer = themePanel,
+                onSecondaryContainer = Color.White,
+                tertiary = themeSecondary,
+                background = themeBackground,
+                onBackground = Color.White,
+                surface = themePanel,
+                onSurface = Color.White,
+                surfaceVariant = themeRaised,
+                onSurfaceVariant = themeMuted,
+                outline = themeMuted.copy(alpha = 0.65f),
+                error = Color(0xFFFF6B6B),
+                onError = Color(0xFF1A0505)
             )) {
                 EdaDashboard(
                     viewModel = viewModel,
