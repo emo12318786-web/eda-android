@@ -49,9 +49,9 @@ private val PanelRaised: Color get() = Color(ThemeConfig.current.raised)
 private val Violet: Color get() = Color(ThemeConfig.current.accent)
 private val Cyan: Color get() = Color(ThemeConfig.current.secondary)
 private val Muted: Color get() = Color(ThemeConfig.current.muted)
-private val Good = Color(0xFF69E6A6)
-private val Warn = Color(0xFFFFC36E)
-private val Bad = Color(0xFFFF788B)
+private val Good: Color get() = Color(ThemeConfig.current.secondary)
+private val Warn: Color get() = Color(ThemeConfig.current.accent)
+private val Bad: Color get() = Color(ThemeConfig.current.accent)
 
 class DashboardActivity : ComponentActivity() {
     private var pendingStartAction: String? = null
