@@ -650,7 +650,7 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
                 contentDescription = null,
                 modifier = Modifier.matchParentSize().clip(RoundedCornerShape(20.dp)),
                 contentScale = ContentScale.Crop,
-                alpha = 0.42f
+                alpha = 0.12f
             )
         }
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
