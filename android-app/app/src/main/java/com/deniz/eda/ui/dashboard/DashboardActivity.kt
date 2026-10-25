@@ -21,6 +21,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -633,10 +637,22 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
 
 @Composable
 private fun HeroPanel(name: String, time: String, date: String, status: Color, active: Boolean, sleeping: Boolean, onAction: (String) -> Unit) {
-    Box(Modifier.fillMaxWidth().background(
-        Brush.linearGradient(listOf(PanelRaised, Panel, Color(ThemeConfig.current.background).copy(alpha = 0.96f))),
-        RoundedCornerShape(26.dp)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val artworkId = remember(ThemeConfig.current.id) {
+        context.resources.getIdentifier("bg_theme_${ThemeConfig.current.id}", "drawable", context.packageName)
+    }
+    Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(
+        Brush.linearGradient(listOf(PanelRaised, Panel, Color(ThemeConfig.current.background).copy(alpha = 0.96f)))
     ).padding(20.dp)) {
+        if (artworkId != 0) {
+            Image(
+                painter = painterResource(id = artworkId),
+                contentDescription = null,
+                modifier = Modifier.matchParentSize().clip(RoundedCornerShape(20.dp)),
+                contentScale = ContentScale.Crop,
+                alpha = 0.42f
+            )
+        }
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("MERHABA, ${name.uppercase()}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
             Text("Ben Eda." + 10.toChar() + "Buradayım.", fontSize = 31.sp, lineHeight = 36.sp,
