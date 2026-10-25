@@ -380,7 +380,36 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
                         }, modifier = Modifier.weight(1f)) { Text("Bildirimler") }
                     }
-                    Text("Yazmadan önce hedef alanı kendin seç. OCR görsel metni tanır; korumalı ekranlarda Android görüntü vermeyebilir.", color = Muted, fontSize = 11.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedButton(onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("home")
+                            phoneScreenText = phoneControlStatus
+                        }, modifier = Modifier.weight(1f)) { Text("Ana ekran") }
+                        OutlinedButton(onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("recents")
+                            phoneScreenText = phoneControlStatus
+                        }, modifier = Modifier.weight(1f)) { Text("Son uygulamalar") }
+                        OutlinedButton(onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("quick_settings")
+                            phoneScreenText = phoneControlStatus
+                        }, modifier = Modifier.weight(1f)) { Text("Hızlı ayarlar") }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedButton(onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("power_dialog")
+                            phoneScreenText = phoneControlStatus
+                        }, modifier = Modifier.weight(1f)) { Text("Güç menüsü") }
+                        OutlinedButton(onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("screenshot")
+                            phoneControlStatus += "\n" + com.deniz.eda.phone.PhoneControlService.run("vision")
+                            phoneScreenText = phoneControlStatus
+                        }, modifier = Modifier.weight(1f)) { Text("Ekran görüntüsü") }
+                        OutlinedButton(onClick = {
+                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("lock_screen")
+                            phoneScreenText = phoneControlStatus
+                        }, modifier = Modifier.weight(1f)) { Text("Kilitle") }
+                    }
+                    Text("EDA normal uygulama izinleriyle korumalı alanları, kilit ekranını aşamaz; para transferi, silme ve gönderme gibi son işlemleri kendisi onaylamaz.", color = Muted, fontSize = 11.sp)
                 }
             }
         }
