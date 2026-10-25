@@ -244,10 +244,21 @@ class PhoneControlService : AccessibilityService() {
         val id = when (action) {
             "back" -> GLOBAL_ACTION_BACK
             "home" -> GLOBAL_ACTION_HOME
+            "recents" -> GLOBAL_ACTION_RECENTS
             "notifications" -> GLOBAL_ACTION_NOTIFICATIONS
+            "quick_settings" -> GLOBAL_ACTION_QUICK_SETTINGS
+            "power_dialog" -> GLOBAL_ACTION_POWER_DIALOG
+            "lock_screen" -> {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return@main "Ekranı kilitleme işlemi Android 9 veya üzeri gerektirir."
+                GLOBAL_ACTION_LOCK_SCREEN
+            }
+            "screenshot" -> {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return@main "Ekran görüntüsü işlemi Android 9 veya üzeri gerektirir."
+                GLOBAL_ACTION_TAKE_SCREENSHOT
+            }
             else -> return@main "Bu gezinme işlemi desteklenmiyor."
         }
-        if (performGlobalAction(id)) "Gezinme işlemi istendi: $action" else "Android gezinme işlemini kabul etmedi."
+        if (performGlobalAction(id)) "İşlem istendi: $action. Sonucu ekranı yeniden okuyarak doğrula." else "Android bu sistem işlemini kabul etmedi."
     }
 
     companion object {
@@ -267,7 +278,7 @@ class PhoneControlService : AccessibilityService() {
                 "type" -> service.type(arg) ?: "Metin yazma zaman aşımına uğradı."
                 "up" -> service.scroll(true) ?: "Kaydırma zaman aşımına uğradı."
                 "down" -> service.scroll(false) ?: "Kaydırma zaman aşımına uğradı."
-                "back", "home", "notifications" -> service.global(action) ?: "Gezinme zaman aşımına uğradı."
+                "back", "home", "recents", "notifications", "quick_settings", "power_dialog", "lock_screen", "screenshot" -> service.global(action) ?: "Sistem işlemi zaman aşımına uğradı."
                 else -> "Bu ekran aracı desteklenmiyor."
             }
         }
