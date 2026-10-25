@@ -20,6 +20,7 @@ import com.deniz.eda.core.KomutSonucu
 import com.deniz.eda.core.ReminderChecker
 import com.deniz.eda.core.SecurityMode
 import com.deniz.eda.core.Settings
+import com.deniz.eda.phone.PhoneTaskRouter
 import com.deniz.eda.core.WakeWordDetector
 import com.deniz.eda.data.db.EdaDatabase
 import com.deniz.eda.data.db.LogEntity
@@ -666,7 +667,11 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 // kilitlemesini önle. Uyku ve dinleme zamanlamasına dokunmaz.
                 withContext(Dispatchers.IO) {
                     withTimeout(60_000L) {
-                        CommandProcessor.isle(this@EdaForegroundService, metin)
+                        // Phone actions use the same EDA wake-word/voice loop and run
+                        // locally through Accessibility; ordinary requests keep their old route.
+                        val phoneResult = PhoneTaskRouter.tryHandle(this@EdaForegroundService, metin)
+                        if (phoneResult != null) KomutSonucu.Cevap(phoneResult)
+                        else CommandProcessor.isle(this@EdaForegroundService, metin)
                     }
                 }.also {
                     android.util.Log.i("EdaService", "CommandProcessor tamamlandı: " + (System.currentTimeMillis() - baslangicZaman) + "ms")
