@@ -9,6 +9,7 @@ import com.deniz.eda.data.MemoryStore
 import com.deniz.eda.data.ReminderStore
 import com.deniz.eda.health.HealthConnectManager
 import com.deniz.eda.utils.BatteryUtils
+import com.deniz.eda.phone.PhoneTaskRouter
 import com.deniz.eda.utils.PhoneSystemCommands
 import com.deniz.eda.utils.CurrencyUtils
 import com.deniz.eda.utils.ExtraCommands
@@ -221,6 +222,8 @@ object CommandProcessor {
         var metin = metinHam.lowercase(Locale.getDefault()).trim()
 
         // Direct phone controls must run before learning/fuzzy matching or cloud AI.
+        // Screen automation stays opt-in through Android Accessibility and never handles ordinary chat.
+        PhoneTaskRouter.tryHandle(context, metinHam)?.let { return KomutSonucu.Cevap(it) }
         PhoneSystemCommands.handle(context, metinHam)?.let { return KomutSonucu.Cevap(it) }
 
         // حافظه فقط برای اطلاعاتی است که کاربر عمداً می‌خواهد نگه داریم.
