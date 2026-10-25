@@ -237,7 +237,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    alpha = 0.10f
+                    alpha = 0.28f
                 )
             }
             // Keep text readable while allowing the theme artwork to remain visible.
@@ -245,9 +245,9 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 Modifier.fillMaxSize().background(
                     Brush.verticalGradient(
                         listOf(
-                            VoidBlack.copy(alpha = 0.72f),
-                            VoidBlack.copy(alpha = 0.90f),
-                            VoidBlack.copy(alpha = 0.96f)
+                            VoidBlack.copy(alpha = 0.28f),
+                            VoidBlack.copy(alpha = 0.46f),
+                            VoidBlack.copy(alpha = 0.62f)
                         )
                     )
                 )
