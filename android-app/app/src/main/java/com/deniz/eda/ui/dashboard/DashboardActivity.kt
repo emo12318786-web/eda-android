@@ -212,8 +212,13 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
         else -> Bad
     }
 
+    val screenArtworkId = remember(ThemeConfig.current.id) {
+        context.resources.getIdentifier("bg_theme_${ThemeConfig.current.id}", "drawable", context.packageName)
+    }
+
     Scaffold(
-        containerColor = VoidBlack,
+        // Transparent content lets the selected theme artwork sit behind every dashboard tab.
+        containerColor = Color.Transparent,
         bottomBar = {
             NavigationBar(containerColor = Panel, contentColor = Violet) {
                 NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 },
@@ -225,11 +230,33 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             }
         }
     ) { padding ->
-        Column(
-            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
-                .padding(horizontal = 18.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        Box(Modifier.fillMaxSize().background(VoidBlack)) {
+            if (screenArtworkId != 0) {
+                Image(
+                    painter = painterResource(id = screenArtworkId),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    alpha = 0.10f
+                )
+            }
+            // Keep text readable while allowing the theme artwork to remain visible.
+            Box(
+                Modifier.fillMaxSize().background(
+                    Brush.verticalGradient(
+                        listOf(
+                            VoidBlack.copy(alpha = 0.72f),
+                            VoidBlack.copy(alpha = 0.90f),
+                            VoidBlack.copy(alpha = 0.96f)
+                        )
+                    )
+                )
+            )
+            Column(
+                Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
+                    .padding(horizontal = 18.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 // EDA monogram: luminous double-tone ring and signature dot.
                 Box(
@@ -332,6 +359,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             }
             Text("EDA • YARDIMA HAZIR", Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 14.dp),
                 color = Muted, fontSize = 9.sp, letterSpacing = 2.sp, textAlign = TextAlign.Center)
+            }
         }
     }
 
