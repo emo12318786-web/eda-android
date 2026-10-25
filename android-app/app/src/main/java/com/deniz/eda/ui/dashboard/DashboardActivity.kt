@@ -241,16 +241,9 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     onAction("ACTION_AI_OLLAMA")
                     deepChatOpen = true
                 }
-                SectionHeader("JARVIS · GÖREV AJANI", "Yerel Ollama · En fazla 5 güvenli araç adımı")
-                ControlTile("⌘", "Jarvis ile görev yürüt", "İsteğini doğal dille yaz veya söyle; izinli işlemleri adım adım uygular", Violet) {
-                    jarvisOpen = true
-                    jarvisReply = ""
-                }
-                SectionHeader("PHONE HARNESS", "Ekran kontrolü · Android erişilebilirlik")
-                ControlTile("▣", "Telefon ekranını kontrol et", "Ekranı oku, metinle dokun, seçili alana yaz ve kaydır", Cyan) {
-                    phoneControlOpen = true
-                    phoneControlStatus = if (com.deniz.eda.phone.PhoneControlService.isEnabled()) "Ekran kontrolü etkin." else "Önce erişilebilirlik ayarlarından EDA hizmetini etkinleştir."
-                }
+                SectionHeader("EDA · SESLİ TELEFON KOMUTLARI", "Ayrı Jarvis veya kontrol ekranı açmadan")
+                InfoNotice("📱  Telefonu Eda ile yönet", "Eda aktifken doğrudan söyle: “Eda, aşağı kaydır ve ekrandakini oku”, “Eda, ekranı oku”, “Eda, bildirimleri aç”, “Eda, geri git” veya “Eda, ekrandaki metne dokun, Ayarlar”. Basit komutlar yerel erişilebilirlik üzerinden doğrudan çalışır; normal sohbet ve derin sohbet akışı değişmez.")
+                InfoNotice("🔐  İlk kurulum", "Yalnızca bir kez Android Erişilebilirlik ayarlarında EDA hizmetini aç. Kilidi aşma, parola/OTP okuma, mesaj gönderme, silme, ödeme veya son onay işlemleri otomatik yapılmaz.")
                 SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
                 ControlTile("▶", "Eda’yı başlat", "Eda’yı dinlemeye hazır hâle getir", Good) { onAction("ACTION_AKTIF") }
                 ControlTile("☾", "Uyku moduna al", "Uyandırma kelimesiyle yeniden etkinleşir", Cyan) { onAction("ACTION_UYKU") }
