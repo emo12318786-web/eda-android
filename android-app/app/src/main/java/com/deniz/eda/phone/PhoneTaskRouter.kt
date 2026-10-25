@@ -26,7 +26,7 @@ object PhoneTaskRouter {
             "ekrandaki metni oku", "telefon ekranini oku",
             "ekrandaki metne dokun", "ekrandaki ogeye dokun",
             "ekrandaki dugmeye bas", "ekrandaki yaziyi sec"
-        ).any { q.contains(it) } || quotedTarget(raw) != null
+        ).any { q.contains(it) } || (quotedTarget(raw) != null && listOf("dokun", "tikla", "bas", "sec").any { q.contains(it) })
         if (!phoneIntent) return null
 
         if (!PhoneControlService.isEnabled()) {
@@ -59,7 +59,7 @@ object PhoneTaskRouter {
                 }
                 else -> {
                     val target = quotedTarget(raw)
-                        ?: return "Hangi metne dokunmamı istediğini tırnak içinde söyle. Örnek: Eda, ekrandaki metne dokun, "Ayarlar"."
+                        ?: return "Hangi metne dokunmamı istediğini tırnak içinde söyle. Örnek: Eda, ekrandaki metne dokun, \\"Ayarlar\\"."
                     PhoneControlService.run("tap", target)
                 }
             }
