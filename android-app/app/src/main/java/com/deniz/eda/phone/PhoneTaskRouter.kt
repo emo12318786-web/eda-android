@@ -59,7 +59,7 @@ object PhoneTaskRouter {
                 }
                 else -> {
                     val target = quotedTarget(raw)
-                        ?: return "Hangi metne dokunmamı istediğini tırnak içinde söyle. Örnek: Eda, ekrandaki metne dokun, \\"Ayarlar\\"."
+                        ?: return "Hangi metne dokunmamı istediğini tırnak içinde söyle. Örnek: Eda, ekrandaki metne dokun ve hedefi tırnak içinde belirt."
                     PhoneControlService.run("tap", target)
                 }
             }
