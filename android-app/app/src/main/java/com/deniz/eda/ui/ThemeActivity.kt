@@ -3,6 +3,7 @@ package com.deniz.eda.ui
 import android.app.Activity
 import android.graphics.Color as AndroidColor
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.ViewGroup
@@ -38,11 +39,17 @@ class ThemeActivity : Activity() {
         root.addView(subtitle)
         val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         ThemeConfig.palettes.forEachIndexed { index, item ->
+            val isSelected = ThemeConfig.selectedId(this) == item.id
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(dp(14), dp(14), dp(14), dp(14))
-                setBackgroundColor(item.panel.toInt())
+                background = GradientDrawable().apply {
+                    setColor(item.panel.toInt())
+                    cornerRadius = dp(16).toFloat()
+                    setStroke(dp(if (isSelected) 2 else 1),
+                        (if (isSelected) item.accent else item.muted).toInt())
+                }
                 isClickable = true
                 isFocusable = true
             }
@@ -61,7 +68,7 @@ class ThemeActivity : Activity() {
                 setTextColor(AndroidColor.WHITE)
             })
             labels.addView(TextView(this).apply {
-                text = if (ThemeConfig.selectedId(this@ThemeActivity) == item.id) "✓ Seçili tema" else "Koyu görünüm"
+                text = if (isSelected) "✓ Şu anda seçili" else "Önizleme için dokun"
                 textSize = 12f
                 setTextColor(item.muted.toInt())
             })
