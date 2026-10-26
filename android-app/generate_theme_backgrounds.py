@@ -99,6 +99,51 @@ def build(theme):
     glow_layer = glow_layer.filter(ImageFilter.GaussianBlur(95))
     photo = Image.alpha_composite(photo, glow_layer)
 
+    # Add a distinct, high-contrast dark-fantasy sigil to each wallpaper.
+    # This makes each theme recognizable even when the photographic source is subtle.
+    emblem = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    ed = ImageDraw.Draw(emblem)
+    cx, cy = W // 2, int(H * 0.31)
+    red = (accent[0], accent[1], accent[2], 225)
+    pale = (secondary[0], secondary[1], secondary[2], 175)
+    # Shared thin occult ring, like the supplied EDA reference design.
+    ed.ellipse((cx-92, cy-92, cx+92, cy+92), outline=red, width=3)
+    ed.ellipse((cx-78, cy-78, cx+78, cy+78), outline=(red[0], red[1], red[2], 95), width=2)
+    if motif in ("crown", "moon_crown"):
+        pts=[(cx-58,cy+26),(cx-66,cy-34),(cx-28,cy-4),(cx,cy-52),(cx+28,cy-4),(cx+66,cy-34),(cx+58,cy+26)]
+        ed.line(pts, fill=red, width=5, joint="curve"); ed.line([(cx-58,cy+26),(cx+58,cy+26)],fill=pale,width=4)
+        for x,y in [(cx-66,cy-34),(cx,cy-52),(cx+66,cy-34)]: ed.ellipse((x-5,y-5,x+5,y+5),fill=pale)
+    elif motif in ("pentagram",):
+        points=[]
+        for i in range(5):
+            a=-math.pi/2+i*4*math.pi/5
+            points.append((int(cx+67*math.cos(a)),int(cy+67*math.sin(a))))
+        ed.line(points+[points[0]],fill=red,width=4)
+    elif motif in ("wolf_fire","wolf_moon"):
+        ed.polygon([(cx-58,cy-34),(cx-38,cy-74),(cx-9,cy-48),(cx+9,cy-48),(cx+38,cy-74),(cx+58,cy-34),(cx+43,cy+29),(cx,cy+68),(cx-43,cy+29)],outline=red)
+        ed.line([(cx-39,cy-7),(cx-12,cy+3),(cx-27,cy+14)],fill=pale,width=4)
+        ed.line([(cx+39,cy-7),(cx+12,cy+3),(cx+27,cy+14)],fill=pale,width=4)
+    elif motif in ("dragon","crystal","abyss"):
+        ed.polygon([(cx-52,cy-39),(cx-15,cy-65),(cx+5,cy-25),(cx+53,cy-49),(cx+34,cy+4),(cx+12,cy+54),(cx-21,cy+38),(cx-48,cy+7)],outline=red)
+        ed.line([(cx-30,cy-8),(cx-4,cy+3),(cx+28,cy-8)],fill=pale,width=4)
+    elif motif in ("wings_up","wings_down"):
+        direction=-1 if motif=="wings_up" else 1
+        ed.line([(cx,cy-12),(cx,cy+58)],fill=pale,width=4)
+        for i in range(5):
+            y=cy-45+i*22
+            ed.line([(cx-5,y),(cx-28-i*5,y+direction*(12+i*3)),(cx-62-i*2,y+direction*(4+i*5))],fill=red,width=4)
+            ed.line([(cx+5,y),(cx+28+i*5,y+direction*(12+i*3)),(cx+62+i*2,y+direction*(4+i*5))],fill=red,width=4)
+    elif motif in ("eclipse","sun","portal"):
+        ed.ellipse((cx-52,cy-52,cx+52,cy+52),outline=red,width=6)
+        ed.ellipse((cx-35,cy-35,cx+35,cy+35),outline=pale,width=2)
+        for i in range(12):
+            a=i*math.pi/6
+            ed.line([(int(cx+59*math.cos(a)),int(cy+59*math.sin(a))), (int(cx+76*math.cos(a)),int(cy+76*math.sin(a)))],fill=red,width=3)
+    elif motif=="throne":
+        ed.line([(cx-50,cy+55),(cx-50,cy-40),(cx-25,cy-12),(cx,cy-52),(cx+25,cy-12),(cx+50,cy-40),(cx+50,cy+55)],fill=red,width=5,joint="curve")
+        ed.line([(cx-62,cy+55),(cx+62,cy+55)],fill=pale,width=5)
+    photo = Image.alpha_composite(photo, emblem.filter(ImageFilter.GaussianBlur(0.35)))
+
     # Darken edges and bottom so controls and labels remain legible.
     vignette = Image.new("L", (W, H), 0)
     vd = ImageDraw.Draw(vignette)
