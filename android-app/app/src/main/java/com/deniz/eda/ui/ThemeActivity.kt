@@ -37,7 +37,7 @@ class ThemeActivity : Activity() {
             text = "EDA • TEMA SEÇİMİ"
             textSize = 22f
             typeface = android.graphics.Typeface.create(
-                ThemeConfig.androidTypeface(selected), android.graphics.Typeface.BOLD
+                ThemeConfig.androidTypeface(selected, android.graphics.Typeface.BOLD or selected.fontStyle)
             )
             setTextColor(AndroidColor.WHITE)
             setPadding(0, dp(8), 0, dp(8))
@@ -104,7 +104,7 @@ class ThemeActivity : Activity() {
                 text = item.name
                 textSize = 16f
                 typeface = android.graphics.Typeface.create(
-                    ThemeConfig.androidTypeface(item), android.graphics.Typeface.BOLD
+                    ThemeConfig.androidTypeface(item, android.graphics.Typeface.BOLD or item.fontStyle)
                 )
                 setTextColor(AndroidColor.WHITE)
             })
