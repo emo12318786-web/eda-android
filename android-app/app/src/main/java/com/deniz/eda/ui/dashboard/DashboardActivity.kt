@@ -908,7 +908,6 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
 }
 
 @Composable
-private fun @Composable
 private fun ThemeHeroVariant(
     mode: Int,
     name: String,
@@ -1074,7 +1073,8 @@ private fun ThemeHeroVariant(
     }
 }
 
-
+@Composable
+private fun HeroMeta(time: String, date: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(time, fontSize = 22.sp, color = Cyan, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.width(10.dp))
