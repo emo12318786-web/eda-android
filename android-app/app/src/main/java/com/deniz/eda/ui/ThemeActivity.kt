@@ -36,8 +36,8 @@ class ThemeActivity : Activity() {
         val title = TextView(this).apply {
             text = "EDA • TEMA SEÇİMİ"
             textSize = 22f
-            typeface = android.graphics.Typeface.create(
-                ThemeConfig.androidTypeface(selected, android.graphics.Typeface.BOLD or selected.fontStyle)
+            typeface = ThemeConfig.androidTypeface(
+                selected, android.graphics.Typeface.BOLD or selected.fontStyle
             )
             setTextColor(AndroidColor.WHITE)
             setPadding(0, dp(8), 0, dp(8))
@@ -103,8 +103,8 @@ class ThemeActivity : Activity() {
             labels.addView(TextView(this).apply {
                 text = item.name
                 textSize = 16f
-                typeface = android.graphics.Typeface.create(
-                    ThemeConfig.androidTypeface(item, android.graphics.Typeface.BOLD or item.fontStyle)
+                typeface = ThemeConfig.androidTypeface(
+                    item, android.graphics.Typeface.BOLD or item.fontStyle
                 )
                 setTextColor(AndroidColor.WHITE)
             })
