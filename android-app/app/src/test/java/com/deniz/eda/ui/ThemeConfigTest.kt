@@ -27,7 +27,7 @@ class ThemeConfigTest {
                 assertTrue("${profile.name} is missing icon purpose $purpose",
                     ThemeConfig.icon(purpose, profile).isNotBlank())
             }
-            assertTrue(ThemeConfig.androidTypeface(profile) != null)
+            assertTrue(ThemeConfig.fontLabel(profile).isNotBlank())
             assertTrue(ThemeConfig.cornerRadius(profile, 18) in 3..38)
         }
         assertTrue(
