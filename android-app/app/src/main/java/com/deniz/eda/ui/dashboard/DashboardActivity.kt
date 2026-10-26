@@ -220,13 +220,71 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
         // Transparent content lets the selected theme artwork sit behind every dashboard tab.
         containerColor = Color.Transparent,
         bottomBar = {
-            NavigationBar(containerColor = Panel.copy(alpha = 0.96f), contentColor = Violet) {
-                NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 },
-                    icon = { Text("⌂", fontSize = 21.sp, color = if (selectedTab == 0) Violet else Muted) }, label = { Text("Merkez") })
-                NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 },
-                    icon = { Text("⌘", fontSize = 21.sp, color = if (selectedTab == 1) Violet else Muted) }, label = { Text("Kontrol") })
-                NavigationBarItem(selected = selectedTab == 2, onClick = { selectedTab = 2 },
-                    icon = { Text("✥", fontSize = 21.sp, color = if (selectedTab == 2) Violet else Muted) }, label = { Text("Sistem") })
+            NavigationBar(
+                containerColor = Panel.copy(alpha = 0.97f),
+                contentColor = Violet,
+                tonalElevation = 0.dp
+            ) {
+                NavigationBarItem(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    icon = {
+                        Text(
+                            "⌂",
+                            fontSize = 22.sp,
+                            color = if (selectedTab == 0) Violet else Muted,
+                            fontWeight = if (selectedTab == 0) FontWeight.Black else FontWeight.Normal
+                        )
+                    },
+                    label = { Text("Merkez", fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Violet,
+                        selectedTextColor = Violet,
+                        indicatorColor = Violet.copy(alpha = 0.16f),
+                        unselectedIconColor = Muted,
+                        unselectedTextColor = Muted
+                    )
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    icon = {
+                        Text(
+                            "⌘",
+                            fontSize = 22.sp,
+                            color = if (selectedTab == 1) Violet else Muted,
+                            fontWeight = if (selectedTab == 1) FontWeight.Black else FontWeight.Normal
+                        )
+                    },
+                    label = { Text("Kontrol", fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Violet,
+                        selectedTextColor = Violet,
+                        indicatorColor = Violet.copy(alpha = 0.16f),
+                        unselectedIconColor = Muted,
+                        unselectedTextColor = Muted
+                    )
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 },
+                    icon = {
+                        Text(
+                            "✥",
+                            fontSize = 22.sp,
+                            color = if (selectedTab == 2) Violet else Muted,
+                            fontWeight = if (selectedTab == 2) FontWeight.Black else FontWeight.Normal
+                        )
+                    },
+                    label = { Text("Sistem", fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Violet,
+                        selectedTextColor = Violet,
+                        indicatorColor = Violet.copy(alpha = 0.16f),
+                        unselectedIconColor = Muted,
+                        unselectedTextColor = Muted
+                    )
+                )
             }
         }
     ) { padding ->
