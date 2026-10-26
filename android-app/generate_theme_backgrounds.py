@@ -11,20 +11,20 @@ W, H = 420, 900
 
 # id, accent RGB, secondary RGB, motif
 THEMES = [
- ("dark_queen",(255,35,75),(255,150,180),"queen"),
- ("hellhound",(255,55,30),(255,155,85),"hellhound"),
- ("obsidian",(210,220,235),(255,55,75),"obsidian"),
- ("pentagram",(255,25,85),(255,125,160),"pentagram"),
- ("wolf",(220,225,235),(255,55,65),"wolf"),
- ("eclipse",(255,65,55),(255,170,120),"eclipse"),
- ("throne",(255,40,40),(255,145,145),"throne"),
- ("black_sun",(255,90,35),(255,190,100),"sun"),
- ("dark_angel",(255,45,75),(225,225,240),"angel"),
- ("dragon_core",(255,40,25),(255,150,65),"dragon"),
- ("fallen_angel",(255,50,85),(215,215,230),"fallen"),
- ("night_queen",(255,45,110),(255,170,205),"nightqueen"),
- ("space_gate",(255,45,90),(155,200,255),"gate"),
- ("neon_abyss",(255,40,95),(100,245,215),"abyss"),
+ ("dark_queen",(255,181,46),(255,224,160),"queen"),
+ ("hellhound",(255,50,31),(255,139,72),"hellhound"),
+ ("obsidian",(184,199,217),(228,236,247),"obsidian"),
+ ("pentagram",(255,45,135),(255,139,194),"pentagram"),
+ ("wolf",(184,216,255),(228,242,255),"wolf"),
+ ("eclipse",(255,106,53),(255,177,122),"eclipse"),
+ ("throne",(255,69,69),(255,144,144),"throne"),
+ ("black_sun",(255,138,38),(255,198,110),"sun"),
+ ("dark_angel",(185,167,255),(226,214,255),"angel"),
+ ("dragon_core",(255,58,36),(255,154,81),"dragon"),
+ ("fallen_angel",(142,168,255),(215,224,255),"fallen"),
+ ("night_queen",(255,79,168),(255,165,208),"nightqueen"),
+ ("space_gate",(126,155,255),(183,216,255),"gate"),
+ ("neon_abyss",(69,242,208),(115,232,208),"abyss"),
 ]
 
 def polygon_star(draw,cx,cy,r1,r2,n,fill,width=2,rotation=-math.pi/2):
