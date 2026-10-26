@@ -46,7 +46,7 @@ PHOTO_URLS = {
     "throne": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
     "black_sun": "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
     "dark_angel": "https://images.unsplash.com/photo-1500534623283-312aade485b7?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-    "dragon_core": "https://images.unsplash.com/photo-1475738198235-4b30fc2fcf7b?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
+    "dragon_core": "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
     "fallen_angel": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=840&h=1800&fit=crop&crop=entropy&q=88",
     "night_queen": "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
     "space_gate": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
