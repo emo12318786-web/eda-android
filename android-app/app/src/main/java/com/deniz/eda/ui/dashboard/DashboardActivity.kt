@@ -220,13 +220,13 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
         // Transparent content lets the selected theme artwork sit behind every dashboard tab.
         containerColor = Color.Transparent,
         bottomBar = {
-            NavigationBar(containerColor = Panel, contentColor = Violet) {
+            NavigationBar(containerColor = Panel.copy(alpha = 0.96f), contentColor = Violet) {
                 NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 },
-                    icon = { Text("◈", fontSize = 20.sp) }, label = { Text("Merkez") })
+                    icon = { Text("⌂", fontSize = 21.sp, color = if (selectedTab == 0) Violet else Muted) }, label = { Text("Merkez") })
                 NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 },
-                    icon = { Text("⌘", fontSize = 20.sp) }, label = { Text("Kontrol") })
+                    icon = { Text("⌘", fontSize = 21.sp, color = if (selectedTab == 1) Violet else Muted) }, label = { Text("Kontrol") })
                 NavigationBarItem(selected = selectedTab == 2, onClick = { selectedTab = 2 },
-                    icon = { Text("◉", fontSize = 20.sp) }, label = { Text("Sistem") })
+                    icon = { Text("✥", fontSize = 21.sp, color = if (selectedTab == 2) Violet else Muted) }, label = { Text("Sistem") })
             }
         }
     ) { padding ->
@@ -757,7 +757,7 @@ private fun SectionHeader(title: String, subtitle: String) {
 
 @Composable
 private fun MetricCard(label: String, icon: String, value: String, detail: String, tint: Color, modifier: Modifier = Modifier) {
-    Card(modifier, shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Panel)) {
+    Card(modifier, shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Panel), border = BorderStroke(1.dp, Violet.copy(alpha = 0.42f))) {
         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(icon, color = tint, fontSize = 17.sp)
@@ -801,7 +801,7 @@ private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
 @Composable
 private fun ControlTile(icon: String, title: String, detail: String, tint: Color, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Panel)) {
+        colors = CardDefaults.cardColors(containerColor = Panel), border = BorderStroke(1.dp, Violet.copy(alpha = 0.42f))) {
         Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(44.dp).background(tint.copy(alpha = .12f), RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center) { Text(icon, color = tint, fontSize = 21.sp) }
