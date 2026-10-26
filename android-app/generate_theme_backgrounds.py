@@ -1,181 +1,158 @@
 #!/usr/bin/env python3
-"""Download and process real photographic wallpapers for EDA.
-
-Run from android-app/: python3 -m pip install Pillow && python3 generate_theme_backgrounds.py
-The GitHub Actions build runs this before Gradle, so the raster assets are packaged into both APKs.
-"""
+"""Generate original offline dark-fantasy EDA wallpapers (no stock photos/network)."""
 from __future__ import annotations
-
-import math
-import random
+import math, random
 from pathlib import Path
-
-from PIL import Image, ImageDraw, ImageFilter, ImageChops
+from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "app" / "src" / "main" / "res" / "drawable-nodpi"
 W, H = 420, 900
 
-# id: background, main glow, accent, secondary, motif
+# id, accent RGB, secondary RGB, motif
 THEMES = [
-    # All 14 artworks follow the requested black/crimson visual family.
-    # Accent shades vary subtly, while the silhouette/sigil remains theme-specific.
-    ("dark_queen",   (5, 2, 4),  (65, 4, 20),  (255, 38, 59),  (255, 145, 164), "crown"),
-    ("hellhound",    (5, 2, 2),  (72, 5, 3),   (255, 43, 31),  (255, 112, 74),  "wolf_fire"),
-    ("obsidian",     (3, 4, 5),  (36, 8, 12),  (255, 57, 69),  (183, 185, 192),"crystal"),
-    ("pentagram",    (6, 2, 4),  (67, 3, 19),  (255, 23, 74),  (255, 99, 125),  "pentagram"),
-    ("wolf",         (3, 4, 5),  (35, 6, 9),   (255, 48, 56),  (208, 211, 216), "wolf_moon"),
-    ("eclipse",      (4, 2, 3),  (63, 6, 11),  (255, 52, 46),  (255, 130, 120), "eclipse"),
-    ("throne",       (5, 2, 2),  (74, 3, 3),   (255, 37, 37),  (255, 104, 104), "throne"),
-    ("black_sun",    (5, 3, 2),  (67, 18, 5),  (255, 58, 34),  (255, 154, 84),  "sun"),
-    ("dark_angel",   (3, 3, 4),  (51, 4, 12),  (255, 38, 61),  (226, 214, 216), "wings_up"),
-    ("dragon_core",  (5, 1, 1),  (76, 2, 4),   (255, 30, 36),  (255, 119, 61),  "dragon"),
-    ("fallen_angel", (3, 3, 4),  (48, 4, 13),  (255, 43, 67),  (215, 208, 214), "wings_down"),
-    ("night_queen",  (5, 2, 4),  (71, 4, 21),  (255, 36, 84),  (255, 131, 167), "moon_crown"),
-    ("space_gate",   (2, 3, 4),  (37, 7, 15),  (255, 45, 77),  (183, 197, 213), "portal"),
-    ("neon_abyss",   (2, 4, 3),  (14, 25, 19), (255, 41, 73),  (115, 232, 208), "abyss"),
+ ("dark_queen",(255,35,75),(255,150,180),"queen"),
+ ("hellhound",(255,55,30),(255,155,85),"hellhound"),
+ ("obsidian",(210,220,235),(255,55,75),"obsidian"),
+ ("pentagram",(255,25,85),(255,125,160),"pentagram"),
+ ("wolf",(220,225,235),(255,55,65),"wolf"),
+ ("eclipse",(255,65,55),(255,170,120),"eclipse"),
+ ("throne",(255,40,40),(255,145,145),"throne"),
+ ("black_sun",(255,90,35),(255,190,100),"sun"),
+ ("dark_angel",(255,45,75),(225,225,240),"angel"),
+ ("dragon_core",(255,40,25),(255,150,65),"dragon"),
+ ("fallen_angel",(255,50,85),(215,215,230),"fallen"),
+ ("night_queen",(255,45,110),(255,170,205),"nightqueen"),
+ ("space_gate",(255,45,90),(155,200,255),"gate"),
+ ("neon_abyss",(255,40,95),(100,245,215),"abyss"),
 ]
 
-# Real photographic sources from Unsplash. Downloaded at build time and bundled
-# into the APK, so wallpapers work offline after installation.
-PHOTO_URLS = {
-    "dark_queen": "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-    "hellhound": "https://images.unsplash.com/photo-1511497584788-876760111969?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-    "obsidian": "https://images.unsplash.com/photo-1497250681960-ef046c08a56e?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-    "pentagram": "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-    "wolf": "https://images.unsplash.com/photo-1472396961693-142e6e269027?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-    "eclipse": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-    "throne": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-    "black_sun": "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-    "dark_angel": "https://images.unsplash.com/photo-1500534623283-312aade485b7?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-    "dragon_core": "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-    "fallen_angel": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=840&h=1800&fit=crop&crop=entropy&q=88",
-    "night_queen": "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-    "space_gate": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-    "neon_abyss": "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-}
+def polygon_star(draw,cx,cy,r1,r2,n,fill,width=2,rotation=-math.pi/2):
+    pts=[]
+    for i in range(n*2):
+        a=rotation+i*math.pi/n; r=r1 if i%2==0 else r2
+        pts.append((int(cx+math.cos(a)*r),int(cy+math.sin(a)*r)))
+    draw.line(pts+[pts[0]],fill=fill,width=width,joint="curve")
 
 def build(theme):
-    theme_id, bg, glow, accent, secondary, motif = theme
-    from urllib.request import Request, urlopen
-    from urllib.error import URLError, HTTPError
-
-    url = PHOTO_URLS[theme_id]
-    request = Request(url, headers={"User-Agent": "EDA-Android-WallpaperBuilder/1.0"})
-    try:
-        with urlopen(request, timeout=35) as response:
-            raw = response.read()
-    except (URLError, HTTPError, TimeoutError) as exc:
-        raise RuntimeError(
-            f"Cannot download real photo for {theme_id}; refusing to silently "
-            f"replace it with generated shapes: {exc}"
-        ) from exc
-
-    import io
-    with Image.open(io.BytesIO(raw)) as source:
-        photo = source.convert("RGB")
-    # Crop the real photograph to a tall phone wallpaper without stretching.
-    target_ratio = W / H
-    source_ratio = photo.width / photo.height
-    if source_ratio > target_ratio:
-        new_width = max(1, int(photo.height * target_ratio))
-        left = (photo.width - new_width) // 2
-        photo = photo.crop((left, 0, left + new_width, photo.height))
-    else:
-        new_height = max(1, int(photo.width / target_ratio))
-        top = max(0, (photo.height - new_height) // 2)
-        photo = photo.crop((0, top, photo.width, top + new_height))
-    photo = photo.resize((W, H), Image.Resampling.LANCZOS).convert("RGBA")
-
-    # Keep the photograph recognisable while darkening it for readable UI text.
-    photo = Image.blend(photo, Image.new("RGBA", (W, H), (bg[0], bg[1], bg[2], 255)), 0.43)
-    tint = Image.new("RGBA", (W, H), (accent[0], accent[1], accent[2], 0))
-    tint.putalpha(Image.new("L", (W, H), 34))
-    photo = Image.alpha_composite(photo, tint)
-
-    # Gentle theme-colored glow near the upper/middle area, not a vector emblem.
-    glow_layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    gd = ImageDraw.Draw(glow_layer)
-    gd.ellipse((W*0.08, H*0.10, W*0.92, H*0.68),
-               fill=(glow[0], glow[1], glow[2], 38))
-    glow_layer = glow_layer.filter(ImageFilter.GaussianBlur(95))
-    photo = Image.alpha_composite(photo, glow_layer)
-
-    # Add a distinct, high-contrast dark-fantasy sigil to each wallpaper.
-    # This makes each theme recognizable even when the photographic source is subtle.
-    emblem = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    ed = ImageDraw.Draw(emblem)
-    cx, cy = W // 2, int(H * 0.31)
-    red = (accent[0], accent[1], accent[2], 225)
-    pale = (secondary[0], secondary[1], secondary[2], 175)
-    # Shared thin occult ring, like the supplied EDA reference design.
-    ed.ellipse((cx-92, cy-92, cx+92, cy+92), outline=red, width=3)
-    ed.ellipse((cx-78, cy-78, cx+78, cy+78), outline=(red[0], red[1], red[2], 95), width=2)
-    if motif in ("crown", "moon_crown"):
-        pts=[(cx-58,cy+26),(cx-66,cy-34),(cx-28,cy-4),(cx,cy-52),(cx+28,cy-4),(cx+66,cy-34),(cx+58,cy+26)]
-        ed.line(pts, fill=red, width=5, joint="curve"); ed.line([(cx-58,cy+26),(cx+58,cy+26)],fill=pale,width=4)
-        for x,y in [(cx-66,cy-34),(cx,cy-52),(cx+66,cy-34)]: ed.ellipse((x-5,y-5,x+5,y+5),fill=pale)
-    elif motif in ("pentagram",):
-        points=[]
-        for i in range(5):
-            a=-math.pi/2+i*4*math.pi/5
-            points.append((int(cx+67*math.cos(a)),int(cy+67*math.sin(a))))
-        ed.line(points+[points[0]],fill=red,width=4)
-    elif motif in ("wolf_fire","wolf_moon"):
-        ed.polygon([(cx-58,cy-34),(cx-38,cy-74),(cx-9,cy-48),(cx+9,cy-48),(cx+38,cy-74),(cx+58,cy-34),(cx+43,cy+29),(cx,cy+68),(cx-43,cy+29)],outline=red)
-        ed.line([(cx-39,cy-7),(cx-12,cy+3),(cx-27,cy+14)],fill=pale,width=4)
-        ed.line([(cx+39,cy-7),(cx+12,cy+3),(cx+27,cy+14)],fill=pale,width=4)
-    elif motif in ("dragon","crystal","abyss"):
-        ed.polygon([(cx-52,cy-39),(cx-15,cy-65),(cx+5,cy-25),(cx+53,cy-49),(cx+34,cy+4),(cx+12,cy+54),(cx-21,cy+38),(cx-48,cy+7)],outline=red)
-        ed.line([(cx-30,cy-8),(cx-4,cy+3),(cx+28,cy-8)],fill=pale,width=4)
-    elif motif in ("wings_up","wings_down"):
-        direction=-1 if motif=="wings_up" else 1
-        ed.line([(cx,cy-12),(cx,cy+58)],fill=pale,width=4)
-        for i in range(5):
-            y=cy-45+i*22
-            ed.line([(cx-5,y),(cx-28-i*5,y+direction*(12+i*3)),(cx-62-i*2,y+direction*(4+i*5))],fill=red,width=4)
-            ed.line([(cx+5,y),(cx+28+i*5,y+direction*(12+i*3)),(cx+62+i*2,y+direction*(4+i*5))],fill=red,width=4)
-    elif motif in ("eclipse","sun","portal"):
-        ed.ellipse((cx-52,cy-52,cx+52,cy+52),outline=red,width=6)
-        ed.ellipse((cx-35,cy-35,cx+35,cy+35),outline=pale,width=2)
-        for i in range(12):
-            a=i*math.pi/6
-            ed.line([(int(cx+59*math.cos(a)),int(cy+59*math.sin(a))), (int(cx+76*math.cos(a)),int(cy+76*math.sin(a)))],fill=red,width=3)
+    tid, accent, secondary, motif = theme
+    random.seed(tid)
+    # Rich bespoke procedural art: no downloaded photography and no generic landscapes.
+    im=Image.new("RGB",(W,H),(3,2,7)); px=im.load()
+    glow={"queen":(57,3,22),"hellhound":(65,5,4),"obsidian":(13,18,27),
+          "pentagram":(55,2,23),"wolf":(12,17,28),"eclipse":(48,5,10),
+          "throne":(58,2,5),"sun":(55,13,2),"angel":(35,5,17),
+          "dragon":(60,2,2),"fallen":(32,4,15),"nightqueen":(55,3,25),
+          "gate":(8,9,35),"abyss":(2,28,25)}[motif]
+    for y in range(H):
+        for x in range(W):
+            dx=(x-W*.5)/(W*.8); dy=(y-H*.34)/(H*.66)
+            g=max(0,1-math.sqrt(dx*dx+dy*dy))
+            wave=(math.sin(x*.025+y*.013)+1)*.5
+            px[x,y]=tuple(min(255,int((3,2,7)[i]+glow[i]*g*g*.9+accent[i]*wave*g*.045)) for i in range(3))
+    im=im.convert("RGBA")
+    # Nebula haze and fine stars, never realistic trees/mountains/photos.
+    haze=Image.new("RGBA",(W,H),(0,0,0,0)); hd=ImageDraw.Draw(haze)
+    for _ in range(34):
+        x=random.randint(-40,W+40); y=random.randint(30,H-80); r=random.randint(12,85)
+        hd.ellipse((x-r,y-r,x+r,y+r),fill=(*accent,random.randint(2,11)))
+    haze=haze.filter(ImageFilter.GaussianBlur(28)); im=Image.alpha_composite(im,haze)
+    d=ImageDraw.Draw(im)
+    for _ in range(210):
+        x=random.randrange(W); y=random.randrange(H); r=random.choices([1,2,3],[.78,.19,.03])[0]
+        c=(*secondary,random.randint(35,150))
+        d.ellipse((x-r,y-r,x+r,y+r),fill=c)
+    cx,cy=W//2,int(H*.36); red=(*accent,235); pale=(*secondary,205); dim=(*accent,70)
+    # Ornamental circles / occult geometry as a backdrop, not a sticker on a photo.
+    for r,w in [(145,2),(132,1),(118,1)]:
+        d.ellipse((cx-r,cy-r,cx+r,cy+r),outline=dim,width=w)
+    for i in range(36):
+        a=i*math.tau/36
+        d.line((cx+math.cos(a)*135,cy+math.sin(a)*135,cx+math.cos(a)*(145 if i%3==0 else 140),cy+math.sin(a)*(145 if i%3==0 else 140)),fill=red if i%3==0 else dim,width=2)
+    if motif in ("queen","nightqueen"):
+        # Elaborate floating crown
+        pts=[(cx-92,cy+25),(cx-82,cy-48),(cx-40,cy-8),(cx-15,cy-78),(cx+15,cy-78),(cx+40,cy-8),(cx+82,cy-48),(cx+92,cy+25)]
+        d.line(pts,fill=red,width=5,joint="curve"); d.line((cx-92,cy+25,cx-75,cy+57,cx+75,cy+57,cx+92,cy+25),fill=pale,width=3)
+        for x,y in pts[1::2]: d.ellipse((x-6,y-6,x+6,y+6),fill=pale)
+        if motif=="nightqueen": d.arc((cx-110,cy-120,cx+110,cy+100),190,350,fill=pale,width=3)
+    elif motif=="hellhound":
+        # Infernal hound head with horns and burning eyes
+        d.polygon([(cx-78,cy-38),(cx-112,cy-105),(cx-45,cy-73),(cx-15,cy-45),(cx+15,cy-45),(cx+45,cy-73),(cx+112,cy-105),(cx+78,cy-38),(cx+62,cy+48),(cx,cy+102),(cx-62,cy+48)],outline=red,width=4)
+        d.line((cx-55,cy-12,cx-20,cy+2,cx-45,cy+13),fill=pale,width=4); d.line((cx+55,cy-12,cx+20,cy+2,cx+45,cy+13),fill=pale,width=4)
+        d.polygon([(cx-13,cy+36),(cx+13,cy+36),(cx,cy+53)],fill=red)
+        for j in range(5): d.arc((cx-130-j*4,cy+35+j*7,cx-20,cy+130+j*5),200,320,fill=(*accent,65),width=2)
+    elif motif=="obsidian":
+        d.polygon([(cx,cy-112),(cx+62,cy-35),(cx+42,cy+72),(cx,cy+110),(cx-42,cy+72),(cx-62,cy-35)],outline=pale,width=4)
+        d.line((cx,cy-112,cx,cy+110),fill=red,width=2); d.line((cx-62,cy-35,cx+42,cy+72),fill=dim,width=2); d.line((cx+62,cy-35,cx-42,cy+72),fill=dim,width=2)
+    elif motif=="pentagram":
+        polygon_star(d,cx,cy,104,42,5,red,4)
+        d.ellipse((cx-12,cy-12,cx+12,cy+12),outline=pale,width=2)
+    elif motif=="wolf":
+        d.arc((cx-115,cy-115,cx+115,cy+115),205,335,outline=pale,width=3)
+        d.polygon([(cx-72,cy-30),(cx-63,cy-100),(cx-20,cy-62),(cx+20,cy-62),(cx+63,cy-100),(cx+72,cy-30),(cx+52,cy+46),(cx,cy+93),(cx-52,cy+46)],outline=red,width=4)
+        d.line((cx-52,cy-5,cx-20,cy+5),fill=pale,width=4); d.line((cx+52,cy-5,cx+20,cy+5),fill=pale,width=4)
+    elif motif in ("eclipse","sun"):
+        d.ellipse((cx-72,cy-72,cx+72,cy+72),outline=red,width=5)
+        d.ellipse((cx-53,cy-53,cx+53,cy+53),outline=pale,width=2)
+        if motif=="eclipse": d.ellipse((cx-32,cy-62,cx+78,cy+48),fill=(3,2,7,255))
+        else:
+            for i in range(24):
+                a=i*math.tau/24; d.line((cx+math.cos(a)*83,cy+math.sin(a)*83,cx+math.cos(a)*103,cy+math.sin(a)*103),fill=red,width=3)
     elif motif=="throne":
-        ed.line([(cx-50,cy+55),(cx-50,cy-40),(cx-25,cy-12),(cx,cy-52),(cx+25,cy-12),(cx+50,cy-40),(cx+50,cy+55)],fill=red,width=5,joint="curve")
-        ed.line([(cx-62,cy+55),(cx+62,cy+55)],fill=pale,width=5)
-    photo = Image.alpha_composite(photo, emblem.filter(ImageFilter.GaussianBlur(0.35)))
-
-    # Darken edges and bottom so controls and labels remain legible.
-    vignette = Image.new("L", (W, H), 0)
-    vd = ImageDraw.Draw(vignette)
-    vd.ellipse((-W*0.22, -H*0.10, W*1.22, H*1.10), fill=105)
-    vignette = vignette.filter(ImageFilter.GaussianBlur(65))
-    shade = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    shade.putalpha(vignette.point(lambda p: int(p * 0.55)))
-    photo = Image.alpha_composite(photo, shade)
-
-    OUT.mkdir(parents=True, exist_ok=True)
-    target = OUT / f"bg_theme_{theme_id}.webp"
-    final = photo.convert("RGB")
-    final.save(target, "WEBP", quality=88, method=6)
-
-    # Theme identity icon is cut from the exact same wallpaper, so selector
-    # thumbnails and the dashboard share the same visual language.
-    icon_size = 320
-    icon_center_y = int(H * 0.31)
-    left = max(0, min(W - icon_size, (W - icon_size) // 2))
-    top = max(0, min(H - icon_size, icon_center_y - icon_size // 2))
-    icon = final.crop((left, top, left + icon_size, top + icon_size))
-    icon_target = OUT / f"ic_theme_{theme_id}.webp"
-    icon.save(icon_target, "WEBP", quality=90, method=6)
-    print(f"{target.relative_to(ROOT)}: {target.stat().st_size // 1024} KiB; icon={icon_target.name}")
-
+        d.polygon([(cx-88,cy+90),(cx-88,cy-72),(cx-48,cy-38),(cx,cy-112),(cx+48,cy-38),(cx+88,cy-72),(cx+88,cy+90)],outline=red,width=5)
+        d.line((cx-105,cy+90,cx+105,cy+90),fill=pale,width=5); d.rectangle((cx-55,cy+10,cx+55,cy+70),outline=dim,width=3)
+    elif motif in ("angel","fallen"):
+        # Feathered wings around a central sigil
+        for side in (-1,1):
+            for j in range(8):
+                yy=cy-75+j*20
+                x0=cx+side*12; x1=cx+side*(48+j*8); y1=yy+(-1 if motif=="angel" else 1)*(20+j*2)
+                d.line((x0,yy,x1,y1),fill=red if j%2==0 else pale,width=3)
+                d.arc((min(x0,x1)-8,min(yy,y1)-9,max(x0,x1)+8,max(yy,y1)+9),190 if side<0 else 0,290 if side<0 else 100,fill=dim,width=2)
+        d.line((cx,cy-45,cx,cy+72),fill=pale,width=3); polygon_star(d,cx,cy,30,12,6,red,2)
+    elif motif=="dragon":
+        # Coiled dragon / horned silhouette
+        d.arc((cx-105,cy-110,cx+105,cy+105),35,310,fill=red,width=6)
+        d.polygon([(cx+15,cy-75),(cx+70,cy-112),(cx+56,cy-56),(cx+100,cy-30),(cx+40,cy-20),(cx+10,cy+15)],outline=pale,width=4)
+        d.line((cx-62,cy+44,cx-20,cy+70,cx+25,cy+55),fill=red,width=4)
+        for j in range(4): d.line((cx-85+j*12,cy+50+j*5,cx-105+j*12,cy+80+j*5),fill=dim,width=2)
+    elif motif=="gate":
+        for r in (105,85,65):
+            d.arc((cx-r,cy-r,cx+r,cy+r),0,360,fill=red if r==85 else pale,width=3)
+        d.polygon([(cx,cy-65),(cx+42,cy),(cx,cy+65),(cx-42,cy)],outline=red,width=3)
+        for i in range(9):
+            y=cy-55+i*14; d.line((cx-25,y,cx+25,y),fill=dim,width=2)
+    elif motif=="abyss":
+        polygon_star(d,cx,cy,95,70,8,red,3)
+        d.ellipse((cx-42,cy-42,cx+42,cy+42),outline=pale,width=3)
+        for i in range(16):
+            a=i*math.tau/16
+            d.line((cx+math.cos(a)*112,cy+math.sin(a)*112,cx+math.cos(a)*128,cy+math.sin(a)*128),fill=red,width=2)
+    # Gothic spires and arches frame the composition; no landscape imagery.
+    arch=Image.new("RGBA",(W,H),(0,0,0,0)); ad=ImageDraw.Draw(arch)
+    for side in (0,W):
+        x=side
+        ad.polygon([(x-35,H),(x+22,H),(x+18,H*.53),(x+2,H*.44),(x-15,H*.53)],fill=(0,0,0,105))
+        ad.line((x+3,H*.57,x+2,H*.22,x+22,H*.12,x+38,H*.22,x+38,H*.57),fill=(*accent,48),width=2)
+    ad.arc((W*.10,H*.08,W*.90,H*.70),190,350,fill=(*accent,45),width=2)
+    im=Image.alpha_composite(im,arch)
+    # Strong bottom/edge readability gradient for UI overlays.
+    shade=Image.new("RGBA",(W,H),(0,0,0,0)); sd=ImageDraw.Draw(shade)
+    for y in range(H):
+        a=int(175*(y/H)**2)
+        sd.line((0,y,W,y),fill=(0,0,0,a))
+    for x in range(W//2):
+        a=int(95*(1-x/(W/2)))
+        sd.line((x,0,x,H),fill=(0,0,0,a)); sd.line((W-1-x,0,W-1-x,H),fill=(0,0,0,a))
+    im=Image.alpha_composite(im,shade).convert("RGB")
+    OUT.mkdir(parents=True,exist_ok=True)
+    target=OUT/f"bg_theme_{tid}.webp"; im.save(target,"WEBP",quality=91,method=6)
+    # Thumbnails are purposefully artwork crops, not separately composed stock photos.
+    icon=im.crop((W//2-145,int(H*.36)-145,W//2+145,int(H*.36)+145))
+    icon.save(OUT/f"ic_theme_{tid}.webp","WEBP",quality=92,method=6)
+    print(f"{target.name}: {target.stat().st_size//1024} KiB")
 
 def main():
-    for theme in THEMES:
-        build(theme)
-    print(f"Generated {len(THEMES)} raster theme wallpapers in {OUT}")
-
-if __name__ == "__main__":
-    main()
+    for theme in THEMES: build(theme)
+    print(f"Generated {len(THEMES)} original offline fantasy themes")
+if __name__=="__main__": main()
