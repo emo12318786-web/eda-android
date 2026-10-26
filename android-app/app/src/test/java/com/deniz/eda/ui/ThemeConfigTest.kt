@@ -13,8 +13,9 @@ class ThemeConfigTest {
         assertEquals("Theme artwork IDs must be unique", 14, profiles.map { it.id }.distinct().size)
         assertEquals("Every theme needs its own icon vocabulary", 14, profiles.map { it.iconStyle }.distinct().size)
         assertEquals("Every theme needs its own identity", 14, profiles.map { listOf(it.id, it.fontFamily, it.fontStyle, it.iconStyle, it.shapeStyle, it.layoutMode) }.distinct().size)
-        assertTrue(profiles.all { it.layoutMode in 0..3 })
-        assertTrue(profiles.map { it.layoutMode }.containsAll(listOf(0, 1, 2, 3)))
+        assertEquals("Each theme needs a unique hero composition", 14, profiles.map { it.layoutMode }.distinct().size)
+        assertTrue(profiles.all { it.layoutMode in 0..13 })
+        assertTrue(profiles.map { it.layoutMode }.containsAll((0..13).toList()))
         assertEquals("Every skin must have its own typeface family/style profile", 14,
             profiles.map { it.fontFamily to it.fontStyle }.distinct().size)
         assertTrue(profiles.map { it.fontFamily }.distinct().size >= 12)
