@@ -178,8 +178,9 @@ class SettingsActivity : AppCompatActivity() {
             }
             if (view is TextView) {
                 // Legacy XML widgets use the selected theme's actual Typeface too.
-                val style = view.typeface?.style ?: Typeface.NORMAL
-                view.typeface = Typeface.create(ThemeConfig.androidTypeface(palette), style)
+                val existingStyle = view.typeface?.style ?: Typeface.NORMAL
+                val themedStyle = existingStyle or palette.fontStyle
+                view.typeface = ThemeConfig.androidTypeface(palette, themedStyle)
 
                 // Re-skin the existing settings-card pictograms without changing IDs/actions.
                 val original = view.text?.toString().orEmpty()
