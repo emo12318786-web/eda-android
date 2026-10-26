@@ -1,20 +1,29 @@
-# EDA photographic theme wallpapers
+# EDA theme artwork: 14 offline wallpapers
 
-EDA downloads 14 distinct photographic source images from Unsplash at build time,
-then crops, darkens and color-grades them for readable text and controls. The
-processed WebP files are packaged in the APK; the installed app does not need a
-network connection to display them.
+EDA currently creates 14 original, procedural dark-fantasy wallpapers with
+`android-app/generate_theme_backgrounds.py`. The art is drawn locally with
+Pillow; it does **not** download Unsplash images, use remote URLs, or need network
+access at runtime. This is intentionally documented as procedural artwork rather
+than photography.
 
-Source image URLs are listed in `generate_theme_backgrounds.py` under
-`PHOTO_URLS`. The original photographs remain subject to the Unsplash License:
-https://unsplash.com/license
+For each theme, the generator creates:
+- `bg_theme_<theme-id>.webp`: phone-height wallpaper used behind the dashboard;
+- `ic_theme_<theme-id>.webp`: thumbnail shown in the theme picker.
 
-The build intentionally fails if a source image cannot be downloaded or decoded.
-This prevents a successful-looking build from silently shipping synthetic fallback
-art instead of the requested photographic wallpapers.
+The GitHub Actions workflow installs the pinned Pillow version and runs the
+generator before Gradle assembles both APK flavors. To build locally, run:
 
-The source images are not stored as binaries in Git; they are fetched and bundled
-by the GitHub Actions workflow before Gradle compilation.
+```bash
+cd android-app
+python3 -m pip install Pillow==11.0.0
+python3 generate_theme_backgrounds.py
+gradle testStandardDebugUnitTest assembleStandardDebug assemblePreviewDebug --stacktrace --no-daemon
+```
 
-
-Last source validation update: replaced the broken dragon wallpaper URL after GitHub Actions reported HTTP 404. The next build must pass the wallpaper-generation step before an APK is considered ready.
+The generated WebP files are not checked into Git; a build that bypasses the
+generator can therefore launch without the theme artwork. The app has a safe
+resource-ID fallback, but a release candidate must use the workflow-generated APK.
+The current procedural art provides distinct emblems, colors and ornamental
+backgrounds; it is not a set of photorealistic character illustrations. If
+photorealistic character art is needed later, it must be sourced/licensed or
+created as separate assets, not described as already present.
