@@ -155,8 +155,19 @@ def build(theme):
 
     OUT.mkdir(parents=True, exist_ok=True)
     target = OUT / f"bg_theme_{theme_id}.webp"
-    photo.convert("RGB").save(target, "WEBP", quality=88, method=6)
-    print(f"{target.relative_to(ROOT)}: {target.stat().st_size // 1024} KiB; source=photo; {photo.size}")
+    final = photo.convert("RGB")
+    final.save(target, "WEBP", quality=88, method=6)
+
+    # Theme identity icon is cut from the exact same wallpaper, so selector
+    # thumbnails and the dashboard share the same visual language.
+    icon_size = 320
+    icon_center_y = int(H * 0.31)
+    left = max(0, min(W - icon_size, (W - icon_size) // 2))
+    top = max(0, min(H - icon_size, icon_center_y - icon_size // 2))
+    icon = final.crop((left, top, left + icon_size, top + icon_size))
+    icon_target = OUT / f"ic_theme_{theme_id}.webp"
+    icon.save(icon_target, "WEBP", quality=90, method=6)
+    print(f"{target.relative_to(ROOT)}: {target.stat().st_size // 1024} KiB; icon={icon_target.name}")
 
 
 def main():
