@@ -55,7 +55,7 @@ class ThemeActivity : Activity() {
                 isFocusable = true
             }
             // Thumbnail proves that this theme has its own bundled raster wallpaper.
-            val artworkId = resources.getIdentifier("bg_theme_${item.id}", "drawable", packageName)
+            val artworkId = resources.getIdentifier("ic_theme_${item.id}", "drawable", packageName)
             val preview = ImageView(this).apply {
                 scaleType = ImageView.ScaleType.CENTER_CROP
                 background = GradientDrawable().apply {
@@ -66,7 +66,7 @@ class ThemeActivity : Activity() {
                 clipToOutline = true
                 if (artworkId != 0) setImageResource(artworkId)
             }
-            val previewParams = LinearLayout.LayoutParams(dp(52), dp(66))
+            val previewParams = LinearLayout.LayoutParams(dp(76), dp(86))
             previewParams.rightMargin = dp(12)
             row.addView(preview, previewParams)
 
@@ -85,13 +85,15 @@ class ThemeActivity : Activity() {
                 setTextColor(AndroidColor.WHITE)
             })
             labels.addView(TextView(this).apply {
-                text = if (isSelected) "✓ Şu anda seçili" else "Önizleme için dokun"
+                text = if (isSelected) "✓ Şu anda seçili" else "Temayı uygula"
                 textSize = 12f
                 setTextColor(item.muted.toInt())
             })
             row.addView(labels, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             row.setOnClickListener {
                 ThemeConfig.save(this, item.id)
+                // Apply immediately and return to the dashboard, which refreshes its
+                // background, card palette and accent colors from the saved theme.
                 setResult(Activity.RESULT_OK)
                 finish()
             }
