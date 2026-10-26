@@ -133,20 +133,20 @@ object ThemeConfig {
             else -> listOf("E", "⌂", "⌘", "◉", "ϟ", "⌁", "✧", "◷", "✦", "☎", "⚙", "▶", "☾", "■")
         }
         val index = when (purpose.lowercase()) {
-            "brand", "crown" -> 0
+            "brand", "crown", "identity" -> 0
             "home" -> 1
-            "control" -> 2
-            "system" -> 3
-            "battery" -> 4
-            "network" -> 5
-            "memory" -> 6
-            "reminder" -> 7
-            "chat" -> 8
-            "phone" -> 9
-            "settings" -> 10
-            "wake" -> 11
+            "control", "application", "app", "tools" -> 2
+            "system", "screen", "scroll", "back", "screenshot" -> 3
+            "battery", "power" -> 4
+            "network", "internet", "location", "map", "navigation" -> 5
+            "memory", "knowledge" -> 6
+            "reminder", "notification", "alarm" -> 7
+            "chat", "message", "sms", "translation", "jarvis", "deep_chat", "ollama", "groq", "pollinations" -> 8
+            "phone", "call", "camera", "dialer", "car" -> 9
+            "settings", "setup" -> 10
+            "wake", "start", "microphone", "voice" -> 11
             "sleep" -> 12
-            "stop" -> 13
+            "stop", "security", "lock", "protect" -> 13
             else -> 2
         }
         return glyphs[index]
@@ -168,11 +168,27 @@ object ThemeConfig {
     fun actionIcon(title: String, fallback: String, palette: Palette = current): String {
         val normalized = title.lowercase()
         val purpose = when {
-            "sohbet" in normalized || "jarvis" in normalized -> "chat"
-            "telefon" in normalized || "phone" in normalized -> "phone"
+            "sohbet" in normalized || "jarvis" in normalized || "ollama" in normalized ||
+                "derin analiz" in normalized || "yapay zek" in normalized -> "chat"
+            "telefon" in normalized || "phone" in normalized || "arama" in normalized ||
+                "çağrı" in normalized || "kamera" in normalized || "araba" in normalized -> "phone"
+            "mesaj" in normalized || "sms" in normalized || "çevir" in normalized -> "message"
+            "ekran" in normalized || "kaydır" in normalized || "yukarı" in normalized ||
+                "aşağı" in normalized || "geri git" in normalized || "screenshot" in normalized -> "screen"
+            "uygulama" in normalized || "app " in normalized -> "application"
+            "internet" in normalized || "bağlantı" in normalized || "konum" in normalized ||
+                "harita" in normalized || "navigasyon" in normalized -> "network"
+            "bildirim" in normalized || "hatırlat" in normalized || "alarm" in normalized -> "reminder"
+            "güvenlik" in normalized || "koruma" in normalized || "kilitle" in normalized -> "security"
+            "ayar" in normalized || "kurulum" in normalized || "izin" in normalized -> "settings"
             "uyku" in normalized -> "sleep"
             "durdur" in normalized || "stop" in normalized -> "stop"
-            "başlat" in normalized || "uyandır" in normalized || "aktif" in normalized -> "wake"
+            "başlat" in normalized || "uyandır" in normalized || "aktif" in normalized ||
+                "sesli" in normalized || "mikrofon" in normalized -> "wake"
+            "pil" in normalized || "batarya" in normalized -> "battery"
+            "hafıza" in normalized || "günlük" in normalized -> "memory"
+            "groq" in normalized || "pollinations" in normalized -> "network"
+            "ilk kurulum" in normalized -> "settings"
             else -> return fallback
         }
         return icon(purpose, palette)
