@@ -293,8 +293,8 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 Column(Modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("EDA · PHONE CONTROL", color = Cyan, fontWeight = FontWeight.Bold)
-                            Text("Phone Harness esinli · Yerel erişilebilirlik", color = Muted, fontSize = 11.sp)
+                            Text("EDA · Telefon ekranı", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Medium)
+                            Text("Yerel ekran kontrolü · Erişilebilirlik", color = Muted, fontSize = 11.sp)
                         }
                         Text("✕", Modifier.clickable { phoneControlOpen = false }.padding(8.dp), color = Muted)
                     }
@@ -302,7 +302,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     Button(onClick = {
                         runCatching { context.startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
                             .onFailure { phoneControlStatus = "Erişilebilirlik ayarları açılamadı." }
-                    }, modifier = Modifier.fillMaxWidth()) { Text("Erişilebilirlik ayarlarında EDA'yı etkinleştir") }
+                    }, modifier = Modifier.fillMaxWidth()) { Text("⚙ Erişilebilirlik iznini etkinleştir") }
                     OutlinedButton(onClick = {
                         phoneControlStatus = if (com.deniz.eda.phone.PhoneControlService.isEnabled()) {
                             "Ekran kontrolü etkin. Şimdi ekranı okuyabilir veya görevi Jarvis'e verebilirsin."
@@ -313,7 +313,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     Button(onClick = {
                         phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("read")
                         phoneScreenText = phoneControlStatus
-                    }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻ Ekranı oku") }
+                    }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("⌕  Ekranı oku") }
                     OutlinedButton(onClick = {
                         phoneControlStatus = "Görsel OCR çalışıyor…"
                         chatScope.launch {
@@ -323,13 +323,13 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                             phoneControlStatus = "Görsel OCR tamamlandı."
                             phoneScreenText = visualText
                         }
-                    }, modifier = Modifier.fillMaxWidth()) { Text("⌕ Ekranı görsel OCR ile oku") }
+                    }, modifier = Modifier.fillMaxWidth()) { Text("▧  Görsel OCR ile oku") }
                     Text(phoneControlStatus, color = Muted, fontSize = 12.sp)
                     Column(Modifier.weight(1f).fillMaxWidth().background(PanelRaised, RoundedCornerShape(12.dp))
                         .verticalScroll(rememberScrollState()).padding(10.dp)) {
                         Text(phoneScreenText, color = Color.White, fontSize = 13.sp, lineHeight = 19.sp)
                     }
-                    OutlinedTextField(value = phoneTarget, onValueChange = { phoneTarget = it }, label = { Text("Dokunulacak öğenin metni") },
+                    OutlinedTextField(value = phoneTarget, onValueChange = { phoneTarget = it }, label = { Text("Ekranda dokunulacak metin") },
                         modifier = Modifier.fillMaxWidth(), maxLines = 1)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Button(enabled = phoneTarget.isNotBlank(), onClick = {
@@ -358,16 +358,16 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                         }, modifier = Modifier.weight(1f)) { Text("↓ Aşağı") }
                     }
                     OutlinedTextField(value = phoneTypedText, onValueChange = { phoneTypedText = it },
-                        label = { Text("Etkin alana yazılacak metin") }, modifier = Modifier.fillMaxWidth(), maxLines = 2)
+                        label = { Text("Seçili alana yazılacak metin") }, modifier = Modifier.fillMaxWidth(), maxLines = 2)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         OutlinedButton(enabled = phoneTypedText.isNotBlank(), onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("type", phoneTypedText)
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
-                        }, modifier = Modifier.weight(1f)) { Text("Yaz") }
+                        }, modifier = Modifier.weight(1f)) { Text("Seçili alana yaz") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("back")
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
-                        }, modifier = Modifier.weight(1f)) { Text("Geri") }
+                        }, modifier = Modifier.weight(1f)) { Text("← Geri") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("notifications")
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
@@ -396,13 +396,13 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("screenshot")
                             phoneControlStatus += "\n" + com.deniz.eda.phone.PhoneControlService.run("vision")
                             phoneScreenText = phoneControlStatus
-                        }, modifier = Modifier.weight(1f)) { Text("Ekran görüntüsü") }
+                        }, modifier = Modifier.weight(1f)) { Text("▣ Ekran görüntüsü") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("lock_screen")
                             phoneScreenText = phoneControlStatus
                         }, modifier = Modifier.weight(1f)) { Text("Kilitle") }
                     }
-                    Text("EDA normal uygulama izinleriyle korumalı alanları, kilit ekranını aşamaz; para transferi, silme ve gönderme gibi son işlemleri kendisi onaylamaz.", color = Muted, fontSize = 11.sp)
+                    Text("Güvenlik: EDA kilidi veya korumalı alanları aşmaz. Para transferi, silme, mesaj gönderme ve satın alma gibi son onayları sen yaparsın.", color = Muted, fontSize = 11.sp)
                 }
             }
         }
