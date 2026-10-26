@@ -11,20 +11,22 @@ object ThemeConfig {
     )
 
     val palettes = listOf(
-        Palette("dark_queen", "Dark Queen", 0xFF100710, 0xFF291326, 0xFF421B35, 0xFFE34D70, 0xFFFF8FA8, 0xFFB9A5B3),
-        Palette("hellhound", "Hellhound", 0xFF100606, 0xFF2B1110, 0xFF451B18, 0xFFE34B42, 0xFFFF9A72, 0xFFB8A3A1),
-        Palette("obsidian", "Obsidian", 0xFF070A10, 0xFF17202B, 0xFF263545, 0xFFE05B63, 0xFFFFA0A5, 0xFF9DA8B8),
-        Palette("pentagram", "Pentagram", 0xFF0C0612, 0xFF261033, 0xFF3B1A50, 0xFFCF526E, 0xFFDA8BFF, 0xFFB5A1BE),
-        Palette("wolf", "Wolf", 0xFF050B14, 0xFF12283D, 0xFF1D405C, 0xFFB84D5A, 0xFF8BB8E8, 0xFF9EADBF),
-        Palette("eclipse", "Eclipse", 0xFF080611, 0xFF201633, 0xFF342453, 0xFF9D6BDA, 0xFFE0A0F7, 0xFFA9A4B9),
-        Palette("throne", "Throne", 0xFF110505, 0xFF301010, 0xFF4A1B1B, 0xFFC94C4C, 0xFFE5B1A5, 0xFFB8A5A5),
-        Palette("black_sun", "Black Sun", 0xFF100904, 0xFF30200D, 0xFF4A3216, 0xFFE07A42, 0xFFFFC17D, 0xFFB8AA9B),
-        Palette("dark_angel", "Dark Angel", 0xFF050A17, 0xFF12233A, 0xFF1C3857, 0xFFB49AFF, 0xFF64E5E0, 0xFF98A2B9),
-        Palette("dragon_core", "Dragon Core", 0xFF100404, 0xFF321010, 0xFF501B1B, 0xFFFF4545, 0xFFFFA15C, 0xFFB9A1A1),
-        Palette("fallen_angel", "Fallen Angel", 0xFF070B18, 0xFF172443, 0xFF263A61, 0xFF9D8BFF, 0xFFB3D7FF, 0xFFA2A8BF),
-        Palette("night_queen", "Night Queen", 0xFF120512, 0xFF35102F, 0xFF501847, 0xFFE65BA8, 0xFFFFA4D6, 0xFFBCA2B7),
-        Palette("space_gate", "Space Gate", 0xFF050A19, 0xFF10264A, 0xFF1A3D70, 0xFF827BFF, 0xFF61D9F4, 0xFF9BAAC8),
-        Palette("neon_abyss", "Neon Abyss", 0xFF03100E, 0xFF0B2924, 0xFF12463D, 0xFF39E6C5, 0xFF91FFF0, 0xFF91B8B4)
+        // The reference direction is shared across all 14 models: near-black surfaces,
+        // deep crimson lighting and readable neutral text. Each theme keeps its own accent.
+        Palette("dark_queen", "Dark Queen", 0xFF050304, 0xFF160709, 0xFF2B0A10, 0xFFFF263B, 0xFFFF6675, 0xFFC4A8AC),
+        Palette("hellhound", "Hellhound", 0xFF050202, 0xFF190605, 0xFF310A08, 0xFFFF2B1F, 0xFFFF704A, 0xFFC5A7A2),
+        Palette("obsidian", "Obsidian", 0xFF030405, 0xFF101113, 0xFF202124, 0xFFFF3945, 0xFFB7B9C0, 0xFFAAAEB6),
+        Palette("pentagram", "Pentagram", 0xFF060204, 0xFF190509, 0xFF300910, 0xFFFF174A, 0xFFFF637D, 0xFFC5A4AD),
+        Palette("wolf", "Wolf", 0xFF030405, 0xFF111214, 0xFF222326, 0xFFFF3038, 0xFFD0D3D8, 0xFFADB0B8),
+        Palette("eclipse", "Eclipse", 0xFF040203, 0xFF160608, 0xFF2B0B0E, 0xFFFF342E, 0xFFFF8278, 0xFFC2A5A5),
+        Palette("throne", "Throne", 0xFF050202, 0xFF1A0505, 0xFF330909, 0xFFFF2525, 0xFFFF6868, 0xFFC8A5A5),
+        Palette("black_sun", "Black Sun", 0xFF050302, 0xFF19100A, 0xFF2E180D, 0xFFFF3A22, 0xFFFF9A54, 0xFFC5B1A4),
+        Palette("dark_angel", "Dark Angel", 0xFF030304, 0xFF130608, 0xFF260B10, 0xFFFF263D, 0xFFE2D6D8, 0xFFB8A9AD),
+        Palette("dragon_core", "Dragon Core", 0xFF050101, 0xFF1B0304, 0xFF350607, 0xFFFF1E24, 0xFFFF773D, 0xFFC8A4A2),
+        Palette("fallen_angel", "Fallen Angel", 0xFF030304, 0xFF130609, 0xFF260B11, 0xFFFF2B43, 0xFFD7D0D6, 0xFFB6A8B0),
+        Palette("night_queen", "Night Queen", 0xFF050204, 0xFF19050C, 0xFF300A16, 0xFFFF2454, 0xFFFF83A7, 0xFFC7A5B3),
+        Palette("space_gate", "Space Gate", 0xFF020304, 0xFF0D0D13, 0xFF1D1118, 0xFFFF2D4D, 0xFFB7C5D5, 0xFFAAB2C0),
+        Palette("neon_abyss", "Neon Abyss", 0xFF020403, 0xFF0B110F, 0xFF151F1B, 0xFFFF2949, 0xFF73E8D0, 0xFFA8BDB8)
     )
 
     fun selectedId(context: Context): String =
