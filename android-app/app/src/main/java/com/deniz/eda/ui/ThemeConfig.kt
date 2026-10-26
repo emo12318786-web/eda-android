@@ -20,6 +20,8 @@ object ThemeConfig {
         val secondary: Long,
         val muted: Long,
         val fontFamily: String,
+        /** Typeface style flags: Android Typeface.NORMAL/BOLD/ITALIC/BOLD_ITALIC. */
+        val fontStyle: Int,
         val iconStyle: String,
         val shapeStyle: String,
         /** 0=hero first, 1=AI first, 2=metrics first, 3=split-focus. */
@@ -27,20 +29,20 @@ object ThemeConfig {
     )
 
     val palettes = listOf(
-        Palette("dark_queen", "Dark Queen", 0xFF050304, 0xFF160709, 0xFF2B0A10, 0xFFFFB52E, 0xFFFFE0A0, 0xFFC4B59B, "serif", "royal", "pill", 0),
-        Palette("hellhound", "Hellhound", 0xFF050202, 0xFF190605, 0xFF310A08, 0xFFFF321F, 0xFFFF8B48, 0xFFC5A7A2, "sans", "infernal", "cut", 1),
-        Palette("obsidian", "Obsidian", 0xFF030405, 0xFF101113, 0xFF202124, 0xFFB8C7D9, 0xFFE4ECF7, 0xFFAAAEB6, "mono", "geometric", "square", 2),
-        Palette("pentagram", "Pentagram", 0xFF060204, 0xFF190509, 0xFF300910, 0xFFFF2D87, 0xFFFF8BC2, 0xFFC5A4AD, "serif", "arcane", "sharp", 3),
-        Palette("wolf", "Wolf", 0xFF030405, 0xFF111214, 0xFF222326, 0xFFB8D8FF, 0xFFE4F2FF, 0xFFADB8C8, "sans", "rune", "hex", 1),
-        Palette("eclipse", "Eclipse", 0xFF040203, 0xFF160608, 0xFF2B0B0E, 0xFFFF6A35, 0xFFFFB17A, 0xFFC2A5A5, "mono", "eclipse", "round", 2),
-        Palette("throne", "Throne", 0xFF050202, 0xFF1A0505, 0xFF330909, 0xFFFF4545, 0xFFFF9090, 0xFFC8A5A5, "serif", "throne", "classic", 0),
-        Palette("black_sun", "Black Sun", 0xFF050302, 0xFF19100A, 0xFF2E180D, 0xFFFF8A26, 0xFFFFC66E, 0xFFC5B1A4, "mono", "solar", "cut", 3),
-        Palette("dark_angel", "Dark Angel", 0xFF030304, 0xFF130608, 0xFF260B10, 0xFFB9A7FF, 0xFFE2D6FF, 0xFFB8A9C8, "serif", "angel", "soft", 1),
-        Palette("dragon_core", "Dragon Core", 0xFF050101, 0xFF1B0304, 0xFF350607, 0xFFFF3A24, 0xFFFF9A51, 0xFFC8A4A2, "sans", "dragon", "sharp", 2),
-        Palette("fallen_angel", "Fallen Angel", 0xFF030304, 0xFF130609, 0xFF260B11, 0xFF8EA8FF, 0xFFD7E0FF, 0xFFB6B8D0, "cursive", "fallen", "soft", 3),
-        Palette("night_queen", "Night Queen", 0xFF050204, 0xFF19050C, 0xFF300A16, 0xFFFF4FA8, 0xFFFFA5D0, 0xFFC7A5B3, "serif", "night", "pill", 0),
-        Palette("space_gate", "Space Gate", 0xFF020304, 0xFF0D0D13, 0xFF1D1118, 0xFF7E9BFF, 0xFFB7D8FF, 0xFFAAB2C0, "mono", "portal", "square", 2),
-        Palette("neon_abyss", "Neon Abyss", 0xFF020403, 0xFF0B110F, 0xFF151F1B, 0xFF45F2D0, 0xFF73E8D0, 0xFFA8BDB8, "sans", "cyber", "cut", 1)
+        Palette("dark_queen", "Dark Queen", 0xFF050304, 0xFF160709, 0xFF2B0A10, 0xFFFFB52E, 0xFFFFE0A0, 0xFFC4B59B, "serif", 1, "royal", "pill", 0),
+        Palette("hellhound", "Hellhound", 0xFF050202, 0xFF190605, 0xFF310A08, 0xFFFF321F, 0xFFFF8B48, 0xFFC5A7A2, "sans-serif-condensed", 1, "infernal", "cut", 1),
+        Palette("obsidian", "Obsidian", 0xFF030405, 0xFF101113, 0xFF202124, 0xFFB8C7D9, 0xFFE4ECF7, 0xFFAAAEB6, "monospace", 0, "geometric", "square", 2),
+        Palette("pentagram", "Pentagram", 0xFF060204, 0xFF190509, 0xFF300910, 0xFFFF2D87, 0xFFFF8BC2, 0xFFC5A4AD, "serif", 2, "arcane", "sharp", 3),
+        Palette("wolf", "Wolf", 0xFF030405, 0xFF111214, 0xFF222326, 0xFFB8D8FF, 0xFFE4F2FF, 0xFFADB8C8, "sans-serif-light", 0, "rune", "hex", 1),
+        Palette("eclipse", "Eclipse", 0xFF040203, 0xFF160608, 0xFF2B0B0E, 0xFFFF6A35, 0xFFFFB17A, 0xFFC2A5A5, "monospace", 1, "eclipse", "round", 2),
+        Palette("throne", "Throne", 0xFF050202, 0xFF1A0505, 0xFF330909, 0xFFFF4545, 0xFFFF9090, 0xFFC8A5A5, "sans-serif-medium", 1, "throne", "classic", 0),
+        Palette("black_sun", "Black Sun", 0xFF050302, 0xFF19100A, 0xFF2E180D, 0xFFFF8A26, 0xFFFFC66E, 0xFFC5B1A4, "sans-serif-condensed-light", 0, "solar", "cut", 3),
+        Palette("dark_angel", "Dark Angel", 0xFF030304, 0xFF130608, 0xFF260B10, 0xFFB9A7FF, 0xFFE2D6FF, 0xFFB8A9C8, "casual", 0, "angel", "soft", 1),
+        Palette("dragon_core", "Dragon Core", 0xFF050101, 0xFF1B0304, 0xFF350607, 0xFFFF3A24, 0xFFFF9A51, 0xFFC8A4A2, "sans-serif-black", 1, "dragon", "sharp", 2),
+        Palette("fallen_angel", "Fallen Angel", 0xFF030304, 0xFF130609, 0xFF260B11, 0xFF8EA8FF, 0xFFD7E0FF, 0xFFB6B8D0, "cursive", 2, "fallen", "soft", 3),
+        Palette("night_queen", "Night Queen", 0xFF050204, 0xFF19050C, 0xFF300A16, 0xFFFF4FA8, 0xFFFFA5D0, 0xFFC7A5B3, "sans-serif-condensed-medium", 1, "night", "pill", 0),
+        Palette("space_gate", "Space Gate", 0xFF020304, 0xFF0D0D13, 0xFF1D1118, 0xFF7E9BFF, 0xFFB7D8FF, 0xFFAAB2C0, "sans-serif-smallcaps", 0, "portal", "square", 2),
+        Palette("neon_abyss", "Neon Abyss", 0xFF020403, 0xFF0B110F, 0xFF151F1B, 0xFF45F2D0, 0xFF73E8D0, 0xFFA8BDB8, "sans-serif-thin", 0, "cyber", "cut", 1),
     )
 
     fun selectedId(context: Context): String =
@@ -66,25 +68,49 @@ object ThemeConfig {
         refresh(context)
     }
 
-    fun composeFont(palette: Palette = current): FontFamily = when (palette.fontFamily) {
-        "serif" -> FontFamily.Serif
-        "mono" -> FontFamily.Monospace
-        "cursive" -> FontFamily.Cursive
-        else -> FontFamily.SansSerif
-    }
+    fun composeFont(palette: Palette = current): FontFamily =
+        FontFamily(androidTypeface(palette))
 
-    fun androidTypeface(palette: Palette = current): Typeface = when (palette.fontFamily) {
-        "serif" -> Typeface.SERIF
-        "mono" -> Typeface.MONOSPACE
-        "cursive" -> Typeface.create("casual", Typeface.NORMAL)
-        else -> Typeface.SANS_SERIF
-    }
+    fun androidTypeface(
+        palette: Palette = current,
+        style: Int = palette.fontStyle
+    ): Typeface = Typeface.create(palette.fontFamily, style)
 
-    fun fontLabel(palette: Palette): String = when (palette.fontFamily) {
-        "serif" -> "Serif · klasik"
-        "mono" -> "Monospace · terminal"
-        "cursive" -> "Casual · zarif"
-        else -> "Sans Serif · modern"
+    fun composeFontWeight(palette: Palette = current): androidx.compose.ui.text.font.FontWeight =
+        if (palette.fontStyle and Typeface.BOLD != 0)
+            androidx.compose.ui.text.font.FontWeight.Bold
+        else
+            androidx.compose.ui.text.font.FontWeight.Normal
+
+    fun composeFontStyle(palette: Palette = current): androidx.compose.ui.text.font.FontStyle =
+        if (palette.fontStyle and Typeface.ITALIC != 0)
+            androidx.compose.ui.text.font.FontStyle.Italic
+        else
+            androidx.compose.ui.text.font.FontStyle.Normal
+
+    fun fontLabel(palette: Palette): String {
+        val family = when (palette.fontFamily) {
+            "serif" -> "Serif"
+            "sans-serif-condensed" -> "Sans Condensed"
+            "monospace" -> "Monospace"
+            "sans-serif-light" -> "Sans Light"
+            "sans-serif-medium" -> "Sans Medium"
+            "sans-serif-condensed-light" -> "Condensed Light"
+            "casual" -> "Casual"
+            "sans-serif-black" -> "Sans Black"
+            "cursive" -> "Cursive"
+            "sans-serif-condensed-medium" -> "Condensed Medium"
+            "sans-serif-smallcaps" -> "Small Caps"
+            "sans-serif-thin" -> "Sans Thin"
+            else -> palette.fontFamily
+        }
+        val style = when (palette.fontStyle) {
+            Typeface.BOLD -> "Bold"
+            Typeface.ITALIC -> "Italic"
+            Typeface.BOLD_ITALIC -> "Bold Italic"
+            else -> "Regular"
+        }
+        return "$family · $style"
     }
 
     fun cornerRadius(palette: Palette = current, baseDp: Int): Int = when (palette.shapeStyle) {
