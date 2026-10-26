@@ -15,3 +15,6 @@ art instead of the requested photographic wallpapers.
 
 The source images are not stored as binaries in Git; they are fetched and bundled
 by the GitHub Actions workflow before Gradle compilation.
+
+
+Last source validation update: replaced the broken dragon wallpaper URL after GitHub Actions reported HTTP 404. The next build must pass the wallpaper-generation step before an APK is considered ready.
