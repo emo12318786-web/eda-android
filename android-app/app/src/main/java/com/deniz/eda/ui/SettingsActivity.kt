@@ -155,14 +155,14 @@ class SettingsActivity : AppCompatActivity() {
                     view.setHintTextColor(muted)
                     view.backgroundTintList = ColorStateList.valueOf(accent)
                 }
-                is Button -> {
-                    view.backgroundTintList = ColorStateList.valueOf(accent)
-                    view.setTextColor(if (luminance(accent) > 0.62) AndroidColor.BLACK else AndroidColor.WHITE)
-                }
                 is Switch -> {
                     view.setTextColor(AndroidColor.WHITE)
                     view.thumbTintList = ColorStateList.valueOf(accent)
                     view.trackTintList = ColorStateList.valueOf(AndroidColor.argb(110, AndroidColor.red(accent), AndroidColor.green(accent), AndroidColor.blue(accent)))
+                }
+                is Button -> {
+                    view.backgroundTintList = ColorStateList.valueOf(accent)
+                    view.setTextColor(if (luminance(accent) > 0.62) AndroidColor.BLACK else AndroidColor.WHITE)
                 }
                 is TextView -> {
                     val current = view.currentTextColor
