@@ -230,7 +230,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     onClick = { selectedTab = 0 },
                     icon = {
                         Text(
-                            "⌂",
+                            if (ThemeConfig.current.id == "wolf") "♜" else if (ThemeConfig.current.id == "space_gate") "◎" else "⌂",
                             fontSize = 22.sp,
                             color = if (selectedTab == 0) Violet else Muted,
                             fontWeight = if (selectedTab == 0) FontWeight.Black else FontWeight.Normal
@@ -250,7 +250,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     onClick = { selectedTab = 1 },
                     icon = {
                         Text(
-                            "⌘",
+                            if (ThemeConfig.current.id == "hellhound") "♨" else if (ThemeConfig.current.id == "dragon_core") "♢" else "⌘",
                             fontSize = 22.sp,
                             color = if (selectedTab == 1) Violet else Muted,
                             fontWeight = if (selectedTab == 1) FontWeight.Black else FontWeight.Normal
@@ -270,7 +270,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     onClick = { selectedTab = 2 },
                     icon = {
                         Text(
-                            "✥",
+                            if (ThemeConfig.current.id == "pentagram") "✶" else if (ThemeConfig.current.id == "dark_angel" || ThemeConfig.current.id == "fallen_angel") "✧" else if (ThemeConfig.current.id == "black_sun" || ThemeConfig.current.id == "eclipse") "☼" else "✥",
                             fontSize = 22.sp,
                             color = if (selectedTab == 2) Violet else Muted,
                             fontWeight = if (selectedTab == 2) FontWeight.Black else FontWeight.Normal
@@ -338,7 +338,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     Text("EDA", fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
                     Text("KİŞİSEL ASİSTAN • V5", fontSize = 9.sp, color = Muted, letterSpacing = 1.4.sp)
                 }
-                Text("◐", modifier = Modifier.clickable { context.startActivity(Intent(context, ThemeActivity::class.java)) }.padding(8.dp), color = Cyan, fontSize = 22.sp)
+                Text(if (ThemeConfig.current.id == "dark_queen" || ThemeConfig.current.id == "night_queen") "♛" else if (ThemeConfig.current.id == "wolf") "♜" else if (ThemeConfig.current.id == "dragon_core") "♢" else if (ThemeConfig.current.id == "space_gate") "◎" else "◐", modifier = Modifier.clickable { context.startActivity(Intent(context, ThemeActivity::class.java)) }.padding(8.dp), color = Cyan, fontSize = 22.sp)
                 Text("⚙", modifier = Modifier.clickable { onAction("ACTION_SETTINGS") }.padding(8.dp), color = Violet, fontSize = 24.sp)
                 Surface(shape = RoundedCornerShape(50), color = statusColor.copy(alpha = 0.12f),
                     border = BorderStroke(1.dp, statusColor.copy(alpha = 0.5f))) {
