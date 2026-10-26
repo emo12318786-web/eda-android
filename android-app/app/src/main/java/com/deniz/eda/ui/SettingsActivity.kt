@@ -3,6 +3,7 @@ package com.deniz.eda.ui
 import android.os.Bundle
 import android.content.res.ColorStateList
 import android.graphics.Color as AndroidColor
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.View
 import android.view.ViewGroup
@@ -128,7 +129,7 @@ class SettingsActivity : AppCompatActivity() {
             if (child is LinearLayout) {
                 child.background = GradientDrawable().apply {
                     setColor(AndroidColor.argb(226, AndroidColor.red(panel), AndroidColor.green(panel), AndroidColor.blue(panel)))
-                    cornerRadius = dp(18).toFloat()
+                    cornerRadius = dp(ThemeConfig.cornerRadius(palette, 18)).toFloat()
                     setStroke(dp(1), AndroidColor.argb(70, AndroidColor.red(accent), AndroidColor.green(accent), AndroidColor.blue(accent)))
                 }
             }
@@ -171,6 +172,23 @@ class SettingsActivity : AppCompatActivity() {
                     else if (current == androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.text_secondary)) view.setTextColor(palette.secondary.toInt())
                 }
             }
+            if (view is TextView) {
+                // Legacy XML widgets use the selected theme's actual Typeface too.
+                val style = view.typeface?.style ?: Typeface.NORMAL
+                view.typeface = Typeface.create(ThemeConfig.androidTypeface(palette), style)
+
+                // Re-skin the existing settings-card pictograms without changing IDs/actions.
+                val original = view.text?.toString().orEmpty()
+                val replacement = when {
+                    original.startsWith("👤") -> ThemeConfig.icon("brand", palette)
+                    original.startsWith("🔑") -> ThemeConfig.icon("settings", palette)
+                    original.startsWith("📱") -> ThemeConfig.icon("phone", palette)
+                    original.startsWith("🧠") -> ThemeConfig.icon("chat", palette)
+                    original.startsWith("💾") -> ThemeConfig.icon("system", palette)
+                    else -> null
+                }
+                if (replacement != null) view.text = replacement + original.drop(1)
+            }
             if (view is ViewGroup) {
                 for (i in 0 until view.childCount) tintTree(view.getChildAt(i))
             }
@@ -178,7 +196,9 @@ class SettingsActivity : AppCompatActivity() {
         tintTree(root)
 
         findViewById<TextView>(com.deniz.eda.R.id.geriButon)?.background = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
+            val angular = palette.shapeStyle in setOf("cut", "hex", "sharp", "square")
+            shape = if (angular) GradientDrawable.RECTANGLE else GradientDrawable.OVAL
+            cornerRadius = dp(ThemeConfig.cornerRadius(palette, 14)).toFloat()
             setColor(panel)
             setStroke(dp(1), accent)
         }
