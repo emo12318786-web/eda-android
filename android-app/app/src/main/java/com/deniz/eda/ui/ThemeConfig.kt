@@ -87,6 +87,17 @@ object ThemeConfig {
         else -> "Sans Serif · modern"
     }
 
+    fun cornerRadius(palette: Palette = current, baseDp: Int): Int = when (palette.shapeStyle) {
+        "pill" -> (baseDp * 1.45).toInt().coerceAtMost(34)
+        "cut" -> (baseDp * 0.62).toInt().coerceAtLeast(5)
+        "square" -> 4
+        "sharp" -> (baseDp * 0.28).toInt().coerceAtLeast(4)
+        "hex" -> (baseDp * 0.52).toInt().coerceAtLeast(7)
+        "soft" -> (baseDp * 1.35).toInt().coerceAtMost(38)
+        "round" -> (baseDp * 1.6).toInt().coerceAtMost(36)
+        else -> baseDp
+    }
+
     fun shapeLabel(palette: Palette): String = when (palette.shapeStyle) {
         "pill" -> "Yuvarlak / akıcı"
         "cut" -> "Kesik köşeli"
