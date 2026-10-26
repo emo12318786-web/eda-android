@@ -162,7 +162,11 @@ class SettingsActivity : AppCompatActivity() {
                     view.trackTintList = ColorStateList.valueOf(AndroidColor.argb(110, AndroidColor.red(accent), AndroidColor.green(accent), AndroidColor.blue(accent)))
                 }
                 is Button -> {
-                    view.backgroundTintList = ColorStateList.valueOf(accent)
+                    // Recreate button background so corner geometry changes with each theme.
+                    view.background = GradientDrawable().apply {
+                        cornerRadius = dp(ThemeConfig.cornerRadius(palette, 14)).toFloat()
+                        setColor(accent)
+                    }
                     view.setTextColor(if (luminance(accent) > 0.62) AndroidColor.BLACK else AndroidColor.WHITE)
                 }
                 is TextView -> {
@@ -179,15 +183,25 @@ class SettingsActivity : AppCompatActivity() {
 
                 // Re-skin the existing settings-card pictograms without changing IDs/actions.
                 val original = view.text?.toString().orEmpty()
-                val replacement = when {
-                    original.startsWith("👤") -> ThemeConfig.icon("brand", palette)
-                    original.startsWith("🔑") -> ThemeConfig.icon("settings", palette)
-                    original.startsWith("📱") -> ThemeConfig.icon("phone", palette)
-                    original.startsWith("🧠") -> ThemeConfig.icon("chat", palette)
-                    original.startsWith("💾") -> ThemeConfig.icon("system", palette)
+                val iconPrefix = when {
+                    original.startsWith("👤") -> "👤"
+                    original.startsWith("🔑") -> "🔑"
+                    original.startsWith("📱") -> "📱"
+                    original.startsWith("🧠") -> "🧠"
+                    original.startsWith("💾") -> "💾"
                     else -> null
                 }
-                if (replacement != null) view.text = replacement + original.drop(1)
+                val replacement = when (iconPrefix) {
+                    "👤" -> ThemeConfig.icon("brand", palette)
+                    "🔑" -> ThemeConfig.icon("settings", palette)
+                    "📱" -> ThemeConfig.icon("phone", palette)
+                    "🧠" -> ThemeConfig.icon("chat", palette)
+                    "💾" -> ThemeConfig.icon("system", palette)
+                    else -> null
+                }
+                if (replacement != null && iconPrefix != null) {
+                    view.text = replacement + original.removePrefix(iconPrefix)
+                }
             }
             if (view is ViewGroup) {
                 for (i in 0 until view.childCount) tintTree(view.getChildAt(i))
