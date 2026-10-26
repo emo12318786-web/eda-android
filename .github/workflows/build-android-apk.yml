@@ -6,7 +6,7 @@ on:
       - "android-app/**"
       - ".github/workflows/**"
   push:
-    branches: [ main, eda-v5-native-gemma-runtime, eda-fix-long-prompt-crash ]
+    branches: [ main, eda-v5-native-gemma-runtime, eda-fix-long-prompt-crash, eda-14-models-visual-fix ]
     paths:
       - "android-app/**"
       - ".github/workflows/**"
@@ -56,11 +56,17 @@ jobs:
         with:
           gradle-version: 8.7
 
-      - name: Generate raster theme wallpapers
+      - name: Generate and verify fourteen theme wallpapers
         working-directory: android-app
         run: |
           python3 -m pip install --disable-pip-version-check Pillow==11.0.0
+          python3 -m py_compile generate_theme_backgrounds.py
           python3 generate_theme_backgrounds.py
+          BG_COUNT=$(find app/src/main/res/drawable-nodpi -maxdepth 1 -name 'bg_theme_*.webp' | wc -l)
+          ICON_COUNT=$(find app/src/main/res/drawable-nodpi -maxdepth 1 -name 'ic_theme_*.webp' | wc -l)
+          echo "Theme backgrounds: $BG_COUNT; theme previews: $ICON_COUNT"
+          test "$BG_COUNT" -eq 14
+          test "$ICON_COUNT" -eq 14
 
       - name: Build Debug APK
         working-directory: android-app
