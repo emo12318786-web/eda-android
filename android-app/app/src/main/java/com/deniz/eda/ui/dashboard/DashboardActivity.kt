@@ -1044,6 +1044,8 @@ private fun LogsPanel(logs: List<String>) {
         }
     }
 
+}
+
 private fun themeShape(baseDp: Int): Shape {
     val palette = ThemeConfig.current
     val radius = ThemeConfig.cornerRadius(palette, baseDp).dp
@@ -1051,5 +1053,4 @@ private fun themeShape(baseDp: Int): Shape {
         "cut", "hex", "sharp" -> CutCornerShape(radius)
         else -> RoundedCornerShape(radius)
     }
-}
 }
