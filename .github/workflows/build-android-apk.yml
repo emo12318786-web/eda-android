@@ -1,6 +1,10 @@
 name: Build Android APK
 
 on:
+  pull_request:
+    paths:
+      - "android-app/**"
+      - ".github/workflows/**"
   push:
     branches: [ main, eda-v5-native-gemma-runtime, eda-fix-long-prompt-crash ]
     paths:
@@ -51,6 +55,12 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.7
+
+      - name: Generate raster theme wallpapers
+        working-directory: android-app
+        run: |
+          python3 -m pip install --disable-pip-version-check Pillow==11.0.0
+          python3 generate_theme_backgrounds.py
 
       - name: Build Debug APK
         working-directory: android-app
