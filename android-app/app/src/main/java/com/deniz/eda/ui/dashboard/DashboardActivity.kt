@@ -48,8 +48,8 @@ import kotlinx.coroutines.delay
 import com.deniz.eda.service.EdaForegroundService
 
 private val VoidBlack: Color get() = Color(ThemeConfig.current.background)
-private val Panel: Color get() = Color(ThemeConfig.current.panel)
-private val PanelRaised: Color get() = Color(ThemeConfig.current.raised)
+private val Panel: Color get() = Color(ThemeConfig.current.panel).copy(alpha = 0.90f)
+private val PanelRaised: Color get() = Color(ThemeConfig.current.raised).copy(alpha = 0.88f)
 private val Violet: Color get() = Color(ThemeConfig.current.accent)
 private val Cyan: Color get() = Color(ThemeConfig.current.secondary)
 private val Muted: Color get() = Color(ThemeConfig.current.muted)
@@ -704,7 +704,7 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
                 contentDescription = null,
                 modifier = Modifier.matchParentSize().clip(RoundedCornerShape(20.dp)),
                 contentScale = ContentScale.Crop,
-                alpha = 0.12f
+                alpha = 0.44f
             )
         }
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
