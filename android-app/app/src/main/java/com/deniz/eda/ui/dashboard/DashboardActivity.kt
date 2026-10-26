@@ -52,8 +52,8 @@ import kotlinx.coroutines.delay
 import com.deniz.eda.service.EdaForegroundService
 
 private val VoidBlack: Color get() = Color(ThemeConfig.current.background)
-private val Panel: Color get() = Color(ThemeConfig.current.panel).copy(alpha = 0.90f)
-private val PanelRaised: Color get() = Color(ThemeConfig.current.raised).copy(alpha = 0.88f)
+private val Panel: Color get() = Color(ThemeConfig.current.panel).copy(alpha = 0.76f)
+private val PanelRaised: Color get() = Color(ThemeConfig.current.raised).copy(alpha = 0.84f)
 private val Violet: Color get() = Color(ThemeConfig.current.accent)
 private val Cyan: Color get() = Color(ThemeConfig.current.secondary)
 private val Muted: Color get() = Color(ThemeConfig.current.muted)
@@ -313,7 +313,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    alpha = 0.78f
+                    alpha = 0.94f
                 )
             }
             // Keep text readable while allowing the theme artwork to remain visible.
@@ -372,7 +372,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
 
             if (selectedTab == 0) {
                 // Every profile changes the information flow, not just its colors.
-                when (ThemeConfig.current.layoutMode) {
+                when (ThemeConfig.current.layoutMode % 4) {
                     1 -> {
                         DashboardProviderSection(state, onAction)
                         HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
@@ -824,7 +824,7 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
                 contentDescription = null,
                 modifier = Modifier.matchParentSize().clip(shape),
                 contentScale = ContentScale.Crop,
-                alpha = 0.44f
+                alpha = 0.68f
             )
         }
         when (ThemeConfig.current.layoutMode) {
@@ -892,6 +892,9 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
                     }
                 }
             }
+            4, 5, 6, 7, 8, 9, 10, 11, 12, 13 -> ThemeHeroVariant(
+                ThemeConfig.current.layoutMode, name, time, date, status, active, sleeping, onAction
+            )
             else -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("MERHABA, ${name.uppercase()}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
                 Text("Ben Eda.\nBuradayım.", fontSize = 31.sp, lineHeight = 36.sp,
@@ -905,7 +908,173 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
 }
 
 @Composable
-private fun HeroMeta(time: String, date: String) {
+private fun @Composable
+private fun ThemeHeroVariant(
+    mode: Int,
+    name: String,
+    time: String,
+    date: String,
+    status: Color,
+    active: Boolean,
+    sleeping: Boolean,
+    onAction: (String) -> Unit
+) {
+    val emblem = ThemeConfig.icon("brand")
+    when (mode) {
+        4 -> Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                Text("KURT • YEREL AJAN", color = Muted, fontSize = 9.sp, letterSpacing = 1.8.sp)
+                Text("Sana sadığım.\nDaima yanındayım.", fontSize = 24.sp, lineHeight = 29.sp,
+                    fontWeight = FontWeight.Bold, color = Color.White)
+                HeroMeta(time, date)
+                Text("MERHABA, ${name.uppercase()}", color = Violet, fontSize = 9.sp)
+            }
+            Column(Modifier.width(86.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(emblem, color = Violet, fontSize = 56.sp)
+                Box(Modifier.size(8.dp).background(status, CircleShape))
+                Text(if (active) "AKTİF" else if (sleeping) "UYKU" else "KAPALI",
+                    color = status, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        5 -> Column(
+            Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(9.dp)
+        ) {
+            Text(emblem, color = Violet, fontSize = 58.sp)
+            Text("E C L I P S E", color = Violet, fontSize = 10.sp, letterSpacing = 3.sp)
+            Text("Karanlıktan\naydınlığa.", fontSize = 28.sp, lineHeight = 32.sp,
+                fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+            HeroMeta(time, date)
+            HeroActions(active, sleeping, onAction)
+        }
+        6 -> Column(
+            Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(emblem, color = Violet, fontSize = 54.sp)
+            Text("EDA • THRONE", color = Muted, fontSize = 9.sp, letterSpacing = 2.8.sp)
+            Text("GÜÇ. ZEKÂ. KONTROL.", color = Color.White, fontSize = 20.sp,
+                fontWeight = FontWeight.Black, textAlign = TextAlign.Center)
+            HeroMeta(time, date)
+            HeroActions(active, sleeping, onAction)
+            Text("Kontrol sende; karar sende.", color = Muted, fontSize = 10.sp)
+        }
+        7 -> Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("BLACK SUN / V5", color = Violet, fontSize = 9.sp, letterSpacing = 1.8.sp)
+                Text("Her soru\nyeni bir evren.", color = Color.White, fontSize = 24.sp,
+                    lineHeight = 29.sp, fontWeight = FontWeight.Bold)
+                HeroMeta(time, date)
+                Text(if (active) "● DİNLİYORUM" else "○ BEKLEMEDE",
+                    color = status, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            }
+            Text(emblem, color = Violet, fontSize = 66.sp)
+        }
+        8 -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(emblem, color = Violet, fontSize = 54.sp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("DARK ANGEL", color = Muted, fontSize = 9.sp, letterSpacing = 2.sp)
+                    Text("Sessizce yanında.", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text(name, color = Violet, fontSize = 11.sp)
+                }
+            }
+            HeroMeta(time, date)
+            Box(Modifier.fillMaxWidth().height(1.dp).background(Violet.copy(alpha = .65f)))
+            HeroActions(active, sleeping, onAction)
+        }
+        9 -> Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("DRAGON CORE", color = Violet, fontSize = 9.sp, letterSpacing = 2.sp)
+                Text("Ateş gibi hızlı.\nGüvenli ve kararlı.", color = Color.White,
+                    fontSize = 22.sp, lineHeight = 27.sp, fontWeight = FontWeight.Bold)
+                HeroMeta(time, date)
+            }
+            Column(Modifier.width(82.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(emblem, color = Violet, fontSize = 55.sp)
+                Text(if (active) "ONLINE" else "OFFLINE", color = status, fontSize = 8.sp)
+            }
+        }
+        10 -> Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.width(90.dp).height(144.dp).background(
+                Brush.verticalGradient(listOf(Violet.copy(alpha = .20f), Color.Transparent)),
+                themeShape(24)
+            ), contentAlignment = Alignment.Center) {
+                Text(emblem, color = Violet, fontSize = 62.sp)
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("FALLEN ANGEL", color = Muted, fontSize = 9.sp, letterSpacing = 1.7.sp)
+                Text("Güzellik, tehlike\nve sadakat.", color = Color.White,
+                    fontSize = 20.sp, lineHeight = 25.sp, fontWeight = FontWeight.Bold)
+                HeroMeta(time, date)
+                Text(if (sleeping) "UYKU MODU" else if (active) "SENİNLEYİM" else "HAZIRIM",
+                    color = Violet, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        11 -> Column(
+            Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(9.dp)
+        ) {
+            Text(emblem, color = Violet, fontSize = 60.sp)
+            Text("NIGHT QUEEN", color = Violet, fontSize = 10.sp, letterSpacing = 3.sp)
+            Text("Söz değil, sadakat.", color = Color.White, fontSize = 26.sp,
+                fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            Text("Merhaba, ${name}.", color = Muted, fontSize = 12.sp)
+            HeroMeta(time, date)
+            HeroActions(active, sleeping, onAction)
+        }
+        12 -> Column(
+            Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(Modifier.size(104.dp).background(
+                Brush.radialGradient(listOf(Violet.copy(alpha = .28f), Color.Transparent)), CircleShape
+            ), contentAlignment = Alignment.Center) {
+                Surface(shape = CircleShape, color = Color.Transparent,
+                    border = BorderStroke(1.dp, Violet.copy(alpha = .75f))) {
+                    Box(Modifier.size(78.dp), contentAlignment = Alignment.Center) {
+                        Text(emblem, color = Violet, fontSize = 48.sp)
+                    }
+                }
+            }
+            Text("SPACE GATE", color = Muted, fontSize = 10.sp, letterSpacing = 2.5.sp)
+            Text("Kapı hazır.\nSeçim senin.", color = Color.White, fontSize = 25.sp,
+                lineHeight = 30.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            HeroMeta(time, date)
+            HeroActions(active, sleeping, onAction)
+        }
+        else -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    Text("NEON ABYSS // EDA V5", color = Violet, fontSize = 9.sp, letterSpacing = 1.6.sp)
+                    Text("Sınır yok.\nGereksiz risk yok.", color = Color.White,
+                        fontSize = 23.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold)
+                }
+                Text(emblem, color = Violet, fontSize = 56.sp)
+            }
+            HeroMeta(time, date)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(7.dp).background(status, CircleShape))
+                Spacer(Modifier.width(7.dp))
+                Text(if (active) "SİSTEM AKTİF" else if (sleeping) "UYKU GÜVENLİ" else "SİSTEM HAZIR",
+                    color = status, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.weight(1f))
+                Text("YEREL MOD", color = Muted, fontSize = 9.sp)
+            }
+            HeroActions(active, sleeping, onAction)
+        }
+    }
+}
+
+
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(time, fontSize = 22.sp, color = Cyan, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.width(10.dp))
