@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import android.widget.ImageView
 import android.widget.ScrollView
 import android.widget.TextView
 
@@ -53,11 +54,27 @@ class ThemeActivity : Activity() {
                 isClickable = true
                 isFocusable = true
             }
+            // Thumbnail proves that this theme has its own bundled raster wallpaper.
+            val artworkId = resources.getIdentifier("bg_theme_${item.id}", "drawable", packageName)
+            val preview = ImageView(this).apply {
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                background = GradientDrawable().apply {
+                    setColor(item.panel.toInt())
+                    cornerRadius = dp(12).toFloat()
+                    setStroke(dp(1), item.accent.toInt())
+                }
+                clipToOutline = true
+                if (artworkId != 0) setImageResource(artworkId)
+            }
+            val previewParams = LinearLayout.LayoutParams(dp(52), dp(66))
+            previewParams.rightMargin = dp(12)
+            row.addView(preview, previewParams)
+
             val swatch = TextView(this).apply {
                 text = "●"
-                textSize = 26f
+                textSize = 22f
                 setTextColor(item.accent.toInt())
-                setPadding(0, 0, dp(14), 0)
+                setPadding(0, 0, dp(10), 0)
             }
             row.addView(swatch)
             val labels = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
