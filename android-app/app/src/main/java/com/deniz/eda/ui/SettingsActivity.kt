@@ -1,11 +1,19 @@
 package com.deniz.eda.ui
 
 import android.os.Bundle
+import android.content.res.ColorStateList
+import android.graphics.Color as AndroidColor
+import android.graphics.drawable.GradientDrawable
+import android.view.View
+import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Switch
 import android.widget.Toast
+import android.widget.EditText
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import com.deniz.eda.ai.GemmaSessionManager
@@ -49,6 +57,7 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
         Settings.init(this)
+        applySelectedTheme()
         gemmaSessions = GemmaSessionManager(applicationContext)
 
         findViewById<Button>(R.id.gemma3ModelImport).setOnClickListener {
@@ -92,6 +101,102 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
     
+    /**
+     * The XML settings screen predates theme palettes. Recolor its existing controls
+     * at runtime so switching themes also applies here without changing any settings logic.
+     */
+    private fun applySelectedTheme() {
+        ThemeConfig.refresh(this)
+        val palette = ThemeConfig.current
+        val background = palette.background.toInt()
+        val panel = palette.panel.toInt()
+        val accent = palette.accent.toInt()
+        val muted = palette.muted.toInt()
+        window.statusBarColor = background
+        window.navigationBarColor = background
+
+        val content = findViewById<ViewGroup>(android.R.id.content)
+        val scroll = content.getChildAt(0) as? ScrollView ?: return
+        val artworkId = resources.getIdentifier("bg_theme_${palette.id}", "drawable", packageName)
+        if (artworkId != 0) scroll.setBackgroundResource(artworkId) else scroll.setBackgroundColor(background)
+
+        val root = scroll.getChildAt(0) as? LinearLayout ?: return
+        root.setBackgroundColor(AndroidColor.TRANSPARENT)
+
+        // This layout's direct children after the header are the four setting cards.
+        for (index in 1 until root.childCount) {
+            val child = root.getChildAt(index)
+            if (child is LinearLayout) {
+                child.background = GradientDrawable().apply {
+                    setColor(AndroidColor.argb(226, AndroidColor.red(panel), AndroidColor.green(panel), AndroidColor.blue(panel)))
+                    cornerRadius = dp(18).toFloat()
+                    setStroke(dp(1), AndroidColor.argb(70, AndroidColor.red(accent), AndroidColor.green(accent), AndroidColor.blue(accent)))
+                }
+            }
+        }
+
+        val oldAccents = setOf(
+            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.purple_start),
+            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.purple_end),
+            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.pink_start),
+            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.pink_end),
+            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.green_start),
+            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.green_end),
+            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.red_start),
+            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.red_end),
+            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.blue_start),
+            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.blue_end),
+            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.accent_cyan)
+        )
+
+        fun tintTree(view: View) {
+            when (view) {
+                is EditText -> {
+                    view.setTextColor(AndroidColor.WHITE)
+                    view.setHintTextColor(muted)
+                    view.backgroundTintList = ColorStateList.valueOf(accent)
+                }
+                is Button -> {
+                    view.backgroundTintList = ColorStateList.valueOf(accent)
+                    view.setTextColor(if (luminance(accent) > 0.62) AndroidColor.BLACK else AndroidColor.WHITE)
+                }
+                is Switch -> {
+                    view.setTextColor(AndroidColor.WHITE)
+                    view.thumbTintList = ColorStateList.valueOf(accent)
+                    view.trackTintList = ColorStateList.valueOf(AndroidColor.argb(110, AndroidColor.red(accent), AndroidColor.green(accent), AndroidColor.blue(accent)))
+                }
+                is TextView -> {
+                    val current = view.currentTextColor
+                    if (current in oldAccents) view.setTextColor(accent)
+                    else if (current == androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.text_muted)) view.setTextColor(muted)
+                    else if (current == androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.text_secondary)) view.setTextColor(palette.secondary.toInt())
+                }
+            }
+            if (view is ViewGroup) {
+                for (i in 0 until view.childCount) tintTree(view.getChildAt(i))
+            }
+        }
+        tintTree(root)
+
+        findViewById<TextView>(com.deniz.eda.R.id.geriButon)?.background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(panel)
+            setStroke(dp(1), accent)
+        }
+    }
+
+    private fun luminance(color: Int): Double {
+        fun channel(value: Int): Double {
+            val c = value / 255.0
+            return if (c <= 0.04045) c / 12.92 else Math.pow((c + 0.055) / 1.055, 2.4)
+        }
+        return 0.2126 * channel(AndroidColor.red(color)) +
+            0.7152 * channel(AndroidColor.green(color)) +
+            0.0722 * channel(AndroidColor.blue(color))
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
     private fun refreshGemmaStatus() {
         lifecycleScope.launch {
             val status = withContext(Dispatchers.IO) { gemmaSessions.status() }
