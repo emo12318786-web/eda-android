@@ -39,18 +39,18 @@ THEMES = [
 PHOTO_URLS = {
     "dark_queen": "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
     "hellhound": "https://images.unsplash.com/photo-1511497584788-876760111969?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-    "obsidian": "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
+    "obsidian": "https://images.unsplash.com/photo-1497250681960-ef046c08a56e?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
     "pentagram": "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
     "wolf": "https://images.unsplash.com/photo-1472396961693-142e6e269027?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
     "eclipse": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
     "throne": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
     "black_sun": "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
     "dark_angel": "https://images.unsplash.com/photo-1500534623283-312aade485b7?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-    "dragon_core": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
+    "dragon_core": "https://images.unsplash.com/photo-1475738198235-4b30fc2fcf7b?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
     "fallen_angel": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=840&h=1800&fit=crop&crop=entropy&q=88",
     "night_queen": "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
     "space_gate": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
-    "neon_abyss": "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
+    "neon_abyss": "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?w=840&h=1800&fit=crop&crop=entropy&auto=format&q=88",
 }
 
 def build(theme):
