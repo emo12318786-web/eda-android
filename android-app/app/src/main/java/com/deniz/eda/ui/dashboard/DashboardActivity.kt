@@ -324,16 +324,17 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                // EDA monogram: luminous double-tone ring and signature dot.
+                // The monogram silhouette is part of the selected skin, not a permanent circle.
+                val logoShape = themeShape(27)
                 Box(
                     Modifier.size(54.dp).background(
-                        Brush.linearGradient(listOf(PanelRaised, Panel, Violet.copy(alpha = 0.55f))), CircleShape
+                        Brush.linearGradient(listOf(PanelRaised, Panel, Violet.copy(alpha = 0.55f))), logoShape
                     ),
                     contentAlignment = Alignment.Center
                 ) {
                     Surface(
                         modifier = Modifier.fillMaxSize().padding(2.dp),
-                        shape = CircleShape,
+                        shape = themeShape(25),
                         color = Color.Transparent,
                         border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(Violet, Cyan)))
                     ) {}
