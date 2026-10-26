@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -38,6 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -110,11 +113,16 @@ class DashboardActivity : ComponentActivity() {
                 error = Color(0xFFFF6B6B),
                 onError = Color(0xFF1A0505)
             )) {
-                EdaDashboard(
-                    viewModel = viewModel,
-                    onAction = { action -> sendAction(action) },
-                    onShareLog = { com.deniz.eda.utils.EdaLog.share(this) }
+                val themedTextStyle = LocalTextStyle.current.merge(
+                    TextStyle(fontFamily = ThemeConfig.composeFont(ThemeConfig.current))
                 )
+                CompositionLocalProvider(LocalTextStyle provides themedTextStyle) {
+                    EdaDashboard(
+                        viewModel = viewModel,
+                        onAction = { action -> sendAction(action) },
+                        onShareLog = { com.deniz.eda.utils.EdaLog.share(this) }
+                    )
+                }
             }
         }
         val requiredPhonePermissions = arrayOf(
@@ -230,7 +238,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     onClick = { selectedTab = 0 },
                     icon = {
                         Text(
-                            if (ThemeConfig.current.id == "wolf") "♜" else if (ThemeConfig.current.id == "space_gate") "◎" else "⌂",
+                            ThemeConfig.icon("home"),
                             fontSize = 22.sp,
                             color = if (selectedTab == 0) Violet else Muted,
                             fontWeight = if (selectedTab == 0) FontWeight.Black else FontWeight.Normal
@@ -250,7 +258,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     onClick = { selectedTab = 1 },
                     icon = {
                         Text(
-                            if (ThemeConfig.current.id == "hellhound") "♨" else if (ThemeConfig.current.id == "dragon_core") "♢" else "⌘",
+                            ThemeConfig.icon("control"),
                             fontSize = 22.sp,
                             color = if (selectedTab == 1) Violet else Muted,
                             fontWeight = if (selectedTab == 1) FontWeight.Black else FontWeight.Normal
@@ -270,7 +278,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     onClick = { selectedTab = 2 },
                     icon = {
                         Text(
-                            if (ThemeConfig.current.id == "pentagram") "✶" else if (ThemeConfig.current.id == "dark_angel" || ThemeConfig.current.id == "fallen_angel") "✧" else if (ThemeConfig.current.id == "black_sun" || ThemeConfig.current.id == "eclipse") "☼" else "✥",
+                            ThemeConfig.icon("system"),
                             fontSize = 22.sp,
                             color = if (selectedTab == 2) Violet else Muted,
                             fontWeight = if (selectedTab == 2) FontWeight.Black else FontWeight.Normal
@@ -338,8 +346,8 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     Text("EDA", fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
                     Text("KİŞİSEL ASİSTAN • V5", fontSize = 9.sp, color = Muted, letterSpacing = 1.4.sp)
                 }
-                Text(if (ThemeConfig.current.id == "dark_queen" || ThemeConfig.current.id == "night_queen") "♛" else if (ThemeConfig.current.id == "wolf") "♜" else if (ThemeConfig.current.id == "dragon_core") "♢" else if (ThemeConfig.current.id == "space_gate") "◎" else "◐", modifier = Modifier.clickable { context.startActivity(Intent(context, ThemeActivity::class.java)) }.padding(8.dp), color = Cyan, fontSize = 22.sp)
-                Text("⚙", modifier = Modifier.clickable { onAction("ACTION_SETTINGS") }.padding(8.dp), color = Violet, fontSize = 24.sp)
+                Text(ThemeConfig.icon("crown"), modifier = Modifier.clickable { context.startActivity(Intent(context, ThemeActivity::class.java)) }.padding(8.dp), color = Cyan, fontSize = 22.sp)
+                Text(ThemeConfig.icon("settings"), modifier = Modifier.clickable { onAction("ACTION_SETTINGS") }.padding(8.dp), color = Violet, fontSize = 24.sp)
                 Surface(shape = RoundedCornerShape(50), color = statusColor.copy(alpha = 0.12f),
                     border = BorderStroke(1.dp, statusColor.copy(alpha = 0.5f))) {
                     Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -352,22 +360,33 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             }
 
             if (selectedTab == 0) {
-                HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
-                SectionHeader("CANLI DURUM", "Telefon ve Eda’nın durumu")
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    MetricCard("BATARYA", "⚡", "${state.pilYuzde}%", state.pilDurum,
-                        if (state.pilYuzde <= 20) Bad else Good, Modifier.weight(1f))
-                    MetricCard("BAĞLANTI", "⌁", if (state.internetStatus) "Bağlı" else "Bağlı değil",
-                        "Ağ bağlantısı", if (state.internetStatus) Cyan else Warn, Modifier.weight(1f))
+                // Every profile changes the information flow, not just its colors.
+                when (ThemeConfig.current.layoutMode) {
+                    1 -> {
+                        DashboardProviderSection(state, onAction)
+                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
+                        DashboardLiveMetrics(state)
+                        DashboardLogsSection(state)
+                    }
+                    2 -> {
+                        DashboardLiveMetrics(state)
+                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
+                        DashboardProviderSection(state, onAction)
+                        DashboardLogsSection(state)
+                    }
+                    3 -> {
+                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
+                        DashboardLogsSection(state)
+                        DashboardProviderSection(state, onAction)
+                        DashboardLiveMetrics(state)
+                    }
+                    else -> {
+                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
+                        DashboardLiveMetrics(state)
+                        DashboardProviderSection(state, onAction)
+                        DashboardLogsSection(state)
+                    }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıtlı bilgi", Violet, Modifier.weight(1f))
-                    MetricCard("HATIRLATICI", "◷", state.hatirlatmaSayi.toString(), "bekleyen hatırlatma", Warn, Modifier.weight(1f))
-                }
-                SectionHeader("YAPAY ZEKÂ", "Öncelikli sağlayıcı")
-                ProviderPanel(state.aiSaglayici, onAction)
-                SectionHeader("SON HAREKETLER", "Eda’nın son kayıtları")
-                LogsPanel(state.sonLoglar)
             } else if (selectedTab == 1) {
                 HeroMini("KONTROL", "Eda’nın çalışma durumunu buradan yönet.")
                 SectionHeader("DERİN SOHBET", "Yerel Gemma 2:2B · Termux / Ollama")
@@ -423,7 +442,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
 
     if (phoneControlOpen) {
         Dialog(onDismissRequest = { phoneControlOpen = false }) {
-            Surface(Modifier.fillMaxWidth().fillMaxHeight(0.9f), shape = RoundedCornerShape(24.dp),
+            Surface(Modifier.fillMaxWidth().fillMaxHeight(0.9f), shape = themeShape(24),
                 color = Panel, border = BorderStroke(1.dp, Cyan.copy(alpha = 0.35f))) {
                 Column(Modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -460,7 +479,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                         }
                     }, modifier = Modifier.fillMaxWidth()) { Text("⌕ Ekranı görsel OCR ile oku") }
                     Text(phoneControlStatus, color = Muted, fontSize = 12.sp)
-                    Column(Modifier.weight(1f).fillMaxWidth().background(PanelRaised, RoundedCornerShape(12.dp))
+                    Column(Modifier.weight(1f).fillMaxWidth().background(PanelRaised, themeShape(12))
                         .verticalScroll(rememberScrollState()).padding(10.dp)) {
                         Text(phoneScreenText, color = Color.White, fontSize = 13.sp, lineHeight = 19.sp)
                     }
@@ -547,7 +566,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
         Dialog(onDismissRequest = { if (!jarvisBusy) jarvisOpen = false }) {
             Surface(
                 modifier = Modifier.fillMaxWidth().fillMaxHeight(0.88f),
-                shape = RoundedCornerShape(26.dp),
+                shape = themeShape(26),
                 color = Panel,
                 border = BorderStroke(1.dp, Violet.copy(alpha = 0.4f))
             ) {
@@ -576,7 +595,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     )
                     Column(
                         Modifier.weight(1f).fillMaxWidth()
-                            .background(PanelRaised, RoundedCornerShape(14.dp))
+                            .background(PanelRaised, themeShape(14))
                             .verticalScroll(rememberScrollState()).padding(12.dp)
                     ) {
                         Text(
@@ -680,7 +699,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
         Dialog(onDismissRequest = { if (!deepChatBusy) deepChatOpen = false }) {
             Surface(
                 modifier = Modifier.fillMaxWidth().fillMaxHeight(0.88f),
-                shape = RoundedCornerShape(28.dp),
+                shape = themeShape(28),
                 color = Panel,
                 border = BorderStroke(1.dp, Violet.copy(alpha = 0.35f))
             ) {
@@ -693,7 +712,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                         Text("✕", color = Muted, modifier = Modifier.clickable { if (!deepChatBusy) deepChatOpen = false }.padding(8.dp))
                     }
                     HorizontalDivider(color = Violet.copy(alpha = 0.22f))
-                    Column(Modifier.weight(1f).fillMaxWidth().background(PanelRaised, RoundedCornerShape(18.dp))
+                    Column(Modifier.weight(1f).fillMaxWidth().background(PanelRaised, themeShape(18))
                         .verticalScroll(rememberScrollState()).padding(15.dp)) {
                         Text(deepChatReply, color = Color.White, fontSize = 15.sp, lineHeight = 23.sp)
                     }
@@ -748,45 +767,155 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
 }
 
 @Composable
+private fun DashboardLiveMetrics(state: DashboardViewModel.DashboardState) {
+    SectionHeader("CANLI DURUM", "Telefon ve Eda’nın durumu")
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        MetricCard("BATARYA", ThemeConfig.icon("battery"), "${state.pilYuzde}%", state.pilDurum,
+            if (state.pilYuzde <= 20) Bad else Good, Modifier.weight(1f))
+        MetricCard("BAĞLANTI", ThemeConfig.icon("network"), if (state.internetStatus) "Bağlı" else "Bağlı değil",
+            "Ağ bağlantısı", if (state.internetStatus) Cyan else Warn, Modifier.weight(1f))
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        MetricCard("HAFIZA", ThemeConfig.icon("memory"), state.hafizaSayi.toString(), "kayıtlı bilgi", Violet, Modifier.weight(1f))
+        MetricCard("HATIRLATMA", ThemeConfig.icon("reminder"), state.hatirlatmaSayi.toString(),
+            "bekleyen hatırlatma", Warn, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun DashboardProviderSection(state: DashboardViewModel.DashboardState, onAction: (String) -> Unit) {
+    SectionHeader("YAPAY ZEKÂ", "Öncelikli sağlayıcı")
+    ProviderPanel(state.aiSaglayici, onAction)
+}
+
+@Composable
+private fun DashboardLogsSection(state: DashboardViewModel.DashboardState) {
+    SectionHeader("SON HAREKETLER", "Eda’nın son kayıtları")
+    LogsPanel(state.sonLoglar)
+}
+
+@Composable
 private fun HeroPanel(name: String, time: String, date: String, status: Color, active: Boolean, sleeping: Boolean, onAction: (String) -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val artworkId = remember(ThemeConfig.current.id) {
         context.resources.getIdentifier("bg_theme_${ThemeConfig.current.id}", "drawable", context.packageName)
     }
-    Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(
-        Brush.linearGradient(listOf(PanelRaised, Panel, Color(ThemeConfig.current.background).copy(alpha = 0.96f)))
-    ).padding(20.dp)) {
+    val shape = themeShape(26)
+    Box(
+        Modifier.fillMaxWidth().clip(shape).background(
+            Brush.linearGradient(listOf(PanelRaised, Panel, Color(ThemeConfig.current.background).copy(alpha = 0.96f))),
+            shape
+        ).padding(20.dp)
+    ) {
         if (artworkId != 0) {
             Image(
                 painter = painterResource(id = artworkId),
                 contentDescription = null,
-                modifier = Modifier.matchParentSize().clip(RoundedCornerShape(20.dp)),
+                modifier = Modifier.matchParentSize().clip(shape),
                 contentScale = ContentScale.Crop,
                 alpha = 0.44f
             )
         }
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("MERHABA, ${name.uppercase()}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
-            Text("Ben Eda." + 10.toChar() + "Buradayım.", fontSize = 31.sp, lineHeight = 36.sp,
-                fontWeight = FontWeight.Bold, color = Color.White)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(time, fontSize = 22.sp, color = Cyan, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.width(10.dp))
-                Text("•  $date", fontSize = 10.sp, color = Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        when (ThemeConfig.current.layoutMode) {
+            1 -> Column(
+                Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(ThemeConfig.icon("brand"), color = Violet, fontSize = 35.sp)
+                Text("MERHABA, ${name.uppercase()}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                Text("Ben Eda.\nBuradayım.", fontSize = 29.sp, lineHeight = 34.sp,
+                    fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+                HeroMeta(time, date)
+                HeroActions(active, sleeping, onAction)
+                Text("“Eda” de, konuşmaya başlayalım.", color = Color.White.copy(alpha = .72f), fontSize = 11.sp)
             }
-            Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                Button(onClick = { onAction("ACTION_AKTIF") }, modifier = Modifier.weight(1f).height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = if (active) Good.copy(alpha = .2f) else Violet),
-                    shape = RoundedCornerShape(15.dp)) {
-                    Text(if (active) "✓  Dinliyorum" else "▶  Eda'yı uyandır",
-                        color = if (active) Good else VoidBlack, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            2 -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("EDA / SYSTEM ONLINE", color = Muted, fontSize = 9.sp, letterSpacing = 1.6.sp)
+                        Text("Ben Eda.\nBuradayım.", fontSize = 26.sp, lineHeight = 30.sp,
+                            fontWeight = FontWeight.Bold, color = Color.White)
+                        HeroMeta(time, date)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(ThemeConfig.icon("brand"), color = Violet, fontSize = 52.sp)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.size(7.dp).background(status, CircleShape))
+                            Spacer(Modifier.width(5.dp))
+                            Text(if (active) "AKTİF" else if (sleeping) "UYKU" else "KAPALI",
+                                color = status, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
-                OutlinedButton(onClick = { onAction("ACTION_UYKU") }, modifier = Modifier.weight(.72f).height(48.dp),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = .18f)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                    shape = RoundedCornerShape(15.dp)) { Text(if (sleeping) "☾  Uyuyor" else "☾  Uyku", fontSize = 11.sp) }
+                HeroActions(active, sleeping, onAction)
+                Text("Yerel kontrol • Canlı durum", color = Muted, fontSize = 10.sp)
             }
-            Text("“Eda” de, konuşmaya başlayalım.", color = Color.White.copy(alpha = .68f), fontSize = 11.sp)
+            3 -> Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                    Text("MERHABA, ${name.uppercase()}", color = Muted, fontSize = 9.sp, letterSpacing = 1.5.sp)
+                    Text("Ben Eda.\nBuradayım.", fontSize = 25.sp, lineHeight = 30.sp,
+                        fontWeight = FontWeight.Bold, color = Color.White)
+                    HeroMeta(time, date)
+                    Text("Her zaman yanında.", color = Color.White.copy(alpha = .72f), fontSize = 10.sp)
+                }
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.width(94.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(ThemeConfig.icon("brand"), color = Violet, fontSize = 42.sp)
+                    Button(onClick = { onAction("ACTION_AKTIF") },
+                        modifier = Modifier.fillMaxWidth().height(42.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = if (active) Good.copy(alpha = .22f) else Violet),
+                        shape = themeShape(15)) {
+                        Text(if (active) "✓ Dinle" else "${ThemeConfig.icon("wake")} Uyan",
+                            color = if (active) Good else VoidBlack, fontWeight = FontWeight.Bold, fontSize = 9.sp)
+                    }
+                    OutlinedButton(onClick = { onAction("ACTION_UYKU") },
+                        modifier = Modifier.fillMaxWidth().height(42.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = .2f)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                        shape = themeShape(15)) {
+                        Text("${ThemeConfig.icon("sleep")} Uyku", fontSize = 9.sp)
+                    }
+                }
+            }
+            else -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("MERHABA, ${name.uppercase()}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                Text("Ben Eda.\nBuradayım.", fontSize = 31.sp, lineHeight = 36.sp,
+                    fontWeight = FontWeight.Bold, color = Color.White)
+                HeroMeta(time, date)
+                HeroActions(active, sleeping, onAction)
+                Text("“Eda” de, konuşmaya başlayalım.", color = Color.White.copy(alpha = .68f), fontSize = 11.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeroMeta(time: String, date: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(time, fontSize = 22.sp, color = Cyan, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.width(10.dp))
+        Text("•  $date", fontSize = 10.sp, color = Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun HeroActions(active: Boolean, sleeping: Boolean, onAction: (String) -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+        Button(onClick = { onAction("ACTION_AKTIF") }, modifier = Modifier.weight(1f).height(48.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = if (active) Good.copy(alpha = .2f) else Violet),
+            shape = themeShape(15)) {
+            Text(if (active) "${ThemeConfig.icon("wake")}  Dinliyorum" else "${ThemeConfig.icon("wake")}  Eda'yı uyandır",
+                color = if (active) Good else VoidBlack, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+        }
+        OutlinedButton(onClick = { onAction("ACTION_UYKU") }, modifier = Modifier.weight(.72f).height(48.dp),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = .18f)),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+            shape = themeShape(15)) {
+            Text("${ThemeConfig.icon("sleep")}  ${if (sleeping) "Uyuyor" else "Uyku"}", fontSize = 11.sp)
         }
     }
 }
@@ -794,7 +923,7 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
 @Composable
 private fun HeroMini(title: String, subtitle: String) {
     Column(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(PanelRaised, Panel)),
-        RoundedCornerShape(22.dp)).padding(20.dp)) {
+        themeShape(22)).padding(20.dp)) {
         Text(title, color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Text(subtitle, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -809,16 +938,16 @@ private fun SectionHeader(title: String, subtitle: String) {
             Spacer(Modifier.height(3.dp))
             Text(subtitle, color = Muted, fontSize = 11.sp)
         }
-        Box(Modifier.width(44.dp).height(2.dp).background(Brush.horizontalGradient(listOf(Violet, Cyan)), RoundedCornerShape(2.dp)))
+        Box(Modifier.width(44.dp).height(2.dp).background(Brush.horizontalGradient(listOf(Violet, Cyan)), themeShape(2)))
     }
 }
 
 @Composable
 private fun MetricCard(label: String, icon: String, value: String, detail: String, tint: Color, modifier: Modifier = Modifier) {
-    Card(modifier, shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Panel), border = BorderStroke(1.dp, Violet.copy(alpha = 0.42f))) {
+    Card(modifier, shape = themeShape(20), colors = CardDefaults.cardColors(containerColor = Panel), border = BorderStroke(1.dp, Violet.copy(alpha = 0.42f))) {
         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(icon, color = tint, fontSize = 17.sp)
+                Text(ThemeConfig.metricIcon(label, icon), color = tint, fontSize = 17.sp)
                 Spacer(Modifier.width(7.dp))
                 Text(label, color = Muted, fontSize = 9.sp, letterSpacing = .8.sp, fontWeight = FontWeight.Bold)
             }
@@ -832,7 +961,7 @@ private fun MetricCard(label: String, icon: String, value: String, detail: Strin
 @Composable
 private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
     val main = selected.split(" → ").firstOrNull().orEmpty()
-    Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(20.dp)).padding(14.dp),
+    Column(Modifier.fillMaxWidth().background(Panel, themeShape(20)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Öncelik zinciri", color = Muted, fontSize = 10.sp)
         Text(selected, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
@@ -848,7 +977,7 @@ private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
                     border = BorderStroke(1.dp, if (isSelected) Violet else Violet.copy(alpha = 0.35f)),
                     colors = ButtonDefaults.outlinedButtonColors(containerColor = if (isSelected) Violet.copy(alpha = .16f) else PanelRaised),
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
-                    shape = RoundedCornerShape(12.dp)) {
+                    shape = themeShape(12)) {
                     Text(provider, color = if (isSelected) Violet else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
@@ -858,11 +987,11 @@ private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
 
 @Composable
 private fun ControlTile(icon: String, title: String, detail: String, tint: Color, onClick: () -> Unit) {
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp),
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = themeShape(18),
         colors = CardDefaults.cardColors(containerColor = Panel), border = BorderStroke(1.dp, Violet.copy(alpha = 0.42f))) {
         Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(44.dp).background(tint.copy(alpha = .12f), RoundedCornerShape(14.dp)),
-                contentAlignment = Alignment.Center) { Text(icon, color = tint, fontSize = 21.sp) }
+            Box(Modifier.size(44.dp).background(tint.copy(alpha = .12f), themeShape(14)),
+                contentAlignment = Alignment.Center) { Text(ThemeConfig.actionIcon(title, icon), color = tint, fontSize = 21.sp) }
             Spacer(Modifier.width(13.dp))
             Column(Modifier.weight(1f)) {
                 Text(title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
@@ -876,7 +1005,7 @@ private fun ControlTile(icon: String, title: String, detail: String, tint: Color
 
 @Composable
 private fun InfoNotice(title: String, detail: String) {
-    Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(16.dp)).padding(15.dp)) {
+    Column(Modifier.fillMaxWidth().background(Panel, themeShape(16)).padding(15.dp)) {
         Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
         Spacer(Modifier.height(5.dp))
         Text(detail, color = Muted, fontSize = 11.sp, lineHeight = 16.sp)
@@ -885,7 +1014,7 @@ private fun InfoNotice(title: String, detail: String) {
 
 @Composable
 private fun StatusLine(name: String, status: String, ok: Boolean) {
-    Row(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(14.dp)).padding(13.dp),
+    Row(Modifier.fillMaxWidth().background(Panel, themeShape(14)).padding(13.dp),
         verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(8.dp).background(if (ok) Good else Warn, CircleShape))
         Spacer(Modifier.width(11.dp))
@@ -899,7 +1028,7 @@ private fun StatusLine(name: String, status: String, ok: Boolean) {
 
 @Composable
 private fun LogsPanel(logs: List<String>) {
-    Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(18.dp)).padding(14.dp),
+    Column(Modifier.fillMaxWidth().background(Panel, themeShape(18)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (logs.isEmpty()) {
             Text("Henüz kayıt yok. Eda'yı kullandıkça burada görünecek.", color = Muted, fontSize = 11.sp)
@@ -914,4 +1043,13 @@ private fun LogsPanel(logs: List<String>) {
             }
         }
     }
+
+private fun themeShape(baseDp: Int): Shape {
+    val palette = ThemeConfig.current
+    val radius = ThemeConfig.cornerRadius(palette, baseDp).dp
+    return when (palette.shapeStyle) {
+        "cut", "hex", "sharp" -> CutCornerShape(radius)
+        else -> RoundedCornerShape(radius)
+    }
+}
 }
