@@ -35,7 +35,7 @@ object ThemeConfig {
         Palette("pentagram", "Pentagram", 0xFF060204, 0xFF190509, 0xFF300910, 0xFFFF244A, 0xFFFF8297, 0xFFC5A4AD, "serif", 2, "arcane", "sharp", 3),
         Palette("wolf", "Wolf", 0xFF030405, 0xFF111214, 0xFF222326, 0xFFBBC7D5, 0xFFFF4444, 0xFFADB8C8, "sans-serif-light", 0, "rune", "hex", 4),
         Palette("eclipse", "Eclipse", 0xFF040203, 0xFF160608, 0xFF2B0B0E, 0xFFFF3F2F, 0xFFFFA078, 0xFFC2A5A5, "monospace", 1, "eclipse", "round", 5),
-        Palette("throne", "Throne", 0xFF050202, 0xFF1A0505, 0xFF330909, 0xFFFF2929, 0xFFFF9090, 0xFFC8A5A5, "sans-serif-medium", 1, "throne", "classic", 6),
+        Palette("throne", "Kafatası", 0xFF050202, 0xFF1A0505, 0xFF330909, 0xFFFF2929, 0xFFFF9090, 0xFFC8A5A5, "sans-serif-medium", 1, "throne", "classic", 6),
         Palette("black_sun", "Black Sun", 0xFF050302, 0xFF19100A, 0xFF2E180D, 0xFFFF4B20, 0xFFFFB86B, 0xFFC5B1A4, "sans-serif-condensed-light", 0, "solar", "cut", 7),
         Palette("dark_angel", "Dark Angel", 0xFF030304, 0xFF130608, 0xFF260B10, 0xFFFF2D36, 0xFFFF8188, 0xFFB8A9C8, "casual", 0, "angel", "soft", 8),
         Palette("dragon_core", "Dragon Core", 0xFF050101, 0xFF1B0304, 0xFF350607, 0xFFFF2E1F, 0xFFFF9A51, 0xFFC8A4A2, "sans-serif-black", 1, "dragon", "sharp", 9),
@@ -46,23 +46,22 @@ object ThemeConfig {
     )
 
     fun selectedId(context: Context): String =
-        context.getSharedPreferences("eda_settings", Context.MODE_PRIVATE)
-            .getString("eda_theme_id", "dark_angel") ?: "dark_angel"
+         "throne"
 
     fun selected(context: Context): Palette =
-        palettes.firstOrNull { it.id == selectedId(context) } ?: palettes[8]
+        palettes.first { it.id == "throne" }
 
     val current: Palette
         get() = cachedPalette
 
-    private var cachedPalette: Palette = palettes.first { it.id == "dark_angel" }
+    private var cachedPalette: Palette = palettes.first { it.id == "throne" }
 
     fun refresh(context: Context) {
         cachedPalette = selected(context)
     }
 
     fun save(context: Context, id: String) {
-        val safeId = palettes.firstOrNull { it.id == id }?.id ?: "dark_angel"
+        val safeId = "throne"
         context.getSharedPreferences("eda_settings", Context.MODE_PRIVATE)
             .edit().putString("eda_theme_id", safeId).apply()
         refresh(context)
