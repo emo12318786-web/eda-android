@@ -18,6 +18,14 @@ class ThemeActivity : Activity() {
         super.onCreate(savedInstanceState)
         ThemeConfig.refresh(this)
         val palette = ThemeConfig.current
+        // Keep Android system bars in sync with the chosen theme.
+        window.statusBarColor = palette.background.toInt()
+        window.navigationBarColor = palette.background.toInt()
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            window.isStatusBarContrastEnforced = false
+            window.isNavigationBarContrastEnforced = false
+        }
+        window.decorView.systemUiVisibility = 0
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(18), dp(18), dp(18), dp(18))
