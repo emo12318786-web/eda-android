@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -113,8 +114,17 @@ class DashboardActivity : ComponentActivity() {
                 error = Color(0xFFFF6B6B),
                 onError = Color(0xFF1A0505)
             )) {
+                val themedFont = remember(ThemeConfig.current.id) {
+                    ThemeConfig.composeFont(ThemeConfig.current)
+                }
                 val themedTextStyle = LocalTextStyle.current.merge(
-                    TextStyle(fontFamily = ThemeConfig.composeFont(ThemeConfig.current))
+                    TextStyle(
+                        fontFamily = themedFont,
+                        fontWeight = ThemeConfig.composeFontWeight(ThemeConfig.current),
+                        fontStyle = ThemeConfig.composeFontStyle(ThemeConfig.current),
+                        letterSpacing = if (ThemeConfig.current.iconStyle == "geometric" ||
+                            ThemeConfig.current.iconStyle == "cyber") 0.25.sp else 0.sp
+                    )
                 )
                 CompositionLocalProvider(LocalTextStyle provides themedTextStyle) {
                     EdaDashboard(
