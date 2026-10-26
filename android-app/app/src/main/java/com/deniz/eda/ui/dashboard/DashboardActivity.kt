@@ -78,6 +78,7 @@ class DashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Settings.init(this)
+        ThemeConfig.save(this, "throne")
         ThemeConfig.refresh(this)
         appliedThemeId = ThemeConfig.selectedId(this)
         window.statusBarColor = ThemeConfig.current.background.toInt()
@@ -357,7 +358,6 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     Text("EDA", fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
                     Text("KİŞİSEL ASİSTAN • V5", fontSize = 9.sp, color = Muted, letterSpacing = 1.4.sp)
                 }
-                Text(ThemeConfig.icon("crown"), modifier = Modifier.clickable { context.startActivity(Intent(context, ThemeActivity::class.java)) }.padding(8.dp), color = Cyan, fontSize = 22.sp)
                 Text(ThemeConfig.icon("settings"), modifier = Modifier.clickable { onAction("ACTION_SETTINGS") }.padding(8.dp), color = Violet, fontSize = 24.sp)
                 Surface(shape = RoundedCornerShape(50), color = statusColor.copy(alpha = 0.12f),
                     border = BorderStroke(1.dp, statusColor.copy(alpha = 0.5f))) {
