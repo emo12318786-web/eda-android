@@ -1007,7 +1007,7 @@ private fun ControlTile(icon: String, title: String, detail: String, tint: Color
 @Composable
 private fun InfoNotice(title: String, detail: String) {
     Column(Modifier.fillMaxWidth().background(Panel, themeShape(16)).padding(15.dp)) {
-        Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        Text(themeLeadingIcon(title), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
         Spacer(Modifier.height(5.dp))
         Text(detail, color = Muted, fontSize = 11.sp, lineHeight = 16.sp)
     }
@@ -1020,7 +1020,7 @@ private fun StatusLine(name: String, status: String, ok: Boolean) {
         Box(Modifier.size(8.dp).background(if (ok) Good else Warn, CircleShape))
         Spacer(Modifier.width(11.dp))
         Column(Modifier.weight(1f)) {
-            Text(name, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Text(themeLeadingIcon(name), color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             Text(status, color = Muted, fontSize = 10.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         Text(if (ok) "OK" else "—", color = if (ok) Good else Warn, fontSize = 10.sp, fontWeight = FontWeight.Bold)
@@ -1045,6 +1045,15 @@ private fun LogsPanel(logs: List<String>) {
         }
     }
 
+}
+
+private fun themeLeadingIcon(label: String): String {
+    val prefix = label.trimStart().substringBefore(' ')
+    if (prefix.isBlank()) return label
+    val themed = ThemeConfig.actionIcon(label, prefix)
+    if (themed == prefix) return label
+    val leading = label.indexOf(prefix)
+    return label.substring(0, leading) + themed + label.substring(leading + prefix.length)
 }
 
 private fun themeShape(baseDp: Int): Shape {
