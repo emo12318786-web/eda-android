@@ -44,7 +44,7 @@ class ThemeActivity : Activity() {
         }
         root.addView(title)
         val subtitle = TextView(this).apply {
-            text = "14 ayrı görünüm: renk, yazı tipi, simgeler, kart biçimi ve ana ekran düzeni."
+            text = "Tek görünüm: Kafatası • siyah-kırmızı • tüm ekranlarda aynı kimlik."
             textSize = 14f
             typeface = ThemeConfig.androidTypeface(selected)
             setTextColor(selected.muted.toInt())
@@ -53,7 +53,7 @@ class ThemeActivity : Activity() {
         root.addView(subtitle)
 
         val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        ThemeConfig.palettes.forEach { item ->
+        ThemeConfig.palettes.filter { it.id == "throne" }.forEach { item ->
             val isSelected = ThemeConfig.selectedId(this) == item.id
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
