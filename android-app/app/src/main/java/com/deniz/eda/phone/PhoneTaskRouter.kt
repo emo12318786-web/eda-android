@@ -15,14 +15,16 @@ object PhoneTaskRouter {
         .replace('ü', 'u').replace('ö', 'o').replace('ç', 'c')
         .replace('ə', 'e').replace(Regex("\\s+"), " ").trim()
 
-    suspend fun tryHandle(context: Context, spoken: String): String? {
+    /** Pure intent matcher so voice aliases can be regression-tested without a device. */
+    internal fun isPhoneIntent(spoken: String): Boolean {
         val raw = spoken.trim()
         val q = norm(raw)
-        val phoneIntent = listOf(
+        return listOf(
             "ekrani oku", "ekranda ne yaziyor", "ekranda ne yazilir", "ekranda ne gorunur",
             "ekrani oxu", "ekraninda ne var", "telefon ekranini oxu",
             "asagi kaydir", "asagi in", "asagi surusdur", "asagi surukle",
             "yukari kaydir", "yukari cik", "yukari surusdur", "yukari qalx",
+            "yuxari surusdur", "yuxari qalx",
             "bildirimleri ac", "bildirisleri ac", "bildirim panelini ac",
             "hizli ayarlari ac", "tez ayarlari ac",
             "geri git", "geri don", "geri qayit", "ana ekrana don", "ana sehifeye qayit",
@@ -30,8 +32,14 @@ object PhoneTaskRouter {
             "ekrandaki metni oku", "telefon ekranini oku",
             "ekrandaki metne dokun", "ekrandaki metne toxun", "ekrandaki ogeye dokun",
             "ekrandaki dugmeye bas", "ekrandaki yaziyi sec"
-        ).any { q.contains(it) } || (quotedTarget(raw) != null && listOf("dokun", "toxun", "tikla", "bas", "sec").any { q.contains(it) })
-        if (!phoneIntent) return null
+        ).any { q.contains(it) } ||
+            (quotedTarget(raw) != null && listOf("dokun", "toxun", "tikla", "bas", "sec").any { q.contains(it) })
+    }
+
+    suspend fun tryHandle(context: Context, spoken: String): String? {
+        val raw = spoken.trim()
+        val q = norm(raw)
+        if (!isPhoneIntent(raw)) return null
 
         if (!PhoneControlService.isEnabled()) {
             return "Telefon ekranına erişmek için EDA'nın Erişilebilirlik iznini bir kez açmalısın. Sonra bu komutları doğrudan Eda'ya söyleyebilirsin; ayrı kontrol sayfasını açman gerekmez."
@@ -47,12 +55,12 @@ object PhoneTaskRouter {
                 q.contains("asagi kaydir") || q.contains("asagi in") || q.contains("asagi surusdur") || q.contains("asagi surukle") -> {
                     val action = PhoneControlService.run("down")
                     delay(350)
-                    if (q.contains("oku") || q.contains("ne yaziyor")) {
+                    if (q.contains("oku") || q.contains("oxu") || q.contains("ne yaziyor") || q.contains("ne yazilir") || q.contains("ne gorunur")) {
                         val screenText = PhoneControlService.run("read")
                         "$action\nEkranda görünenler:\n${screenText.take(1100)}"
                     } else action
                 }
-                q.contains("yukari kaydir") || q.contains("yukari cik") || q.contains("yukari surusdur") || q.contains("yukari qalx") -> PhoneControlService.run("up")
+                q.contains("yukari kaydir") || q.contains("yukari cik") || q.contains("yukari surusdur") || q.contains("yukari qalx") || q.contains("yuxari surusdur") || q.contains("yuxari qalx") -> PhoneControlService.run("up")
                 q.contains("ekrani oku") || q.contains("ekranda ne yaziyor") || q.contains("ekranda ne yazilir") ||
                     q.contains("ekranda ne gorunur") || q.contains("ekrani oxu") || q.contains("ekraninda ne var") ||
                     q.contains("telefon ekranini oku") || q.contains("telefon ekranini oxu") || q.contains("ekrandaki metni oku") -> {
