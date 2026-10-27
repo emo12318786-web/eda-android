@@ -230,9 +230,8 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
         else -> Bad
     }
 
-    val screenArtworkId = remember(ThemeConfig.current.id) {
-        context.resources.getIdentifier("bg_theme_${ThemeConfig.current.id}", "drawable", context.packageName)
-    }
+    // Fixed monochrome mode: do not load colorful theme wallpapers.
+    val screenArtworkId = 0
 
     Scaffold(
         // Transparent content lets the selected theme artwork sit behind every dashboard tab.
@@ -357,7 +356,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     Text("EDA", fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
                     Text("KİŞİSEL ASİSTAN • V5", fontSize = 9.sp, color = Muted, letterSpacing = 1.4.sp)
                 }
-                Text(ThemeConfig.icon("crown"), modifier = Modifier.clickable { context.startActivity(Intent(context, ThemeActivity::class.java)) }.padding(8.dp), color = Cyan, fontSize = 22.sp)
+                Text("✦", modifier = Modifier.padding(8.dp), color = Cyan, fontSize = 22.sp)
                 Text(ThemeConfig.icon("settings"), modifier = Modifier.clickable { onAction("ACTION_SETTINGS") }.padding(8.dp), color = Violet, fontSize = 24.sp)
                 Surface(shape = RoundedCornerShape(50), color = statusColor.copy(alpha = 0.12f),
                     border = BorderStroke(1.dp, statusColor.copy(alpha = 0.5f))) {
