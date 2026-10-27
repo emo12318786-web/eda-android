@@ -79,7 +79,18 @@ object PhoneTaskRouter {
                 else -> {
                     val target = quotedTarget(raw)
                         ?: return "Hangi metne dokunmamı istediğini tırnak içinde söyle. Örnek: Eda, ekrandaki metne dokun ve hedefi tırnak içinde belirt."
-                    runScreenAction("tap", target)
+                    // Match the Phone Harness pattern: accessible-label tap first, OCR fallback second.
+                    val accessibleResult = runScreenAction("tap", target)
+                    val tapResult = if (accessibleResult.contains("Erişilebilirlik ağacında")) {
+                        runScreenAction("tap_visual", target)
+                    } else accessibleResult
+                    val tapWasSent = tapResult.contains("öğesine dokunuldu", ignoreCase = true) ||
+                        tapResult.contains("görsel dokunma gönderildi", ignoreCase = true)
+                    if (tapWasSent) {
+                        delay(500)
+                        val updatedScreen = runScreenAction("read")
+                        "Dokunma sonucu: $tapResult\nGüncel ekran metni:\n${updatedScreen.take(800)}"
+                    } else tapResult
                 }
             }
         } catch (e: Exception) {
