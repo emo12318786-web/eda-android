@@ -40,11 +40,11 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import com.deniz.eda.service.EdaForegroundService
 
-private val VoidBlack = Color(0xFF080A12)
-private val Panel = Color(0xFF121626)
-private val PanelRaised = Color(0xFF191F33)
-private val Violet = Color(0xFFB49AFF)
-private val Cyan = Color(0xFF64E5E0)
+private val VoidBlack = Color(0xFF050A12)
+private val Panel = Color(0xFF0C1524)
+private val PanelRaised = Color(0xFF13243A)
+private val Violet = Color(0xFF69AFFF)
+private val Cyan = Color(0xFF36D7F2)
 private val Muted = Color(0xFF98A2B9)
 private val Good = Color(0xFF69E6A6)
 private val Warn = Color(0xFFFFC36E)
@@ -69,7 +69,7 @@ class DashboardActivity : ComponentActivity() {
         viewModel.yenile()
         setContent {
             MaterialTheme(colorScheme = darkColorScheme(
-                primary = Violet, secondary = Cyan, background = VoidBlack, surface = Panel,
+                primary = Color(0xFF3D8BFF), secondary = Cyan, background = VoidBlack, surface = Panel,
                 onBackground = Color.White, onSurface = Color.White
             )) {
                 EdaDashboard(
@@ -186,7 +186,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 // EDA monogram: luminous double-tone ring and signature dot.
                 Box(
                     Modifier.size(54.dp).background(
-                        Brush.linearGradient(listOf(Color(0xFF292047), Color(0xFF102B35))), CircleShape
+                        Brush.linearGradient(listOf(Color(0xFF12294A), Color(0xFF0B2430))), CircleShape
                     ),
                     contentAlignment = Alignment.Center
                 ) {
