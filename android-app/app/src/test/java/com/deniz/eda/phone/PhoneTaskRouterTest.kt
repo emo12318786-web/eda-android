@@ -28,5 +28,6 @@ class PhoneTaskRouterTest {
         assertFalse(PhoneTaskRouter.isPhoneIntent("Hayatın anlamı nedir?"))
         assertFalse(PhoneTaskRouter.isPhoneIntent("Merhaba, nasılsın?"))
         assertFalse(PhoneTaskRouter.isPhoneIntent("Telefon ekranlarının tarihini anlat"))
+        assertFalse(PhoneTaskRouter.isPhoneIntent("«YouTube» uygulamasını başlat"))
     }
 }
