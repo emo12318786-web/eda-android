@@ -37,10 +37,11 @@ The accessibility service must be explicitly enabled by the phone owner. The age
 
 ## Acceptance checklist
 
-- [ ] Latest branch commit passes `testDebugUnitTest assembleDebug` in GitHub Actions.
+- [ ] Latest branch commit passes `testStandardDebugUnitTest assembleStandardDebug assemblePreviewDebug` in GitHub Actions.
 - [ ] Install and launch on Samsung Galaxy A71 / Android 13.
 - [ ] EDA screen service appears in Accessibility settings and connects only after the owner enables it.
 - [ ] Text read, visual OCR read, accessibility tap, OCR tap, type, scroll, Back, Home, Recents, Notifications, Quick Settings, power dialog, and screenshot actions each return truthful results.
+- [ ] Direct Turkish/Azerbaijani voice commands reach the screen tools; ordinary conversation does not get intercepted.
 - [ ] OCR tap is followed by a fresh screen read, and no sensitive final action is performed.
 - [ ] Password fields remain untouched.
 - [ ] No screen text is sent to Pollinations/Groq; all `SCREEN_*` agent tools, including screenshot/system-navigation tools, remain restricted to local Ollama.
