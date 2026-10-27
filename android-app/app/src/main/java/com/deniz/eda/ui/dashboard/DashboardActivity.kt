@@ -68,7 +68,7 @@ class DashboardActivity : ComponentActivity() {
 fun ThroneDashboardScreen(viewModel: DashboardViewModel, onAction: (String) -> Unit) {
     // گرفتن وضعیت با مقدار پیش‌فرض برای جلوگیری از کرش
     val state by viewModel.state.collectAsState()
-    val isActive = state.sonMod == "AKTIF" || state.mod == "AKTIF"
+    val isActive = state.mod == "AKTIF"
 
     Box(
         modifier = Modifier
@@ -158,7 +158,7 @@ fun ThroneDashboardScreen(viewModel: DashboardViewModel, onAction: (String) -> U
                 Triple("Mesaj", Icons.Default.Email, "ACTION_MESAJ"),
                 Triple("Telefon", Icons.Default.Phone, "ACTION_TELEFON"),
                 Triple("Konum", Icons.Default.LocationOn, "ACTION_KONUM"),
-                Triple("Uygulamalar", Icons.Default.List, "ACTION_UYGULAMALAR")
+                Triple("Uygulamalar", Icons.Default.Menu, "ACTION_UYGULAMALAR")
             )
 
             for (i in 0 until 2) {
