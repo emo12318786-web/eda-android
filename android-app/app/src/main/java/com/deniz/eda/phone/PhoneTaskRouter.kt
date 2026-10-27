@@ -18,7 +18,7 @@ object PhoneTaskRouter {
         .replace('ə', 'e').replace(Regex("\\s+"), " ").trim()
 
     private fun hasTapVerb(normalized: String): Boolean =
-        Regex("""\\b(dokun|toxun|tikla|bas|sec)\\b""").containsMatchIn(normalized)
+        Regex("""\b(dokun|toxun|tikla|bas|sec)\b""").containsMatchIn(normalized)
 
     // Screen capture/OCR can wait for Android callbacks; keep that work off the voice/UI thread.
     private suspend fun runScreenAction(action: String, argument: String = ""): String =
