@@ -1,7 +1,9 @@
 package com.deniz.eda.phone
 
 import android.content.Context
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 /**
@@ -14,6 +16,10 @@ object PhoneTaskRouter {
         .replace('ı', 'i').replace('ş', 's').replace('ğ', 'g')
         .replace('ü', 'u').replace('ö', 'o').replace('ç', 'c')
         .replace('ə', 'e').replace(Regex("\\s+"), " ").trim()
+
+    // Screen capture/OCR can wait for Android callbacks; keep that work off the voice/UI thread.
+    private suspend fun runScreenAction(action: String, argument: String = ""): String =
+        withContext(Dispatchers.IO) { PhoneControlService.run(action, argument) }
 
     /** Pure intent matcher so voice aliases can be regression-tested without a device. */
     internal fun isPhoneIntent(spoken: String): Boolean {
@@ -47,33 +53,33 @@ object PhoneTaskRouter {
 
         return try {
             when {
-                q.contains("bildirim") || q.contains("bildiris") -> PhoneControlService.run("notifications")
-                q.contains("hizli ayar") || q.contains("tez ayar") -> PhoneControlService.run("quick_settings")
-                q.contains("ana ekrana") || q.contains("ana sehif") -> PhoneControlService.run("home")
-                q.contains("son uygulama") || q.contains("son proqram") -> PhoneControlService.run("recents")
-                q.contains("geri git") || q.contains("geri don") || q.contains("geri qayit") -> PhoneControlService.run("back")
+                q.contains("bildirim") || q.contains("bildiris") -> runScreenAction("notifications")
+                q.contains("hizli ayar") || q.contains("tez ayar") -> runScreenAction("quick_settings")
+                q.contains("ana ekrana") || q.contains("ana sehif") -> runScreenAction("home")
+                q.contains("son uygulama") || q.contains("son proqram") -> runScreenAction("recents")
+                q.contains("geri git") || q.contains("geri don") || q.contains("geri qayit") -> runScreenAction("back")
                 q.contains("asagi kaydir") || q.contains("asagi in") || q.contains("asagi surusdur") || q.contains("asagi surukle") -> {
-                    val action = PhoneControlService.run("down")
+                    val action = runScreenAction("down")
                     delay(350)
                     if (q.contains("oku") || q.contains("oxu") || q.contains("ne yaziyor") || q.contains("ne yazilir") || q.contains("ne gorunur")) {
-                        val screenText = PhoneControlService.run("read")
+                        val screenText = runScreenAction("read")
                         "$action\nEkranda görünenler:\n${screenText.take(1100)}"
                     } else action
                 }
-                q.contains("yukari kaydir") || q.contains("yukari cik") || q.contains("yukari surusdur") || q.contains("yukari qalx") || q.contains("yuxari surusdur") || q.contains("yuxari qalx") -> PhoneControlService.run("up")
+                q.contains("yukari kaydir") || q.contains("yukari cik") || q.contains("yukari surusdur") || q.contains("yukari qalx") || q.contains("yuxari surusdur") || q.contains("yuxari qalx") -> runScreenAction("up")
                 q.contains("ekrani oku") || q.contains("ekranda ne yaziyor") || q.contains("ekranda ne yazilir") ||
                     q.contains("ekranda ne gorunur") || q.contains("ekrani oxu") || q.contains("ekraninda ne var") ||
                     q.contains("telefon ekranini oku") || q.contains("telefon ekranini oxu") || q.contains("ekrandaki metni oku") -> {
-                    val text = PhoneControlService.run("read")
+                    val text = runScreenAction("read")
                     if (text.contains("okunabilen metin bulunamadı") || text.contains("Ekran okunamadı")) {
-                        val visual = PhoneControlService.run("vision")
+                        val visual = runScreenAction("vision")
                         "Erişilebilir metin bulunamadı. Görsel okuma sonucu:\n${visual.take(1100)}"
                     } else "Ekranda görünenler:\n${text.take(1400)}"
                 }
                 else -> {
                     val target = quotedTarget(raw)
                         ?: return "Hangi metne dokunmamı istediğini tırnak içinde söyle. Örnek: Eda, ekrandaki metne dokun ve hedefi tırnak içinde belirt."
-                    PhoneControlService.run("tap", target)
+                    runScreenAction("tap", target)
                 }
             }
         } catch (e: Exception) {
