@@ -8,6 +8,7 @@ import com.deniz.eda.data.LearningStore
 import com.deniz.eda.data.MemoryStore
 import com.deniz.eda.data.ReminderStore
 import com.deniz.eda.health.HealthConnectManager
+import com.deniz.eda.phone.PhoneTaskRouter
 import com.deniz.eda.utils.BatteryUtils
 import com.deniz.eda.utils.PhoneSystemCommands
 import com.deniz.eda.utils.CurrencyUtils
@@ -220,7 +221,10 @@ object CommandProcessor {
         val hitap = Settings.kullaniciAdi
         var metin = metinHam.lowercase(Locale.getDefault()).trim()
 
-        // Direct phone controls must run before learning/fuzzy matching or cloud AI.
+        // Route explicit screen-control requests locally before learning, fuzzy matching, or AI.
+        // Ordinary conversation returns null from PhoneTaskRouter and keeps EDA's existing path.
+        PhoneTaskRouter.tryHandle(context, metinHam)?.let { return KomutSonucu.Cevap(it) }
+        // Read-only hardware/status commands stay deterministic and offline.
         PhoneSystemCommands.handle(context, metinHam)?.let { return KomutSonucu.Cevap(it) }
 
         // حافظه فقط برای اطلاعاتی است که کاربر عمداً می‌خواهد نگه داریم.

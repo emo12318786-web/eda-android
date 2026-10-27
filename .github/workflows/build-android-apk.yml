@@ -6,7 +6,7 @@ on:
       - "android-app/**"
       - ".github/workflows/**"
   push:
-    branches: [ main, eda-v5-native-gemma-runtime, eda-fix-long-prompt-crash, eda-14-models-visual-fix ]
+    branches: [ main, eda-v5-native-gemma-runtime, eda-fix-long-prompt-crash, eda-14-models-visual-fix, eda-jarvis-harness-theme-final ]
     paths:
       - "android-app/**"
       - ".github/workflows/**"

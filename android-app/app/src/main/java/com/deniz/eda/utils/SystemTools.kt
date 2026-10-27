@@ -70,6 +70,10 @@ Kullanıcı şu tür sorular sorarsa, sadece <TOOL>ADI</TOOL> yaz:
 - Kullanıcı açıkça seçili metin alanına verdiği metni yazmamı isterse → <TOOL>SCREEN_TYPE: yazılacak metin</TOOL>
 - Kullanıcı ekranı yukarı/aşağı kaydırmamı isterse → <TOOL>SCREEN_SCROLL_UP</TOOL> / <TOOL>SCREEN_SCROLL_DOWN</TOOL>
 - Kullanıcı geri, ana ekran veya bildirim panelini isterse → <TOOL>SCREEN_BACK</TOOL> / <TOOL>SCREEN_HOME</TOOL> / <TOOL>SCREEN_NOTIFICATIONS</TOOL>
+- Kullanıcı açıkça son uygulamaları görmek isterse → <TOOL>SCREEN_RECENTS</TOOL>
+- Kullanıcı açıkça hızlı ayar panelini açmak isterse → <TOOL>SCREEN_QUICK_SETTINGS</TOOL>
+- Kullanıcı açıkça Android güç menüsünü göstermek isterse → <TOOL>SCREEN_POWER_DIALOG</TOOL>
+- Kullanıcı açıkça Android ekran görüntüsü eylemini isterse → <TOOL>SCREEN_TAKE_SCREENSHOT</TOOL>
 - Ekran araçları için Android erişilebilirlik hizmeti kullanıcı tarafından önceden etkinleştirilmiş olmalı. Önce ekranı oku, sonra yalnızca istenen işlemi yap ve tekrar okuyarak sonucu doğrula. Bankacılık, kimlik doğrulama, parola, ödeme, para transferi, mesaj gönderme, satın alma veya silme işlemlerini tamamlama; son onayı kullanıcıya bırak.
 
 ÖRNEK:
@@ -115,6 +119,10 @@ Sen: Merhaba ${Settings.kullaniciAdi}, iyiyim. Sen nasılsın?
                 "SCREEN_BACK" -> com.deniz.eda.phone.PhoneControlService.run("back")
                 "SCREEN_HOME" -> com.deniz.eda.phone.PhoneControlService.run("home")
                 "SCREEN_NOTIFICATIONS" -> com.deniz.eda.phone.PhoneControlService.run("notifications")
+                "SCREEN_RECENTS" -> com.deniz.eda.phone.PhoneControlService.run("recents")
+                "SCREEN_QUICK_SETTINGS" -> com.deniz.eda.phone.PhoneControlService.run("quick_settings")
+                "SCREEN_POWER_DIALOG" -> com.deniz.eda.phone.PhoneControlService.run("power_dialog")
+                "SCREEN_TAKE_SCREENSHOT" -> com.deniz.eda.phone.PhoneControlService.run("screenshot")
                 "SAVE_MEMORY" -> arguments.trim().takeIf { it.isNotBlank() }?.let {
                     MemoryStore.ekle(context, it, "agent")
                     "Bilgi hafızaya kaydedildi."

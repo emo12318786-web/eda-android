@@ -558,9 +558,16 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                             phoneScreenText = phoneControlStatus
                         }, modifier = Modifier.weight(1f)) { Text("Güç menüsü") }
                         OutlinedButton(onClick = {
-                            phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("screenshot")
-                            phoneControlStatus += "\n" + com.deniz.eda.phone.PhoneControlService.run("vision")
-                            phoneScreenText = phoneControlStatus
+                            phoneControlStatus = "Ekran görüntüsü isteği gönderildi; görsel okuma hazırlanıyor…"
+                            chatScope.launch {
+                                val (actionResult, visualText) = withContext(Dispatchers.IO) {
+                                    val action = com.deniz.eda.phone.PhoneControlService.run("screenshot")
+                                    delay(500)
+                                    action to com.deniz.eda.phone.PhoneControlService.run("vision")
+                                }
+                                phoneControlStatus = actionResult
+                                phoneScreenText = visualText
+                            }
                         }, modifier = Modifier.weight(1f)) { Text("Ekran görüntüsü") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("lock_screen")
