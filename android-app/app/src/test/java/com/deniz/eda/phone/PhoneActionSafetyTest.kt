@@ -31,6 +31,15 @@ class PhoneActionSafetyTest {
     }
 
     @Test
+    fun blocksAdditionalPersianAndTurkishFinancialActions() {
+        assertTrue(PhoneActionSafety.isDangerousTarget("Mesaj gönder"))
+        assertTrue(PhoneActionSafety.isDangerousTarget("Ödemeyi tamamla"))
+        assertTrue(PhoneActionSafety.isDangerousTarget("ارسال پیام"))
+        assertTrue(PhoneActionSafety.isSensitiveScreen("کارت بانکی - شماره کارت"))
+        assertFalse(PhoneActionSafety.isSensitiveScreen("Ayarlar ve bildirimler"))
+    }
+
+    @Test
     fun detectsPasswordAndOneTimeCodeFields() {
         assertTrue(PhoneActionSafety.isSensitiveField("Password"))
         assertTrue(PhoneActionSafety.isSensitiveField("SMS doğrulama kodu"))
