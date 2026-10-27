@@ -17,6 +17,9 @@ object PhoneTaskRouter {
         .replace('ü', 'u').replace('ö', 'o').replace('ç', 'c')
         .replace('ə', 'e').replace(Regex("\\s+"), " ").trim()
 
+    private fun hasTapVerb(normalized: String): Boolean =
+        Regex("""\\b(dokun|toxun|tikla|bas|sec)\\b""").containsMatchIn(normalized)
+
     // Screen capture/OCR can wait for Android callbacks; keep that work off the voice/UI thread.
     private suspend fun runScreenAction(action: String, argument: String = ""): String =
         withContext(Dispatchers.IO) { PhoneControlService.run(action, argument) }
@@ -39,7 +42,7 @@ object PhoneTaskRouter {
             "ekrandaki metne dokun", "ekrandaki metne toxun", "ekrandaki ogeye dokun",
             "ekrandaki dugmeye bas", "ekrandaki yaziyi sec"
         ).any { q.contains(it) } ||
-            (quotedTarget(raw) != null && listOf("dokun", "toxun", "tikla", "bas", "sec").any { q.contains(it) })
+            (quotedTarget(raw) != null && hasTapVerb(q))
     }
 
     suspend fun tryHandle(context: Context, spoken: String): String? {
@@ -52,7 +55,7 @@ object PhoneTaskRouter {
         }
 
         val tapTarget = quotedTarget(raw)
-        val tapVerb = listOf("dokun", "toxun", "tikla", "bas", "sec").any { q.contains(it) }
+        val tapVerb = hasTapVerb(q)
 
         return try {
             when {
