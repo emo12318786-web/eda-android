@@ -129,11 +129,11 @@ fun ThroneDashboardScreen(viewModel: DashboardViewModel, onAction: (String) -> U
             // ۶ دکمه مربعی (گرید)
             val buttons = listOf(
                 Triple("Sohbet", Icons.Default.Chat, "ACTION_SOHBET"),
-                Triple("Kontrol", Icons.Default.Build, "ACTION_KONTROL"),
+                Triple("Kontrol", Icons.Default.Settings, "ACTION_KONTROL"),
                 Triple("Mesaj", Icons.Default.Email, "ACTION_MESAJ"),
                 Triple("Telefon", Icons.Default.Phone, "ACTION_TELEFON"),
                 Triple("Konum", Icons.Default.LocationOn, "ACTION_KONUM"),
-                Triple("Uygulamalar", Icons.Default.Apps, "ACTION_UYGULAMALAR")
+                Triple("Uygulamalar", Icons.Default.List, "ACTION_UYGULAMALAR")
             )
 
             // Grid چیدمان 3x2

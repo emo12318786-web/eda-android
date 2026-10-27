@@ -1,5 +1,7 @@
 package com.deniz.eda.ui
 
+import com.deniz.eda.ui.theme.EdaTheme
+
 import android.Manifest
 import android.content.Intent
 import android.os.Build
