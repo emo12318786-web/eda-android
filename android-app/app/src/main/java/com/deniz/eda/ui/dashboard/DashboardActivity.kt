@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -128,7 +129,7 @@ fun ThroneDashboardScreen(viewModel: DashboardViewModel, onAction: (String) -> U
 
             // ۶ دکمه مربعی (گرید)
             val buttons = listOf(
-                Triple("Sohbet", Icons.Default.Chat, "ACTION_SOHBET"),
+                Triple("Sohbet", Icons.Default.Email, "ACTION_SOHBET"),
                 Triple("Kontrol", Icons.Default.Settings, "ACTION_KONTROL"),
                 Triple("Mesaj", Icons.Default.Email, "ACTION_MESAJ"),
                 Triple("Telefon", Icons.Default.Phone, "ACTION_TELEFON"),
@@ -177,7 +178,7 @@ fun ThroneDashboardScreen(viewModel: DashboardViewModel, onAction: (String) -> U
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // به جای عکس کلاغ، از یه آیکون یا متن استفاده می‌کنیم
-                    Text("\"Korkma... ben buradayım...\"", color = Color(0xFFFF243D), fontSize = 16.sp, fontWeight = FontWeight.Italic)
+                    Text("\"Korkma... ben buradayım...\"", color = Color(0xFFFF243D), fontSize = 16.sp, fontStyle = FontStyle.Italic)
                 }
             }
 
