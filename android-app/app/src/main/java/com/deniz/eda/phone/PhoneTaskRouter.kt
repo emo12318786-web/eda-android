@@ -19,14 +19,18 @@ object PhoneTaskRouter {
         val raw = spoken.trim()
         val q = norm(raw)
         val phoneIntent = listOf(
-            "ekrani oku", "ekranda ne yaziyor",
-            "asagi kaydir", "asagi in", "yukari kaydir", "yukari cik",
-            "bildirimleri ac", "bildirim panelini ac", "hizli ayarlari ac",
-            "geri git", "geri don", "ana ekrana don", "son uygulamalari ac",
+            "ekrani oku", "ekranda ne yaziyor", "ekranda ne yazilir", "ekranda ne gorunur",
+            "ekrani oxu", "ekraninda ne var", "telefon ekranini oxu",
+            "asagi kaydir", "asagi in", "asagi surusdur", "asagi surukle",
+            "yukari kaydir", "yukari cik", "yukari surusdur", "yukari qalx",
+            "bildirimleri ac", "bildirisleri ac", "bildirim panelini ac",
+            "hizli ayarlari ac", "tez ayarlari ac",
+            "geri git", "geri don", "geri qayit", "ana ekrana don", "ana sehifeye qayit",
+            "son uygulamalari ac", "son proqramlari ac",
             "ekrandaki metni oku", "telefon ekranini oku",
-            "ekrandaki metne dokun", "ekrandaki ogeye dokun",
+            "ekrandaki metne dokun", "ekrandaki metne toxun", "ekrandaki ogeye dokun",
             "ekrandaki dugmeye bas", "ekrandaki yaziyi sec"
-        ).any { q.contains(it) } || (quotedTarget(raw) != null && listOf("dokun", "tikla", "bas", "sec").any { q.contains(it) })
+        ).any { q.contains(it) } || (quotedTarget(raw) != null && listOf("dokun", "toxun", "tikla", "bas", "sec").any { q.contains(it) })
         if (!phoneIntent) return null
 
         if (!PhoneControlService.isEnabled()) {
@@ -35,12 +39,12 @@ object PhoneTaskRouter {
 
         return try {
             when {
-                q.contains("bildirim") -> PhoneControlService.run("notifications")
-                q.contains("hizli ayar") -> PhoneControlService.run("quick_settings")
-                q.contains("ana ekrana") -> PhoneControlService.run("home")
-                q.contains("son uygulama") -> PhoneControlService.run("recents")
-                q.contains("geri git") || q.contains("geri don") -> PhoneControlService.run("back")
-                q.contains("asagi kaydir") || q.contains("asagi in") -> {
+                q.contains("bildirim") || q.contains("bildiris") -> PhoneControlService.run("notifications")
+                q.contains("hizli ayar") || q.contains("tez ayar") -> PhoneControlService.run("quick_settings")
+                q.contains("ana ekrana") || q.contains("ana sehif") -> PhoneControlService.run("home")
+                q.contains("son uygulama") || q.contains("son proqram") -> PhoneControlService.run("recents")
+                q.contains("geri git") || q.contains("geri don") || q.contains("geri qayit") -> PhoneControlService.run("back")
+                q.contains("asagi kaydir") || q.contains("asagi in") || q.contains("asagi surusdur") || q.contains("asagi surukle") -> {
                     val action = PhoneControlService.run("down")
                     delay(350)
                     if (q.contains("oku") || q.contains("ne yaziyor")) {
@@ -48,9 +52,10 @@ object PhoneTaskRouter {
                         "$action\nEkranda görünenler:\n${screenText.take(1100)}"
                     } else action
                 }
-                q.contains("yukari kaydir") || q.contains("yukari cik") -> PhoneControlService.run("up")
-                q.contains("ekrani oku") || q.contains("ekranda ne yaziyor") ||
-                    q.contains("ekrandaki metni oku") || q.contains("telefon ekranini oku") -> {
+                q.contains("yukari kaydir") || q.contains("yukari cik") || q.contains("yukari surusdur") || q.contains("yukari qalx") -> PhoneControlService.run("up")
+                q.contains("ekrani oku") || q.contains("ekranda ne yaziyor") || q.contains("ekranda ne yazilir") ||
+                    q.contains("ekranda ne gorunur") || q.contains("ekrani oxu") || q.contains("ekraninda ne var") ||
+                    q.contains("telefon ekranini oku") || q.contains("telefon ekranini oxu") || q.contains("ekrandaki metni oku") -> {
                     val text = PhoneControlService.run("read")
                     if (text.contains("okunabilen metin bulunamadı") || text.contains("Ekran okunamadı")) {
                         val visual = PhoneControlService.run("vision")
