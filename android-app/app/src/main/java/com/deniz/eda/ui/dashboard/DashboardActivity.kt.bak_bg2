@@ -1,0 +1,384 @@
+package com.deniz.eda.ui.dashboard
+
+import com.deniz.eda.core.Settings
+
+import android.content.Intent
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import com.deniz.eda.service.EdaForegroundService
+
+private val VoidBlack = Color(0xFF050506)
+private val Panel = Color(0xFF121015)
+private val PanelRaised = Color(0xFF1A1015)
+private val Violet = Color(0xFFFF243D)
+private val Cyan = Color(0xFF8F071A)
+private val Muted = Color(0xFFB9ADB2)
+private val Good = Color(0xFFFF243D)
+private val Warn = Color(0xFFFFC36E)
+private val Bad = Color(0xFFFF243D)
+
+class DashboardActivity : ComponentActivity() {
+    private var pendingStartAction: String? = null
+    private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val action = pendingStartAction
+        pendingStartAction = null
+        if (granted && action != null) sendAction(action)
+        else if (!granted) android.widget.Toast.makeText(this, "Eda için mikrofon izni gerekli.", android.widget.Toast.LENGTH_LONG).show()
+    }
+    private val viewModel: DashboardViewModel by viewModels()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        Settings.init(this)
+        viewModel.yenile()
+        setContent {
+            EdaTheme(colorScheme = darkColorScheme(
+                primary = Violet, secondary = Cyan, background = VoidBlack, surface = Panel,
+                onBackground = Color.White, onSurface = Color.White
+            )) {
+                EdaDashboard(
+                    viewModel = viewModel,
+                    onAction = { action -> sendAction(action) },
+                    onShareLog = { com.deniz.eda.utils.EdaLog.share(this) }
+                )
+            }
+        }
+    }
+
+    private fun sendAction(action: String) {
+        // Request runtime microphone permission before any action that starts listening.
+        if ((action == "ACTION_AKTIF" || action == "ACTION_BASLAT") &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            pendingStartAction = action
+            micPermission.launch(Manifest.permission.RECORD_AUDIO)
+            return
+        }
+        when (action) {
+            "ACTION_SETTINGS" -> { startActivity(Intent(this, com.deniz.eda.ui.SettingsActivity::class.java)); return }
+            "ACTION_AI_GROQ" -> viewModel.setAiProvider("groq")
+            "ACTION_AI_POLLINATIONS" -> viewModel.setAiProvider("pollinations")
+            "ACTION_AI_OLLAMA" -> viewModel.setAiProvider("ollama")
+            else -> {
+                val intent = Intent(this, EdaForegroundService::class.java).apply { this.action = action }
+                if (action == "ACTION_AKTIF" && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    startForegroundService(intent)
+                } else {
+                    startService(intent)
+                }
+            }
+        }
+        viewModel.yenile()
+    }
+}
+
+@Composable
+private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Unit, onShareLog: () -> Unit) {
+    val state by viewModel.state.collectAsState()
+    var selectedTab by remember { mutableStateOf(0) }
+    // Use observable dashboard state; Compose cannot observe mutable Settings directly.
+    val active = state.mod == "AKTIF"
+    val sleeping = state.mod == "UYKU"
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(3_000)
+            viewModel.yenile()
+        }
+    }
+    val statusColor = when {
+        active -> Good
+        sleeping -> Warn
+        else -> Bad
+    }
+
+    Scaffold(
+        containerColor = VoidBlack,
+        bottomBar = {
+            NavigationBar(containerColor = Panel, contentColor = Violet) {
+                NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 },
+                    icon = { Text("◈", fontSize = 20.sp) }, label = { Text("Merkez") })
+                NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 },
+                    icon = { Text("⌘", fontSize = 20.sp) }, label = { Text("Kontrol") })
+                NavigationBarItem(selected = selectedTab == 2, onClick = { selectedTab = 2 },
+                    icon = { Text("◉", fontSize = 20.sp) }, label = { Text("Sistem") })
+            }
+        }
+    ) { padding ->
+        Column(
+            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
+                .padding(horizontal = 18.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                // EDA monogram: luminous double-tone ring and signature dot.
+                Box(
+                    Modifier.size(54.dp).background(
+                        Brush.linearGradient(listOf(Color(0xFF2A0005), Color(0xFF140002))), CircleShape
+                    ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize().padding(2.dp),
+                        shape = CircleShape,
+                        color = Color.Transparent,
+                        border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(Violet, Cyan)))
+                    ) {}
+                    Text("E", color = Color.White, fontSize = 29.sp, fontWeight = FontWeight.Black)
+                    Box(Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 8.dp)
+                        .size(6.dp).background(Cyan, CircleShape))
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("EDA", fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
+                    Text("KİŞİSEL ASİSTAN • V5", fontSize = 9.sp, color = Muted, letterSpacing = 1.4.sp)
+                }
+                Text("⚙", modifier = Modifier.clickable { onAction("ACTION_SETTINGS") }.padding(8.dp), color = Violet, fontSize = 24.sp)
+                Surface(shape = RoundedCornerShape(50), color = statusColor.copy(alpha = 0.12f),
+                    border = BorderStroke(1.dp, statusColor.copy(alpha = 0.5f))) {
+                    Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(7.dp).background(statusColor, CircleShape))
+                        Spacer(Modifier.width(6.dp))
+                        Text(if (active) "AKTİF" else if (sleeping) "UYKU" else "KAPALI",
+                            color = statusColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            if (selectedTab == 0) {
+                HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
+                SectionHeader("CANLI DURUM", "Telefon ve Eda’nın durumu")
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    MetricCard("BATARYA", "⚡", "${state.pilYuzde}%", state.pilDurum,
+                        if (state.pilYuzde <= 20) Bad else Good, Modifier.weight(1f))
+                    MetricCard("BAĞLANTI", "⌁", if (state.internetStatus) "Bağlı" else "Bağlı değil",
+                        "Ağ bağlantısı", if (state.internetStatus) Cyan else Warn, Modifier.weight(1f))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıtlı bilgi", Violet, Modifier.weight(1f))
+                    MetricCard("HATIRLATICI", "◷", state.hatirlatmaSayi.toString(), "bekleyen hatırlatma", Warn, Modifier.weight(1f))
+                }
+                SectionHeader("YAPAY ZEKÂ", "Öncelikli sağlayıcı")
+                ProviderPanel(state.aiSaglayici, onAction)
+                SectionHeader("SON HAREKETLER", "Eda’nın son kayıtları")
+                LogsPanel(state.sonLoglar)
+            } else if (selectedTab == 1) {
+                HeroMini("KONTROL", "Eda’nın çalışma durumunu buradan yönet.")
+                SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
+                ControlTile("▶", "Eda’yı başlat", "Eda’yı dinlemeye hazır hâle getir", Good) { onAction("ACTION_AKTIF") }
+                ControlTile("☾", "Uyku moduna al", "Uyandırma kelimesiyle yeniden etkinleşir", Cyan) { onAction("ACTION_UYKU") }
+                ControlTile("■", "Eda'yı durdur", "Arka plan servisini kapat", Bad) { onAction("ACTION_STOP") }
+                SectionHeader("ÖZEL MODLAR", "Sesli komutla güvenli kontrol")
+                InfoNotice("🚘  Araba modu", "Eda'ya “araba modunu aç” diyebilirsin. Bu panel mevcut durumu gösterir.")
+                InfoNotice("🛡  Güvenlik modu", "Eda’ya “güvenlik modunu aç” diyerek etkinleştirebilirsin.")
+                InfoNotice("🎙  Sesli kullanım", "Eda aktifken “Eda” diye seslenip ardından isteğini söyle.")
+            } else {
+                HeroMini("SİSTEM DURUMU", "Bağlantıları ve kayıtlarını buradan kontrol et.")
+                SectionHeader("YAPAY ZEKÂ BAĞLANTILARI", "Son bağlantı kontrolünün sonucu")
+                StatusLine("🌐 İnternet", if (state.internetStatus) "Bağlı" else "Bağlı değil", state.internetStatus)
+                StatusLine("💎 Gemma Native", state.ollamaStatus, state.ollamaStatus.contains("hazır", true) && !state.ollamaStatus.contains("yok", true))
+                StatusLine("⚡ Groq", state.groqStatus, state.groqStatus.contains("bağlı", true) && !state.groqStatus.contains("yok", true))
+                StatusLine("🌸 Pollinations", state.pollinationsStatus, state.pollinationsStatus.contains("açık", true) || state.pollinationsStatus.contains("çalışıyor", true))
+                SectionHeader("KAYITLARIN", "Bu telefonda saklanan bilgiler")
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıt", Violet, Modifier.weight(1f))
+                    MetricCard("GÜNLÜK", "▤", state.gunlukSayi.toString(), "kayıt", Cyan, Modifier.weight(1f))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    MetricCard("HATIRLATMA", "◷", state.hatirlatmaSayi.toString(), "bekleyen", Warn, Modifier.weight(1f))
+                    MetricCard("LOG", "≋", state.logSayi.toString(), "kayıt", Good, Modifier.weight(1f))
+                }
+                SectionHeader("ARAÇLAR", "Sistem işlemleri")
+                Button(onClick = { viewModel.yenile() }, modifier = Modifier.fillMaxWidth().height(52.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻   Durumu yeniden kontrol et") }
+                Button(onClick = onShareLog, modifier = Modifier.fillMaxWidth().height(52.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("⇧   Tanılama kayıtlarını paylaş") }
+                LogsPanel(state.sonLoglar)
+            }
+            Text("EDA • YARDIMA HAZIR", Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 14.dp),
+                color = Muted, fontSize = 9.sp, letterSpacing = 2.sp, textAlign = TextAlign.Center)
+        }
+    }
+}
+
+@Composable
+private fun HeroPanel(name: String, time: String, date: String, status: Color, active: Boolean, sleeping: Boolean, onAction: (String) -> Unit) {
+    Box(Modifier.fillMaxWidth().background(
+        Brush.linearGradient(listOf(Color(0xFF2A0005), Color(0xFF1A0003), Color(0xFF140002))),
+        RoundedCornerShape(26.dp)
+    ).padding(20.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("MERHABA, ${name.uppercase()}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+            Text("Ben Eda.\nBuradayım.", fontSize = 31.sp, lineHeight = 36.sp,
+                fontWeight = FontWeight.Bold, color = Color.White)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(time, fontSize = 22.sp, color = Cyan, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.width(10.dp))
+                Text("•  $date", fontSize = 10.sp, color = Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+            Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                Button(onClick = { onAction("ACTION_AKTIF") }, modifier = Modifier.weight(1f).height(48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = if (active) Good.copy(alpha = .2f) else Violet),
+                    shape = RoundedCornerShape(15.dp)) {
+                    Text(if (active) "✓  Dinliyorum" else "▶  Eda'yı uyandır",
+                        color = if (active) Good else VoidBlack, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                }
+                OutlinedButton(onClick = { onAction("ACTION_UYKU") }, modifier = Modifier.weight(.72f).height(48.dp),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = .18f)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                    shape = RoundedCornerShape(15.dp)) { Text(if (sleeping) "☾  Uyuyor" else "☾  Uyku", fontSize = 11.sp) }
+            }
+            Text("“Eda” de, konuşmaya başlayalım.", color = Color.White.copy(alpha = .68f), fontSize = 11.sp)
+        }
+    }
+}
+
+@Composable
+private fun HeroMini(title: String, subtitle: String) {
+    Column(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Color(0xFF2A0005), Panel)),
+        RoundedCornerShape(22.dp)).padding(20.dp)) {
+        Text(title, color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        Text(subtitle, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String, subtitle: String) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
+            Spacer(Modifier.height(3.dp))
+            Text(subtitle, color = Muted, fontSize = 11.sp)
+        }
+        Box(Modifier.width(44.dp).height(2.dp).background(Brush.horizontalGradient(listOf(Violet, Cyan)), RoundedCornerShape(2.dp)))
+    }
+}
+
+@Composable
+private fun MetricCard(label: String, icon: String, value: String, detail: String, tint: Color, modifier: Modifier = Modifier) {
+    Card(modifier, shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Panel)) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(icon, color = tint, fontSize = 17.sp)
+                Spacer(Modifier.width(7.dp))
+                Text(label, color = Muted, fontSize = 9.sp, letterSpacing = .8.sp, fontWeight = FontWeight.Bold)
+            }
+            Text(value, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(detail, color = tint, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+@Composable
+private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
+    val main = selected.split(" → ").firstOrNull().orEmpty()
+    Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(20.dp)).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("Öncelik zinciri", color = Muted, fontSize = 10.sp)
+        Text(selected, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("Groq", "Pollinations", "Ollama").forEach { provider ->
+                val action = when (provider) {
+                    "Groq" -> "ACTION_AI_GROQ"
+                    "Pollinations" -> "ACTION_AI_POLLINATIONS"
+                    else -> "ACTION_AI_OLLAMA"
+                }
+                val isSelected = main.contains(provider, true)
+                OutlinedButton(onClick = { onAction(action) }, modifier = Modifier.weight(1f),
+                    border = BorderStroke(1.dp, if (isSelected) Violet else Color(0xFF3A0A12)),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = if (isSelected) Violet.copy(alpha = .16f) else PanelRaised),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(12.dp)) {
+                    Text(provider, color = if (isSelected) Violet else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ControlTile(icon: String, title: String, detail: String, tint: Color, onClick: () -> Unit) {
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Panel)) {
+        Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(44.dp).background(tint.copy(alpha = .12f), RoundedCornerShape(14.dp)),
+                contentAlignment = Alignment.Center) { Text(icon, color = tint, fontSize = 21.sp) }
+            Spacer(Modifier.width(13.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+                Text(detail, color = Muted, fontSize = 10.sp)
+            }
+            Text("›", color = tint, fontSize = 24.sp)
+        }
+    }
+}
+
+@Composable
+private fun InfoNotice(title: String, detail: String) {
+    Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(16.dp)).padding(15.dp)) {
+        Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        Spacer(Modifier.height(5.dp))
+        Text(detail, color = Muted, fontSize = 11.sp, lineHeight = 16.sp)
+    }
+}
+
+@Composable
+private fun StatusLine(name: String, status: String, ok: Boolean) {
+    Row(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(14.dp)).padding(13.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(8.dp).background(if (ok) Good else Warn, CircleShape))
+        Spacer(Modifier.width(11.dp))
+        Column(Modifier.weight(1f)) {
+            Text(name, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Text(status, color = Muted, fontSize = 10.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
+        Text(if (ok) "OK" else "—", color = if (ok) Good else Warn, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun LogsPanel(logs: List<String>) {
+    Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(18.dp)).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (logs.isEmpty()) {
+            Text("Henüz kayıt yok. Eda'yı kullandıkça burada görünecek.", color = Muted, fontSize = 11.sp)
+        } else {
+            logs.take(8).forEachIndexed { index, log ->
+                Row(verticalAlignment = Alignment.Top) {
+                    Text("•", color = if (index == 0) Cyan else Violet, fontSize = 16.sp)
+                    Spacer(Modifier.width(8.dp))
+                    Text(log, color = if (index == 0) Color.White else Muted, fontSize = 10.sp,
+                        lineHeight = 15.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}

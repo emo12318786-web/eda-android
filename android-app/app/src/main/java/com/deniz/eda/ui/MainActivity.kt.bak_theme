@@ -1,0 +1,244 @@
+package com.deniz.eda.ui
+
+import android.Manifest
+import android.content.Intent
+import android.os.Build
+import android.os.Bundle
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.deniz.eda.R
+import com.deniz.eda.core.CommandProcessor
+import com.deniz.eda.core.Settings
+import com.deniz.eda.health.HealthConnectManager
+import androidx.health.connect.client.PermissionController
+import com.deniz.eda.ui.dashboard.DashboardActivity
+import com.deniz.eda.service.EdaForegroundService
+import kotlinx.coroutines.launch
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var durumText: TextView
+    private lateinit var durumDeger: TextView
+    private lateinit var durumIndicator: android.view.View
+
+    private val izinIstegi = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { sonuclar ->
+        val mikrofonVar = sonuclar[Manifest.permission.RECORD_AUDIO] == true
+        if (mikrofonVar) {
+            servisiBaslat()
+        } else {
+            durumText.text = "⚠️ Mikrofon izni olmadan Eda çalışamaz."
+        }
+    }
+
+    // ═══ Health Connect ═══
+    private lateinit var healthManager: HealthConnectManager
+
+    private val healthPermissionLauncher = registerForActivityResult(
+        PermissionController.createRequestPermissionResultContract()
+    ) { granted ->
+        android.util.Log.i("EDA-Health", "✅ مجوزها: $granted")
+    }
+
+
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        Settings.init(this)
+        // ═══ Health Connect — درخواست دسترسی ═══
+        healthManager = HealthConnectManager(this)
+        CommandProcessor.initHealth(this)
+        
+        // ═══ یه بار cache رو پر کن (اولین بار) ═══
+        lifecycleScope.launch {
+            try {
+                val hr = healthManager.getLatestHeartRate(1440)
+                val sleep = healthManager.getLastNightSleepHours()
+                val steps = healthManager.getTodaySteps()
+                CommandProcessor.updateCache(hr, sleep, steps)
+                android.util.Log.i("EDA-Health", "Initial cache: HR=$hr, Sleep=$sleep, Steps=$steps")
+            } catch (e: Exception) {
+                android.util.Log.e("EDA-Health", "Initial cache error: ${e.message}")
+            }
+        }
+        
+        try {
+            android.util.Log.i("EDA-Health", "🔔 درخواست مجوز Health Connect")
+            healthPermissionLauncher.launch(healthManager.requiredPermissions)
+        } catch (e: Exception) {
+            android.util.Log.e("EDA-Health", "خطا: ${e.message}")
+        }
+
+
+        // ═══ همه مجوزهای ضروری — توی onCreate درخواست بشن ═══
+        val gerekliIzinler = mutableListOf<String>()
+
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.RECORD_AUDIO
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.RECORD_AUDIO)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.ACCESS_FINE_LOCATION
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.SEND_SMS
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.SEND_SMS)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.CAMERA
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.CAMERA)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.POST_NOTIFICATIONS
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                gerekliIzinler.add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        if (gerekliIzinler.isNotEmpty()) {
+            android.util.Log.i("MainActivity", "İzinler isteniyor: ${gerekliIzinler.size} adet")
+            androidx.core.app.ActivityCompat.requestPermissions(
+                this, gerekliIzinler.toTypedArray(), 2001
+            )
+        }
+
+        durumText = findViewById(R.id.durumText)
+        durumDeger = findViewById(R.id.durumDeger)
+        durumIndicator = findViewById(R.id.durumIndicator)
+
+        // ═══ چک کن از دکمه Asistan باز شده؟ ═══
+        val isAssist = intent?.action == Intent.ACTION_ASSIST ||
+                       intent?.action == "android.intent.action.VOICE_COMMAND"
+        if (isAssist) {
+            android.util.Log.d("MainActivity", "🎤 از دکمه Asistan باز شد")
+            Toast.makeText(this, "🎤 Eda aktif oluyor...", Toast.LENGTH_SHORT).show()
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                servisiBaslat()
+            }, 500)
+        }
+
+        // ═══ کلیک‌ها ═══
+        findViewById<android.view.View>(R.id.ayarlarButon).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+
+        findViewById<android.widget.Button>(R.id.baslatButon).setOnClickListener {
+            // اگه permission داده شده، مستقیم start کن
+            val mikrofonVar = androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.RECORD_AUDIO
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+            if (mikrofonVar) {
+                servisiBaslat()
+            } else {
+                izinleriKontrolEt()
+            }
+        }
+
+        findViewById<android.widget.Button>(R.id.durdurButon).setOnClickListener {
+            servisiDurdur()
+        }
+
+        findViewById<android.widget.Button>(R.id.panelButon).setOnClickListener {
+            startActivity(Intent(this, DashboardActivity::class.java))
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        durumGuncelle()
+    }
+
+    private fun durumGuncelle() {
+        when (Settings.sonMod) {
+            "AKTIF" -> {
+                durumText.text = "✅ Eda çalışıyor - 'Eda' de ve dinlemeye başlasın"
+                durumDeger.text = "Aktif"
+                durumDeger.setTextColor(0xFF10B981.toInt())
+                durumIndicator.setBackgroundColor(0xFF10B981.toInt())
+            }
+            "UYKU" -> {
+                durumText.text = "💤 Eda uyku modunda"
+                durumDeger.text = "Uyku"
+                durumDeger.setTextColor(0xFF60A5FA.toInt())
+                durumIndicator.setBackgroundColor(0xFF60A5FA.toInt())
+            }
+            else -> {
+                durumText.text = "💤 Servis çalışmıyor"
+                durumDeger.text = "Kapalı"
+                durumDeger.setTextColor(0xFFEF4444.toInt())
+                durumIndicator.setBackgroundColor(0xFFEF4444.toInt())
+            }
+        }
+    }
+
+    private fun izinleriKontrolEt() {
+        val gerekliIzinler = mutableListOf(
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.CAMERA
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            gerekliIzinler.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        izinIstegi.launch(gerekliIzinler.toTypedArray())
+    }
+
+    private fun servisiBaslat() {
+        // اول سرویس قبلی رو متوقف کن
+        try {
+            stopService(Intent(this, EdaForegroundService::class.java))
+        } catch (e: Exception) {}
+
+        // بعد سرویس جدید
+        val intent = Intent(this, EdaForegroundService::class.java).apply {
+            action = "ACTION_BASLAT"
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
+
+        Settings.sonMod = "AKTIF"
+        Toast.makeText(this, "✅ Eda başlatıldı", Toast.LENGTH_SHORT).show()
+
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            durumGuncelle()
+        }, 500)
+    }
+
+    private fun servisiDurdur() {
+        stopService(Intent(this, EdaForegroundService::class.java))
+        Settings.sonMod = "KAPALI"
+        Toast.makeText(this, "⏹ Eda durduruldu", Toast.LENGTH_SHORT).show()
+
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            durumGuncelle()
+        }, 500)
+    }
+}
