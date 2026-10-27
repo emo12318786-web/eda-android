@@ -117,7 +117,7 @@ fun ThroneDashboardScreen(viewModel: DashboardViewModel, onAction: (String) -> U
                 Box(modifier = Modifier.size(120.dp).background(Color(0xFFFF243D).copy(alpha = 0.2f), CircleShape))
                 Box(modifier = Modifier.size(90.dp).background(Color(0xFF050506), CircleShape)) // داخل مشکی
                 Icon(
-                    imageVector = Icons.Default.Mic,
+                    imageVector = Icons.Default.Call,
                     contentDescription = "Mikrofon",
                     tint = Color(0xFFFF243D),
                     modifier = Modifier.size(48.dp)
