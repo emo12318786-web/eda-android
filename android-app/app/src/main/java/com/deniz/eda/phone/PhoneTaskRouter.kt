@@ -51,52 +51,62 @@ object PhoneTaskRouter {
             return "Telefon ekranına erişmek için EDA'nın Erişilebilirlik iznini bir kez açmalısın. Sonra bu komutları doğrudan Eda'ya söyleyebilirsin; ayrı kontrol sayfasını açman gerekmez."
         }
 
+        val tapTarget = quotedTarget(raw)
+        val tapVerb = listOf("dokun", "toxun", "tikla", "bas", "sec").any { q.contains(it) }
+
         return try {
             when {
+                // A quoted tap target outranks navigation keyword matches inside the target label.
+                tapVerb -> {
+                    val target = tapTarget
+                        ?: return "Hangi metne dokunmamı istediğini tırnak içinde söyle. Örnek: Eda, ekrandaki metne dokun: «Ayarlar»."
+                    tapAndVerify(target)
+                }
                 q.contains("bildirim") || q.contains("bildiris") -> runScreenAction("notifications")
                 q.contains("hizli ayar") || q.contains("tez ayar") -> runScreenAction("quick_settings")
                 q.contains("ana ekrana") || q.contains("ana sehif") -> runScreenAction("home")
                 q.contains("son uygulama") || q.contains("son proqram") -> runScreenAction("recents")
                 q.contains("geri git") || q.contains("geri don") || q.contains("geri qayit") -> runScreenAction("back")
-                q.contains("asagi kaydir") || q.contains("asagi in") || q.contains("asagi surusdur") || q.contains("asagi surukle") -> {
+                q.contains("asagi kaydir") || q.contains("asagi in") || q.contains("asagi surusdur") || q.contains("asagi surukle") || q.contains("asagi cek") -> {
                     val action = runScreenAction("down")
                     delay(350)
                     if (q.contains("oku") || q.contains("oxu") || q.contains("ne yaziyor") || q.contains("ne yazilir") || q.contains("ne gorunur")) {
                         val screenText = runScreenAction("read")
-                        "$action\nEkranda görünenler:\n${screenText.take(1100)}"
+                        "Kaydırma sonucu: $action\nEkranda görünenler:\n${screenText.take(1100)}"
                     } else action
                 }
-                q.contains("yukari kaydir") || q.contains("yukari cik") || q.contains("yukari surusdur") || q.contains("yukari qalx") || q.contains("yuxari surusdur") || q.contains("yuxari qalx") -> runScreenAction("up")
+                q.contains("yukari kaydir") || q.contains("yukari cik") || q.contains("yukari surusdur") || q.contains("yukari qalx") || q.contains("yuxari surusdur") || q.contains("yuxari qalx") || q.contains("yuxari cek") -> runScreenAction("up")
                 q.contains("ekrani oku") || q.contains("ekranda ne yaziyor") || q.contains("ekranda ne yazilir") ||
                     q.contains("ekranda ne gorunur") || q.contains("ekrani oxu") || q.contains("ekraninda ne var") ||
-                    q.contains("telefon ekranini oku") || q.contains("telefon ekranini oxu") || q.contains("ekrandaki metni oku") -> {
+                    q.contains("ekrana bax") || q.contains("telefon ekranini oku") || q.contains("telefon ekranini oxu") ||
+                    q.contains("ekrandaki metni oku") || q.contains("ekrandaki yazilari oxu") -> {
                     val text = runScreenAction("read")
-                    if (text.contains("okunabilen metin bulunamadı") || text.contains("Ekran okunamadı")) {
+                    if (text.contains("okunabilen metin bulunamadı", ignoreCase = true) || text.contains("Ekran okunamadı", ignoreCase = true)) {
                         val visual = runScreenAction("vision")
                         "Erişilebilir metin bulunamadı. Görsel okuma sonucu:\n${visual.take(1100)}"
                     } else "Ekranda görünenler:\n${text.take(1400)}"
                 }
-                else -> {
-                    val target = quotedTarget(raw)
-                        ?: return "Hangi metne dokunmamı istediğini tırnak içinde söyle. Örnek: Eda, ekrandaki metne dokun ve hedefi tırnak içinde belirt."
-                    // Match the Phone Harness pattern: accessible-label tap first, OCR fallback second.
-                    val accessibleResult = runScreenAction("tap", target)
-                    val tapResult = if (accessibleResult.contains("Erişilebilirlik ağacında")) {
-                        runScreenAction("tap_visual", target)
-                    } else accessibleResult
-                    val tapWasSent = tapResult.contains("öğesine dokunuldu", ignoreCase = true) ||
-                        tapResult.contains("görsel dokunma gönderildi", ignoreCase = true)
-                    if (tapWasSent) {
-                        delay(500)
-                        val updatedScreen = runScreenAction("read")
-                        "Dokunma sonucu: $tapResult\nGüncel ekran metni:\n${updatedScreen.take(800)}"
-                    } else tapResult
-                }
+                else -> "Telefon ekranında hangi işlemi istediğini net söyle. Örnek: ekranı oku, aşağı kaydır, bildirimleri aç veya «Ayarlar» metnine dokun."
             }
         } catch (e: Exception) {
             android.util.Log.e("EDA-PhoneTask", "Voice phone action failed", e)
             "Telefon işlemi tamamlanamadı. Ekran kontrol iznini ve ekrandaki metni kontrol et."
         }
+    }
+
+    private suspend fun tapAndVerify(target: String): String {
+        // Match Phone Harness behavior: accessible-label tap first, OCR fallback second.
+        val accessibleResult = runScreenAction("tap", target)
+        val tapResult = if (accessibleResult.contains("Erişilebilirlik ağacında")) {
+            runScreenAction("tap_visual", target)
+        } else accessibleResult
+        val tapWasSent = tapResult.contains("öğesine dokunuldu", ignoreCase = true) ||
+            tapResult.contains("görsel dokunma gönderildi", ignoreCase = true)
+        if (!tapWasSent) return tapResult
+
+        delay(500)
+        val updatedScreen = runScreenAction("read")
+        return "Dokunma sonucu: $tapResult\nGüncel ekran metni:\n${updatedScreen.take(800)}"
     }
 
     private fun quotedTarget(raw: String): String? {
