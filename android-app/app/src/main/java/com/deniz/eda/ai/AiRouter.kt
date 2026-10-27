@@ -206,7 +206,8 @@ KURALLAR:
                         "STOP_FIND_PHONE", "LOCK_PHONE", "RUN_SYSTEM_TEST", "LEARNING_ON", "LEARNING_OFF",
                         "OPEN_APP", "OPEN_WIFI_SETTINGS", "OPEN_SOUND_SETTINGS", "OPEN_DISPLAY_SETTINGS",
                         "SCREEN_READ", "SCREEN_VISION", "SCREEN_TAP", "SCREEN_TAP_VISUAL", "SCREEN_TYPE",
-                        "SCREEN_SCROLL_UP", "SCREEN_SCROLL_DOWN", "SCREEN_BACK", "SCREEN_HOME", "SCREEN_NOTIFICATIONS"
+                        "SCREEN_SCROLL_UP", "SCREEN_SCROLL_DOWN", "SCREEN_BACK", "SCREEN_HOME", "SCREEN_NOTIFICATIONS",
+                        "SCREEN_RECENTS", "SCREEN_QUICK_SETTINGS", "SCREEN_POWER_DIALOG", "SCREEN_TAKE_SCREENSHOT"
                     )
                     if (toolName !in allowlist) {
                         sonCevap = "Bu araç EDA'da izinli değil."
