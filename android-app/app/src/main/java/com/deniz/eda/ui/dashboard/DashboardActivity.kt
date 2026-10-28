@@ -615,7 +615,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
 @Composable
 private fun HeroPanel(name: String, time: String, date: String, status: Color, active: Boolean, sleeping: Boolean, onAction: (String) -> Unit) {
     Box(Modifier.fillMaxWidth().background(
-        Brush.linearGradient(listOf(Color(0xFF292047), Color(0xFF151C32), Color(0xFF102B35))),
+        Brush.linearGradient(listOf(Color(0xFF10294A), Color(0xFF101B2C), Color(0xFF0B2B36))),
         RoundedCornerShape(26.dp)
     ).padding(20.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -646,7 +646,7 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
 
 @Composable
 private fun HeroMini(title: String, subtitle: String) {
-    Column(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Color(0xFF292047), Panel)),
+    Column(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Color(0xFF12345A), Panel)),
         RoundedCornerShape(22.dp)).padding(20.dp)) {
         Text(title, color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
@@ -668,7 +668,7 @@ private fun SectionHeader(title: String, subtitle: String) {
 
 @Composable
 private fun MetricCard(label: String, icon: String, value: String, detail: String, tint: Color, modifier: Modifier = Modifier) {
-    Card(modifier, shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Panel)) {
+    Card(modifier, shape = RoundedCornerShape(20.dp), border = BorderStroke(1.dp, Color(0xFF20334A)), colors = CardDefaults.cardColors(containerColor = Panel)) {
         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(icon, color = tint, fontSize = 17.sp)
@@ -699,7 +699,7 @@ private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
                 val isSelected = main.contains(provider, true)
                 OutlinedButton(onClick = { onAction(action) }, modifier = Modifier.weight(1f),
                     border = BorderStroke(1.dp, if (isSelected) Violet else Color(0xFF30384E)),
-                    colors = ButtonDefaults.outlinedButtonColors(containerColor = if (isSelected) Violet.copy(alpha = .16f) else PanelRaised),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = if (isSelected) Violet.copy(alpha = .16f) else Color(0xFF24344A)),
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
                     shape = RoundedCornerShape(12.dp)) {
                     Text(provider, color = if (isSelected) Violet else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
@@ -712,7 +712,7 @@ private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
 @Composable
 private fun ControlTile(icon: String, title: String, detail: String, tint: Color, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Panel)) {
+        border = BorderStroke(1.dp, Color(0xFF20334A)), colors = CardDefaults.cardColors(containerColor = Panel)) {
         Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(44.dp).background(tint.copy(alpha = .12f), RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center) { Text(icon, color = tint, fontSize = 21.sp) }
