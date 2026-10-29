@@ -25,6 +25,8 @@
     <!-- AI saglayicilarina (Groq/DeepSeek/OpenRouter) ve hava/dolar/altin icin -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Allow EDA to request special access for changing system screen brightness. -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <!-- Surekli calisan arka plan servisi (bidarbash dinleme) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
