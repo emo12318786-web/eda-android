@@ -34,7 +34,7 @@ class ThemeActivity : Activity() {
             setBackgroundColor(selected.background.toInt())
         }
         val title = TextView(this).apply {
-            text = "EDA • TEMA SEÇİMİ"
+            text = "EDA • NEON ABYSS"
             textSize = 22f
             typeface = ThemeConfig.androidTypeface(
                 selected, android.graphics.Typeface.BOLD or selected.fontStyle
@@ -44,7 +44,7 @@ class ThemeActivity : Activity() {
         }
         root.addView(title)
         val subtitle = TextView(this).apply {
-            text = "14 ayrı görünüm: renk, yazı tipi, simgeler, kart biçimi ve ana ekran düzeni."
+            text = "Tek tema: siyah zemin, beyaz neon çizgiler ve gri ayrıntılar."
             textSize = 14f
             typeface = ThemeConfig.androidTypeface(selected)
             setTextColor(selected.muted.toInt())
@@ -69,7 +69,7 @@ class ThemeActivity : Activity() {
                 }
                 isClickable = true
                 isFocusable = true
-                contentDescription = "${item.name}, ${ThemeConfig.fontLabel(item)}, ${ThemeConfig.shapeLabel(item)}"
+                contentDescription = "${item.name}, siyah-beyaz neon tema"
             }
 
             val artworkId = resources.getIdentifier("ic_theme_${item.id}", "drawable", packageName)
@@ -82,7 +82,7 @@ class ThemeActivity : Activity() {
                 }
                 clipToOutline = true
                 if (artworkId != 0) setImageResource(artworkId)
-                contentDescription = "${item.name} tema görseli"
+                contentDescription = "${item.name} tema simgesi"
             }
             val previewParams = LinearLayout.LayoutParams(dp(76), dp(86))
             previewParams.marginEnd = dp(12)
@@ -109,7 +109,7 @@ class ThemeActivity : Activity() {
                 setTextColor(AndroidColor.WHITE)
             })
             labels.addView(TextView(this).apply {
-                text = if (isSelected) "✓ Şu anda seçili" else "Temayı uygula"
+                text = "✓ Tek tema · etkin"
                 textSize = 12f
                 typeface = ThemeConfig.androidTypeface(item)
                 setTextColor(item.muted.toInt())
