@@ -47,9 +47,7 @@ object ThemeConfig {
         )
     )
 
-    fun selectedId(context: Context): String =
-        context.getSharedPreferences("eda_settings", Context.MODE_PRIVATE)
-            .getString("eda_theme_id", "neon_abyss") ?: "neon_abyss"
+    fun selectedId(context: Context): String = "neon_abyss"
 
     fun selected(context: Context): Palette =
         palettes.firstOrNull { it.id == selectedId(context) } ?: palettes[0]
