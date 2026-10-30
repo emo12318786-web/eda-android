@@ -21,10 +21,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -230,10 +227,6 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
         else -> Bad
     }
 
-    val screenArtworkId = remember(ThemeConfig.current.id) {
-        context.resources.getIdentifier("bg_theme_${ThemeConfig.current.id}", "drawable", context.packageName)
-    }
-
     Scaffold(
         // Transparent content lets the selected theme artwork sit behind every dashboard tab.
         containerColor = Color.Transparent,
@@ -307,27 +300,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
         }
     ) { padding ->
         Box(Modifier.fillMaxSize().background(VoidBlack)) {
-            if (screenArtworkId != 0) {
-                Image(
-                    painter = painterResource(id = screenArtworkId),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    alpha = 0.94f
-                )
-            }
-            // Keep text readable while allowing the theme artwork to remain visible.
-            Box(
-                Modifier.fillMaxSize().background(
-                    Brush.verticalGradient(
-                        listOf(
-                            VoidBlack.copy(alpha = 0.08f),
-                            VoidBlack.copy(alpha = 0.16f),
-                            VoidBlack.copy(alpha = 0.26f)
-                        )
-                    )
-                )
-            )
+            // Fixed monochrome theme: pure black canvas, no character wallpaper.
             Column(
                 Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
                     .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -371,8 +344,8 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             }
 
             if (selectedTab == 0) {
-                // Every profile changes the information flow, not just its colors.
-                when (ThemeConfig.current.layoutMode % 4) {
+                // One fixed monochrome layout; no theme-specific layout variants.
+                when (0) {
                     1 -> {
                         DashboardProviderSection(state, onAction)
                         HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
@@ -807,10 +780,6 @@ private fun DashboardLogsSection(state: DashboardViewModel.DashboardState) {
 
 @Composable
 private fun HeroPanel(name: String, time: String, date: String, status: Color, active: Boolean, sleeping: Boolean, onAction: (String) -> Unit) {
-    val context = LocalContext.current
-    val artworkId = remember(ThemeConfig.current.id) {
-        context.resources.getIdentifier("bg_theme_${ThemeConfig.current.id}", "drawable", context.packageName)
-    }
     val shape = themeShape(26)
     Box(
         Modifier.fillMaxWidth().clip(shape).background(
@@ -818,16 +787,7 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
             shape
         ).padding(20.dp)
     ) {
-        if (artworkId != 0) {
-            Image(
-                painter = painterResource(id = artworkId),
-                contentDescription = null,
-                modifier = Modifier.matchParentSize().clip(shape),
-                contentScale = ContentScale.Crop,
-                alpha = 0.68f
-            )
-        }
-        when (ThemeConfig.current.layoutMode) {
+        when (0) {
             1 -> Column(
                 Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -892,9 +852,6 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
                     }
                 }
             }
-            4, 5, 6, 7, 8, 9, 10, 11, 12, 13 -> ThemeHeroVariant(
-                ThemeConfig.current.layoutMode, name, time, date, status, active, sleeping, onAction
-            )
             else -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("MERHABA, ${name.uppercase()}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
                 Text("Ben Eda.\nBuradayım.", fontSize = 31.sp, lineHeight = 36.sp,
