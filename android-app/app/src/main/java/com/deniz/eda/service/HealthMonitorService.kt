@@ -17,9 +17,9 @@ import com.deniz.eda.utils.DigitUtils
  * کارها:
  * ۱. چک ضربان قلب هر ۱۵ دقیقه
  * ۲. هشدار خودکار ضربان غیرعادی (خطرناک)
- * ۳. گزارش صبحگاهی (۷-۱۰ صبح)
+ * ۳. گزارش صبحگاهی غیرفعال است
  * ۴. یادآوری شب (۲۲ شب)
- * ۵. سؤال‌های روزانه (صبح، ظهر، عصر)
+ * ۵. فقط سؤال عصرگاهی؛ بدون پیام صبح و ناهار
  * ۶. گزارش هفتگی (شنبه‌ها)
  * ۷. حتی تو حالت خواب کار می‌کنه
  */
@@ -44,7 +44,6 @@ class HealthMonitorService : Service() {
     private lateinit var healthManager: HealthConnectManager
     
     // وضعیت ردیابی (برای اینکه هر چیز یک بار باشه)
-    private var lastMorningReport: Int = -1        // روز سال
     private var lastNightReminder: Int = -1        // روز سال
     private var lastWeeklyReport: Int = -1         // هفته سال
     private var lastQuestionAsk: Int = -1          // ساعت
@@ -103,11 +102,7 @@ class HealthMonitorService : Service() {
         val hr = healthManager.getLatestHeartRate(20)
         checkHeartRate(hr)
 
-        // ۲. گزارش صبحگاهی (۷-۱۰ صبح، یک بار در روز)
-        if (saat in 7..10 && lastMorningReport != gun) {
-            lastMorningReport = gun
-            sendMorningReport()
-        }
+        // Morning greeting/report intentionally disabled per user request.
 
         // ۳. یادآوری شب (۲۲ شب، یک بار در روز)
         if (saat == 22 && lastNightReminder != gun) {
@@ -115,8 +110,9 @@ class HealthMonitorService : Service() {
             sendNightReminder()
         }
 
-        // ۴. سؤال‌های روزانه (۹ صبح، ۱۴ ظهر، ۱۹ عصر)
-        if (saat in listOf(9, 14, 19) && lastQuestionAsk != saat) {
+        // Morning greeting and lunch-break prompt are disabled.
+        // Keep only the evening check-in at 19:00.
+        if (saat == 19 && lastQuestionAsk != saat) {
             lastQuestionAsk = saat
             askDailyQuestion(saat)
         }
@@ -176,36 +172,6 @@ class HealthMonitorService : Service() {
     }
 
     // ─────────────────────────────────────
-    //  ۲. گزارش صبحگاهی
-    // ─────────────────────────────────────
-    private suspend fun sendMorningReport() {
-        val sleep = healthManager.getLastNightSleepHours()
-        val hr = healthManager.getLatestHeartRate(60)
-        
-        val mesaj = buildString {
-            append("Günaydın deniz! ")
-            if (sleep != null) {
-                append("Dün gece " + DigitUtils.formatFloat(sleep) + " saat uyumuşsun. ")
-            }
-            if (hr != null) {
-                append("Nabzın şu an $hr. ")
-            }
-            
-            // توصیه
-            if (sleep != null && sleep < 6) {
-                append("Biraz az uyumuşsun, bugün dikkatli ol.")
-            } else if (sleep != null && sleep > 8) {
-                append("İyi uyumuşsun, harika!")
-            } else {
-                append("Bugün nasılsın?")
-            }
-        }
-        
-        android.util.Log.i(TAG, "🌅 Morning: $mesaj")
-        konus(mesaj)
-    }
-
-    // ─────────────────────────────────────
     //  ۳. یادآوری شب
     // ─────────────────────────────────────
     private suspend fun sendNightReminder() {
@@ -225,8 +191,6 @@ class HealthMonitorService : Service() {
     // ─────────────────────────────────────
     private suspend fun askDailyQuestion(saat: Int) {
         val mesaj = when (saat) {
-            9 -> "Günaydın deniz! Kahvaltı yaptın mı? Su içtin mi?"
-            14 -> "deniz, öğlen oldu. Yemek yedin mi? Biraz mola ver."
             19 -> "deniz, akşam oldu. Bugün nasılsın? İlaç içtin mi?"
             else -> return
         }
