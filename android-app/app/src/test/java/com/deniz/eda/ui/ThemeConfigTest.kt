@@ -6,47 +6,32 @@ import org.junit.Test
 
 class ThemeConfigTest {
     @Test
-    fun allFourteenSkinsHaveCompleteUniqueProfiles() {
+    fun onlyOneMonochromeNeonThemeIsAvailable() {
         val profiles = ThemeConfig.palettes
-        assertEquals("Expected exactly 14 curated skins", 14, profiles.size)
-        assertEquals("Theme IDs must be unique", 14, profiles.map { it.id }.distinct().size)
-        assertEquals("Theme artwork IDs must be unique", 14, profiles.map { it.id }.distinct().size)
-        assertEquals("Every theme needs its own icon vocabulary", 14, profiles.map { it.iconStyle }.distinct().size)
-        assertEquals("Every theme needs its own identity", 14, profiles.map { listOf(it.id, it.fontFamily, it.fontStyle, it.iconStyle, it.shapeStyle, it.layoutMode) }.distinct().size)
-        assertEquals("Each theme needs a unique hero composition", 14, profiles.map { it.layoutMode }.distinct().size)
-        assertTrue(profiles.all { it.layoutMode in 0..13 })
-        assertTrue(profiles.map { it.layoutMode }.containsAll((0..13).toList()))
-        assertEquals("Every skin must have its own typeface family/style profile", 14,
-            profiles.map { it.fontFamily to it.fontStyle }.distinct().size)
-        assertTrue(profiles.map { it.fontFamily }.distinct().size >= 12)
-        assertTrue(profiles.all { it.fontFamily.isNotBlank() && it.fontStyle in 0..3 })
-        assertTrue(profiles.all { it.shapeStyle.isNotBlank() })
+        assertEquals("EDA must expose one fixed theme", 1, profiles.size)
+        val theme = profiles.single()
+        assertEquals("neon_abyss", theme.id)
+        assertEquals(0xFF030303, theme.background)
+        assertEquals(0xFFF5F5F5, theme.accent)
+        assertEquals(0xFFBDBDBD, theme.secondary)
+        assertEquals("cyber", theme.iconStyle)
+        assertEquals("cut", theme.shapeStyle)
+        assertEquals(1, profiles.map { it.id }.distinct().size)
     }
 
     @Test
-    fun everySkinProvidesSemanticIconsAndTypography() {
-        ThemeConfig.palettes.forEach { profile ->
-            listOf("brand", "home", "control", "system", "battery", "network", "memory", "reminder",
-                "chat", "phone", "settings", "wake", "sleep", "stop").forEach { purpose ->
-                assertTrue("${profile.name} is missing icon purpose $purpose",
-                    ThemeConfig.icon(purpose, profile).isNotBlank())
-            }
-            assertTrue(ThemeConfig.fontLabel(profile).isNotBlank())
-            assertTrue(ThemeConfig.cornerRadius(profile, 18) in 3..38)
+    fun monochromeThemeKeepsSemanticIconsAndTypography() {
+        val theme = ThemeConfig.palettes.single()
+        listOf("brand", "home", "control", "system", "battery", "network", "memory", "reminder",
+            "chat", "phone", "settings", "wake", "sleep", "stop").forEach { purpose ->
+            assertTrue("Missing icon purpose $purpose", ThemeConfig.icon(purpose, theme).isNotBlank())
         }
-        assertTrue(
-            "Different skins must not share a single home glyph",
-            ThemeConfig.palettes.map { ThemeConfig.icon("home", it) }.distinct().size >= 8
-        )
+        assertTrue(ThemeConfig.fontLabel(theme).isNotBlank())
+        assertTrue(ThemeConfig.cornerRadius(theme, 18) in 3..38)
+        assertEquals(ThemeConfig.icon("battery", theme), ThemeConfig.metricIcon("BATARYA", "⚡", theme))
+        assertEquals(ThemeConfig.icon("network", theme), ThemeConfig.metricIcon("BAĞLANTI", "⌁", theme))
+        assertEquals(ThemeConfig.icon("chat", theme), ThemeConfig.actionIcon("Derin sohbeti aç", "✧", theme))
+        assertEquals(ThemeConfig.icon("sleep", theme), ThemeConfig.actionIcon("Uyku moduna al", "☾", theme))
     }
 
-    @Test
-    fun semanticUiIconsStayMappedToLabelsAndActions() {
-        ThemeConfig.palettes.forEach { profile ->
-            assertEquals(ThemeConfig.icon("battery", profile), ThemeConfig.metricIcon("BATARYA", "⚡", profile))
-            assertEquals(ThemeConfig.icon("network", profile), ThemeConfig.metricIcon("BAĞLANTI", "⌁", profile))
-            assertEquals(ThemeConfig.icon("chat", profile), ThemeConfig.actionIcon("Derin sohbeti aç", "✧", profile))
-            assertEquals(ThemeConfig.icon("sleep", profile), ThemeConfig.actionIcon("Uyku moduna al", "☾", profile))
-        }
-    }
 }
