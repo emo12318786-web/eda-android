@@ -220,6 +220,25 @@ object CommandProcessor {
         val hitap = Settings.kullaniciAdi
         var metin = metinHam.lowercase(Locale.getDefault()).trim()
 
+        // Instant local response for standalone thank-you phrases. Do not route these
+        // short social replies through AI/network providers, which can time out.
+        val tesekkur = java.text.Normalizer.normalize(metin, java.text.Normalizer.Form.NFD)
+            .replace(Regex("\\p{Mn}+"), "")
+            .replace(Regex("[^a-z\\s]"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        if (tesekkur in setOf(
+                "tesekkur", "tesekkurler", "tesekkur ederim", "cok tesekkur",
+                "cok tesekkurler", "cok tesekkur ederim", "sag ol", "sag olun",
+                "sagol", "sagolun", "sagolasin", "cok sag ol", "cok sagol",
+                "eyvallah", "minnettarim", "ellerine saglik"
+            )) {
+            return KomutSonucu.Cevap(
+                listOf("Rica ederim $hitap!", "Ne demek $hitap, her zaman.", "Memnuniyetle $hitap!")
+                    .random()
+            )
+        }
+
         // Direct phone controls must run before learning/fuzzy matching or cloud AI.
         PhoneSystemCommands.handle(context, metinHam)?.let { return KomutSonucu.Cevap(it) }
 
