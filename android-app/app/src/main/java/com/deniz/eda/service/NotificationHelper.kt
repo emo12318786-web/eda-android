@@ -6,7 +6,7 @@ import android.content.Context
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.deniz.eda.R
-import com.deniz.eda.ui.MainActivity
+import com.deniz.eda.ui.dashboard.DashboardActivity
 import android.app.PendingIntent
 import android.content.Intent
 
@@ -28,7 +28,7 @@ object NotificationHelper {
 
     fun bildirimOlustur(context: Context, metin: String): android.app.Notification {
         val acilisIntent = PendingIntent.getActivity(
-            context, 0, Intent(context, MainActivity::class.java),
+            context, 0, Intent(context, DashboardActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE
         )
         return NotificationCompat.Builder(context, CHANNEL_ID)
