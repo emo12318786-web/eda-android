@@ -102,52 +102,33 @@ class SettingsActivity : AppCompatActivity() {
     }
     
     /**
-     * The XML settings screen predates theme palettes. Recolor its existing controls
-     * at runtime so switching themes also applies here without changing any settings logic.
+     * Keep the legacy XML settings screen in the requested monochrome style.
+     * Deliberately do not load themed artwork or apply the selected legacy palette.
      */
     private fun applySelectedTheme() {
-        ThemeConfig.refresh(this)
-        val palette = ThemeConfig.current
-        val background = palette.background.toInt()
-        val panel = palette.panel.toInt()
-        val accent = palette.accent.toInt()
-        val muted = palette.muted.toInt()
+        val background = AndroidColor.rgb(8, 8, 8)
+        val panel = AndroidColor.rgb(24, 24, 24)
+        val accent = AndroidColor.rgb(235, 235, 235)
+        val muted = AndroidColor.rgb(165, 165, 165)
         window.statusBarColor = background
         window.navigationBarColor = background
 
         val content = findViewById<ViewGroup>(android.R.id.content)
         val scroll = content.getChildAt(0) as? ScrollView ?: return
-        val artworkId = resources.getIdentifier("bg_theme_${palette.id}", "drawable", packageName)
-        if (artworkId != 0) scroll.setBackgroundResource(artworkId) else scroll.setBackgroundColor(background)
-
+        scroll.setBackgroundColor(background)
         val root = scroll.getChildAt(0) as? LinearLayout ?: return
         root.setBackgroundColor(AndroidColor.TRANSPARENT)
 
-        // This layout's direct children after the header are the four setting cards.
         for (index in 1 until root.childCount) {
             val child = root.getChildAt(index)
             if (child is LinearLayout) {
                 child.background = GradientDrawable().apply {
-                    setColor(AndroidColor.argb(226, AndroidColor.red(panel), AndroidColor.green(panel), AndroidColor.blue(panel)))
-                    cornerRadius = dp(ThemeConfig.cornerRadius(palette, 18)).toFloat()
-                    setStroke(dp(1), AndroidColor.argb(70, AndroidColor.red(accent), AndroidColor.green(accent), AndroidColor.blue(accent)))
+                    setColor(panel)
+                    cornerRadius = dp(18).toFloat()
+                    setStroke(dp(1), AndroidColor.rgb(70, 70, 70))
                 }
             }
         }
-
-        val oldAccents = setOf(
-            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.purple_start),
-            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.purple_end),
-            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.pink_start),
-            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.pink_end),
-            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.green_start),
-            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.green_end),
-            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.red_start),
-            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.red_end),
-            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.blue_start),
-            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.blue_end),
-            androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.accent_cyan)
-        )
 
         fun tintTree(view: View) {
             when (view) {
@@ -159,49 +140,19 @@ class SettingsActivity : AppCompatActivity() {
                 is Switch -> {
                     view.setTextColor(AndroidColor.WHITE)
                     view.thumbTintList = ColorStateList.valueOf(accent)
-                    view.trackTintList = ColorStateList.valueOf(AndroidColor.argb(110, AndroidColor.red(accent), AndroidColor.green(accent), AndroidColor.blue(accent)))
+                    view.trackTintList = ColorStateList.valueOf(AndroidColor.rgb(90, 90, 90))
                 }
                 is Button -> {
-                    // Recreate button background so corner geometry changes with each theme.
                     view.background = GradientDrawable().apply {
-                        cornerRadius = dp(ThemeConfig.cornerRadius(palette, 14)).toFloat()
-                        setColor(accent)
+                        cornerRadius = dp(12).toFloat()
+                        setColor(AndroidColor.rgb(45, 45, 45))
+                        setStroke(dp(1), accent)
                     }
-                    view.setTextColor(if (luminance(accent) > 0.62) AndroidColor.BLACK else AndroidColor.WHITE)
+                    view.setTextColor(AndroidColor.WHITE)
                 }
                 is TextView -> {
-                    val current = view.currentTextColor
-                    if (current in oldAccents) view.setTextColor(accent)
-                    else if (current == androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.text_muted)) view.setTextColor(muted)
-                    else if (current == androidx.core.content.ContextCompat.getColor(this, com.deniz.eda.R.color.text_secondary)) view.setTextColor(palette.secondary.toInt())
-                }
-            }
-            if (view is TextView) {
-                // Legacy XML widgets use the selected theme's actual Typeface too.
-                val existingStyle = view.typeface?.style ?: Typeface.NORMAL
-                val themedStyle = existingStyle or palette.fontStyle
-                view.typeface = ThemeConfig.androidTypeface(palette, themedStyle)
-
-                // Re-skin the existing settings-card pictograms without changing IDs/actions.
-                val original = view.text?.toString().orEmpty()
-                val iconPrefix = when {
-                    original.startsWith("👤") -> "👤"
-                    original.startsWith("🔑") -> "🔑"
-                    original.startsWith("📱") -> "📱"
-                    original.startsWith("🧠") -> "🧠"
-                    original.startsWith("💾") -> "💾"
-                    else -> null
-                }
-                val replacement = when (iconPrefix) {
-                    "👤" -> ThemeConfig.icon("brand", palette)
-                    "🔑" -> ThemeConfig.icon("settings", palette)
-                    "📱" -> ThemeConfig.icon("phone", palette)
-                    "🧠" -> ThemeConfig.icon("chat", palette)
-                    "💾" -> ThemeConfig.icon("system", palette)
-                    else -> null
-                }
-                if (replacement != null && iconPrefix != null) {
-                    view.text = replacement + original.removePrefix(iconPrefix)
+                    view.setTextColor(if (view.currentTextColor == AndroidColor.GRAY) muted else AndroidColor.WHITE)
+                    view.typeface = Typeface.create("sans-serif", view.typeface?.style ?: Typeface.NORMAL)
                 }
             }
             if (view is ViewGroup) {
@@ -210,23 +161,11 @@ class SettingsActivity : AppCompatActivity() {
         }
         tintTree(root)
 
-        findViewById<TextView>(com.deniz.eda.R.id.geriButon)?.background = GradientDrawable().apply {
-            val angular = palette.shapeStyle in setOf("cut", "hex", "sharp", "square")
-            shape = if (angular) GradientDrawable.RECTANGLE else GradientDrawable.OVAL
-            cornerRadius = dp(ThemeConfig.cornerRadius(palette, 14)).toFloat()
+        findViewById<TextView>(R.id.geriButon)?.background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
             setColor(panel)
             setStroke(dp(1), accent)
         }
-    }
-
-    private fun luminance(color: Int): Double {
-        fun channel(value: Int): Double {
-            val c = value / 255.0
-            return if (c <= 0.04045) c / 12.92 else Math.pow((c + 0.055) / 1.055, 2.4)
-        }
-        return 0.2126 * channel(AndroidColor.red(color)) +
-            0.7152 * channel(AndroidColor.green(color)) +
-            0.0722 * channel(AndroidColor.blue(color))
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
