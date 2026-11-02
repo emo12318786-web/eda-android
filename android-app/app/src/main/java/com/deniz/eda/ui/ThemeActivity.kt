@@ -72,7 +72,6 @@ class ThemeActivity : Activity() {
                 contentDescription = "${item.name}, siyah-beyaz neon tema"
             }
 
-            val artworkId = resources.getIdentifier("ic_theme_${item.id}", "drawable", packageName)
             val preview = ImageView(this).apply {
                 scaleType = ImageView.ScaleType.CENTER_CROP
                 background = GradientDrawable().apply {
@@ -81,7 +80,7 @@ class ThemeActivity : Activity() {
                     setStroke(dp(1), item.accent.toInt())
                 }
                 clipToOutline = true
-                if (artworkId != 0) setImageResource(artworkId)
+                // Keep the preview monochrome; never load the old red-character artwork.
                 contentDescription = "${item.name} tema simgesi"
             }
             val previewParams = LinearLayout.LayoutParams(dp(76), dp(86))
