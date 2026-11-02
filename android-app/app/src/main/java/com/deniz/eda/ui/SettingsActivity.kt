@@ -117,8 +117,8 @@ class SettingsActivity : AppCompatActivity() {
 
         val content = findViewById<ViewGroup>(android.R.id.content)
         val scroll = content.getChildAt(0) as? ScrollView ?: return
-        val artworkId = resources.getIdentifier("bg_theme_${palette.id}", "drawable", packageName)
-        if (artworkId != 0) scroll.setBackgroundResource(artworkId) else scroll.setBackgroundColor(background)
+        // Do not load legacy theme artwork: it contains the old red character wallpaper.
+        scroll.setBackgroundColor(background)
 
         val root = scroll.getChildAt(0) as? LinearLayout ?: return
         root.setBackgroundColor(AndroidColor.TRANSPARENT)

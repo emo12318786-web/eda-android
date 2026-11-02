@@ -180,7 +180,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<android.widget.Button>(R.id.panelButon).setOnClickListener {
-            startActivity(Intent(this, DashboardActivity::class.java))
+            startActivity(Intent(this, com.deniz.eda.panel.PanelActivity::class.java))
         }
     }
 
