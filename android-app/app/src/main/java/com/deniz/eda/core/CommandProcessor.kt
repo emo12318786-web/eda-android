@@ -220,6 +220,19 @@ object CommandProcessor {
         val hitap = Settings.kullaniciAdi
         var metin = metinHam.lowercase(Locale.getDefault()).trim()
 
+        // Kibar kapanış: "teşekkür" komutu kısa yanıt verir; servis TTS bitince uykuya geçer.
+        val tesekkurMetni = metin
+            .replace(Regex("[^a-zçğıöşü\\s]"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        if (tesekkurMetni in setOf(
+                "teşekkür", "tesekkur", "teşekkürler", "tesekkurler",
+                "teşekkür ederim", "tesekkur ederim", "çok teşekkür ederim",
+                "cok tesekkur ederim", "sağ ol", "sag ol", "sağol", "sagol"
+            )) {
+            return KomutSonucu.Cevap("Rica ederim $hitap. İyi dinlen, şimdi uykuya geçiyorum.")
+        }
+
         // Direct phone controls must run before learning/fuzzy matching or cloud AI.
         PhoneSystemCommands.handle(context, metinHam)?.let { return KomutSonucu.Cevap(it) }
 
