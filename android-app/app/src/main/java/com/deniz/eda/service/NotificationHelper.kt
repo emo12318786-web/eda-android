@@ -6,7 +6,7 @@ import android.content.Context
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.deniz.eda.R
-import com.deniz.eda.ui.DashboardActivity
+import com.deniz.eda.ui.dashboard.DashboardActivity
 import android.app.PendingIntent
 import android.content.Intent
 
