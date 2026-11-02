@@ -624,6 +624,18 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         override fun onEvent(eventType: Int, params: Bundle?) {}
     }
 
+    private fun tesekkurKomutu(metin: String?): Boolean {
+        val normalized = metin.orEmpty().lowercase(Locale.ROOT)
+            .replace(Regex("[^a-zçğıöşü\\s]"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        return normalized in setOf(
+            "teşekkür", "tesekkur", "teşekkürler", "tesekkurler",
+            "teşekkür ederim", "tesekkur ederim", "çok teşekkür ederim",
+            "cok tesekkur ederim", "sağ ol", "sag ol", "sağol", "sagol"
+        )
+    }
+
     private fun metniIsle(metin: String?) {
         if (mod == Mod.UYKU) {
             if (WakeWordDetector.uyandiMi(metin)) {
@@ -707,7 +719,15 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             // ═══ پردازش نتیجه ═══
             android.util.Log.i("EdaService", "Sonuç işleniyor; yanıt süresi=" + (System.currentTimeMillis() - baslangicZaman) + "ms")
             when (sonuc) {
-                is KomutSonucu.Cevap -> konus(sonuc.metin) { baslatDinleme() }
+                is KomutSonucu.Cevap -> konus(sonuc.metin) {
+                    if (tesekkurKomutu(metin)) {
+                        // Yanıt tamamen söylendikten sonra uyku moduna geç; uyanma kelimesi dinlemesi sürer.
+                        mod = Mod.UYKU
+                        sonMod = "UYKU"; Settings.sonMod = "UYKU"
+                        bildirimGuncelle(getString(com.deniz.eda.R.string.notif_sleeping))
+                    }
+                    baslatDinleme()
+                }
                 KomutSonucu.UykuyaDon -> {
                     mod = Mod.UYKU
                 sonMod = "UYKU"; Settings.sonMod = "UYKU"
