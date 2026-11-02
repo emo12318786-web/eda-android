@@ -85,7 +85,17 @@ class EdaWidgetProvider : AppWidgetProvider() {
             
             // ❌ Durdur
             "com.deniz.eda.WIDGET_DURDUR" -> {
-                context.stopService(serviceIntent)
+                // Let the foreground service release the microphone, recognizer and monitor cleanly.
+                serviceIntent.action = "ACTION_STOP"
+                try {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        context.startForegroundService(serviceIntent)
+                    } else {
+                        context.startService(serviceIntent)
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("EdaWidget", "Durdurma hatası: ${e.message}")
+                }
             }
             
             // 💤 Uyku — derin uyku moduna al
