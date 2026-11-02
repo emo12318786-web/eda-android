@@ -102,7 +102,8 @@ class HealthMonitorService : Service() {
         val hr = healthManager.getLatestHeartRate(20)
         checkHeartRate(hr)
 
-        // Morning greeting/report intentionally disabled per user request.
+        // User preference: do not send an automatic "Good morning" greeting/report.
+        // No morning greeting is scheduled here.
 
         // ۳. یادآوری شب (۲۲ شب، یک بار در روز)
         if (saat == 22 && lastNightReminder != gun) {
@@ -110,8 +111,8 @@ class HealthMonitorService : Service() {
             sendNightReminder()
         }
 
-        // Morning greeting and lunch-break prompt are disabled.
-        // Keep only the evening check-in at 19:00.
+        // User preference: no automatic lunch-time "take a little rest" prompt.
+        // Keep only the existing evening check-in at 19:00.
         if (saat == 19 && lastQuestionAsk != saat) {
             lastQuestionAsk = saat
             askDailyQuestion(saat)
