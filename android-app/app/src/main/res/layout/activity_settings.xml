@@ -159,6 +159,57 @@
                 android:paddingVertical="8dp" />
         </LinearLayout>
 
+        <!-- CARD: System permissions and access shortcuts -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_settings"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔐  SİSTEM İZİNLERİ VE ERİŞİM"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/purple_end"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Mikrofon, SMS, arama, bildirim ve arka plan çalışması izinlerini buradan kontrol et."
+                android:textColor="@color/text_muted"
+                android:textSize="12sp"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/appPermissionsButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="EDA UYGULAMA İZİNLERİ" />
+
+            <Button
+                android:id="@+id/accessibilitySettingsButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ERİŞİLEBİLİRLİK / TELEFON KONTROLÜ" />
+
+            <Button
+                android:id="@+id/notificationSettingsButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="BİLDİRİM AYARLARI" />
+
+            <Button
+                android:id="@+id/batterySettingsButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ARKA PLAN / PİL KISITLAMALARI" />
+        </LinearLayout>
+
         <!-- CARD: Offline Gemma models -->
         <LinearLayout
             android:layout_width="match_parent"
