@@ -850,6 +850,11 @@ object CommandProcessor {
                 val sureMs = dakika * 60 * 1000
                 KomutSonucu.GeciciUyku(sureMs, "$dakika dakika dinleniyorum $hitap.")
             }
+            // Tek başına "Bekle" komutu da geçici bekleme modunu açmalı.
+            // Süre belirtilmişse yukarıdaki dakika/saat kuralı önceliklidir.
+            hasExactIntent(metin, "bekle", "biraz bekle", "beni bekle", "bekle lütfen", "bekle lutfen", "bekleme modu") -> {
+                KomutSonucu.GeciciUyku(60_000L, "Bir dakika bekliyorum $hitap.")
+            }
             v(metin, "geçici uyku", "gecici uyku", "kısa uyku", "kisa uyku", "biraz uyu", "dinlen") -> {
                 KomutSonucu.GeciciUyku(60_000L, "Kısa bir mola veriyorum $hitap.")
             }
