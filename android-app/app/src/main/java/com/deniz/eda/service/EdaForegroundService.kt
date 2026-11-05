@@ -460,7 +460,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         if (speechRecognizer == null) return // cihazda konusma tanima yok
         
         // ═══ خواب عمیق: تو حالت خواب عمیق، میکروفون روشن نمی‌شه ═══
-        if (mod == Mod.UYKU) {
+        if (mod == Mod.UYKU && Settings.derinUyku) {
             android.util.Log.d("EdaService", "خواب عمیق — dinleme başlatılmadı")
             bildirimGuncelle("💤 Derin uyku — Widget ile uyandır")
             return
