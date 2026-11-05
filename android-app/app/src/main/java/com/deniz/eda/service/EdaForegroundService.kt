@@ -273,9 +273,18 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 sonMod = "UYKU"; Settings.sonMod = "UYKU"
                 Settings.derinUyku = true
                 dinlemeAktif = false
-                speechRecognizer?.stopListening()
+                retryJob?.cancel()
+                retryJob = null
+                sttFallbackAktif = false
+                try { tts.stop() } catch (_: Exception) {}
+                try {
+                    speechRecognizer?.stopListening()
+                    speechRecognizer?.cancel()
+                    speechRecognizer?.destroy()
+                } catch (_: Exception) {}
+                speechRecognizer = null
                 bildirimGuncelle("💤 Derin uyku — Widget ile uyandır")
-                android.util.Log.d("EdaService", "Derin uyku moduna geçildi")
+                android.util.Log.d("EdaService", "Derin uyku moduna geçildi; STT/TTS durduruldu")
             }
             
             else -> {
