@@ -234,15 +234,18 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 sonMod = "UYKU"; Settings.sonMod = "UYKU"
                 Settings.derinUyku = true
                 dinlemeAktif = false
+                retryJob?.cancel()
+                retryJob = null
+                try { tts.stop() } catch (_: Exception) {}
                 try {
                     speechRecognizer?.stopListening()
                     speechRecognizer?.cancel()
                     speechRecognizer?.destroy()
-                } catch (e: Exception) {}
+                } catch (_: Exception) {}
                 speechRecognizer = null
+                sttFallbackAktif = false
                 bildirimGuncelle("💤 Uyku — Mikrofon kapalı")
-                android.util.Log.d("EdaService", "UYKU moda geçildi")
-                konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") { }
+                android.util.Log.d("EdaService", "UYKU moda geçildi; STT/TTS durduruldu")
             }
             
             "ACTION_STOP_SPEAK" -> {
