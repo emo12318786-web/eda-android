@@ -434,6 +434,15 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private fun baslatDinleme() {
         if (dinlemeAktif) return
 
+        // خواب عمیق باید قبل از هر دو مسیر STT و fallback بررسی شود؛
+        // در غیر این صورت «Bekle» می‌تواند دوباره میکروفون را باز کند.
+        if (mod == Mod.UYKU && Settings.derinUyku) {
+            dinlemeAktif = false
+            android.util.Log.d("EdaService", "Derin uyku — dinleme başlatılmadı")
+            bildirimGuncelle("💤 Derin uyku — Widget ile uyandır")
+            return
+        }
+
         if (sttFallbackAktif) {
             acquireMicrophoneAudioFocus()
             dinlemeAktif = true
@@ -459,12 +468,6 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         }
         if (speechRecognizer == null) return // cihazda konusma tanima yok
         
-        // ═══ خواب عمیق: تو حالت خواب عمیق، میکروفون روشن نمی‌شه ═══
-        if (mod == Mod.UYKU && Settings.derinUyku) {
-            android.util.Log.d("EdaService", "خواب عمیق — dinleme başlatılmadı")
-            bildirimGuncelle("💤 Derin uyku — Widget ile uyandır")
-            return
-        }
         
         acquireMicrophoneAudioFocus()
         dinlemeAktif = true

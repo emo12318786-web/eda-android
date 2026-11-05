@@ -850,6 +850,11 @@ object CommandProcessor {
                 val sureMs = dakika * 60 * 1000
                 KomutSonucu.GeciciUyku(sureMs, "$dakika dakika dinleniyorum $hitap.")
             }
+            // "Bekle" süresiz uykuya döner; yalnızca uyandırma kelimesiyle devam eder.
+            // Süre belirtilen dinlenme komutları yukarıdaki kurala girer.
+            hasExactIntent(metin, "bekle", "bekleme modu", "uyku modu", "uykuya geç", "uykuya gec") -> {
+                KomutSonucu.UykuyaDon
+            }
             v(metin, "geçici uyku", "gecici uyku", "kısa uyku", "kisa uyku", "biraz uyu", "dinlen") -> {
                 KomutSonucu.GeciciUyku(60_000L, "Kısa bir mola veriyorum $hitap.")
             }
