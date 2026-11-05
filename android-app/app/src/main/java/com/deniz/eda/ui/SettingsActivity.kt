@@ -1,6 +1,8 @@
 package com.deniz.eda.ui
 
 import android.os.Bundle
+import android.content.Intent
+import android.net.Uri
 import android.content.res.ColorStateList
 import android.graphics.Color as AndroidColor
 import android.graphics.Typeface
@@ -76,6 +78,46 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<Switch>(R.id.incomingCallSwitch).apply {
             isChecked = Settings.incomingCallAnnouncementEnabled
             setOnCheckedChangeListener { _, checked -> Settings.incomingCallAnnouncementEnabled = checked }
+        }
+
+        // System permission shortcuts: open Android's real settings pages.
+        findViewById<Button>(R.id.appPermissionsButton).setOnClickListener {
+            runCatching {
+                startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.parse("package:$packageName")
+                })
+            }.onFailure {
+                Toast.makeText(this, "Uygulama izinleri açılamadı.", Toast.LENGTH_SHORT).show()
+            }
+        }
+        findViewById<Button>(R.id.accessibilitySettingsButton).setOnClickListener {
+            runCatching {
+                startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            }.onFailure {
+                Toast.makeText(this, "Erişilebilirlik ayarları açılamadı.", Toast.LENGTH_SHORT).show()
+            }
+        }
+        findViewById<Button>(R.id.notificationSettingsButton).setOnClickListener {
+            runCatching {
+                startActivity(Intent("android.settings.APP_NOTIFICATION_SETTINGS").apply {
+                    putExtra("android.provider.extra.APP_PACKAGE", packageName)
+                    putExtra("app_package", packageName)
+                    putExtra("app_uid", applicationInfo.uid)
+                })
+            }.onFailure {
+                startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.parse("package:$packageName")
+                })
+            }
+        }
+        findViewById<Button>(R.id.batterySettingsButton).setOnClickListener {
+            runCatching {
+                startActivity(Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            }.onFailure {
+                startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.parse("package:$packageName")
+                })
+            }
         }
 
         // ═══ Header ═══
