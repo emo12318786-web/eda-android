@@ -432,6 +432,15 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private var offlineDestekYok = false
 
     private fun baslatDinleme() {
+        // Deep sleep is a hard gate: do not start Google/system STT or the
+        // foreground-activity fallback while the user has explicitly put Eda
+        // to sleep. Widget/action wake-up switches the mode back to AKTIF.
+        if (mod == Mod.UYKU && Settings.derinUyku) {
+            dinlemeAktif = false
+            releaseMicrophoneAudioFocus("derin uyku — dinleme engellendi")
+            android.util.Log.d("EdaService", "Derin uyku: STT/fallback başlatılmadı")
+            return
+        }
         if (dinlemeAktif) return
 
         if (sttFallbackAktif) {
