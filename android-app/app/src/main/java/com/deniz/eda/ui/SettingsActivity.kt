@@ -1,6 +1,7 @@
 package com.deniz.eda.ui
 
 import android.os.Bundle
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color as AndroidColor
 import android.graphics.Typeface
@@ -59,6 +60,10 @@ class SettingsActivity : AppCompatActivity() {
         Settings.init(this)
         applySelectedTheme()
         gemmaSessions = GemmaSessionManager(applicationContext)
+
+        findViewById<Button>(R.id.izinMerkeziButon).setOnClickListener {
+            startActivity(Intent(this, PermissionCenterActivity::class.java))
+        }
 
         findViewById<Button>(R.id.gemma3ModelImport).setOnClickListener {
             gemmaModelPicker.launch(arrayOf("application/octet-stream", "*/*"))

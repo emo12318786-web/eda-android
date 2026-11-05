@@ -201,6 +201,20 @@
                 android:layout_marginTop="8dp" />
         </LinearLayout>
 
+        <!-- Permission Center -->
+        <Button
+            android:id="@+id/izinMerkeziButon"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="🔐  İZİN MERKEZİ"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/btn_purple"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:stateListAnimator="@null" />
+
         <!-- Kaydet butonu -->
         <Button
             android:id="@+id/kaydetButon"

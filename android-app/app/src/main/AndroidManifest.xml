@@ -72,6 +72,11 @@
         android:networkSecurityConfig="@xml/network_security_config">
 
         <activity
+            android:name=".ui.PermissionCenterActivity"
+            android:exported="false"
+            android:label="İzin Merkezi" />
+
+        <activity
             android:name=".ui.ThemeActivity"
             android:exported="false"
             android:label="EDA Tema Seçimi" />

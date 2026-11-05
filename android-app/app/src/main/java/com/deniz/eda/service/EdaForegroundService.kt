@@ -391,7 +391,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private fun acquireMicrophoneAudioFocus() {
         if (microphoneAudioFocusHeld) return
         try {
-            val request = microphoneAudioFocusRequest ?: AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+            val request = microphoneAudioFocusRequest ?: AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
                 .setAudioAttributes(
                     AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
@@ -399,7 +399,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                         .build()
                 )
                 .setAcceptsDelayedFocusGain(false)
-                .setWillPauseWhenDucked(true)
+                // Do not ask Android to pause other media when EDA starts STT.
                 .setOnAudioFocusChangeListener { change ->
                     android.util.Log.d("EDA-AudioFocus", "Mikrofon ses odağı değişti: $change")
                 }
@@ -460,7 +460,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         if (speechRecognizer == null) return // cihazda konusma tanima yok
         
         // ═══ خواب عمیق: تو حالت خواب عمیق، میکروفون روشن نمی‌شه ═══
-        if (mod == Mod.UYKU) {
+        if (mod == Mod.UYKU && Settings.derinUyku) {
             android.util.Log.d("EdaService", "خواب عمیق — dinleme başlatılmadı")
             bildirimGuncelle("💤 Derin uyku — Widget ile uyandır")
             return
@@ -650,6 +650,32 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         }
 
         // --- AKTIF MOD ---
+        // "Bekle" is a deterministic local voice command. Do not send it to
+        // PhoneTaskRouter, CommandProcessor, or any AI provider: those routes
+        // can wait for network/model work and hit the voice-loop timeout.
+        val bekleMetni = metin.orEmpty()
+            .lowercase(Locale("tr", "TR"))
+            .replace(Regex("[^a-zçğıöşü\\s]"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+            .removePrefix("eda ")
+            .trim()
+        if (bekleMetni in setOf("bekle", "bekleme modu")) {
+            android.util.Log.i("EdaService", "Yerel bekleme komutu algılandı; AI yolu atlanıyor")
+            retryJob?.cancel()
+            retryJob = null
+            releaseMicrophoneAudioFocus("bekleme moduna geçiliyor")
+            mod = Mod.UYKU
+            sonMod = "UYKU"
+            Settings.sonMod = "UYKU"
+            // This is wake-word standby, NOT deep sleep and NOT timed rest.
+            // Keep SpeechRecognizer alive so the wake word "Eda" can reactivate EDA.
+            Settings.derinUyku = false
+            bildirimGuncelle("⏸ Bekleme modu — Eda kelimesini bekliyorum")
+            konus("Tamam, bekliyorum.") { baslatDinleme() }
+            return
+        }
+
         if (kapatOnayBekleniyor) {
             kapatOnayBekleniyor = false
             val onaylandi = metin != null && listOf("evet", "eminim", "tamam", "kapat")
@@ -689,7 +715,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                     android.util.Log.i("EdaService", "CommandProcessor tamamlandı: " + (System.currentTimeMillis() - baslangicZaman) + "ms")
                 }
             } catch (e: TimeoutCancellationException) {
-                android.util.Log.e("EdaService", "Command processing timed out after 25s; voice loop will continue", e)
+                android.util.Log.e("EdaService", "Command processing timed out after 60s; voice loop will continue", e)
                 KomutSonucu.Cevap("Yanıt biraz gecikti ${Settings.kullaniciAdi}. Tekrar deneyelim.")
             } catch (e: CancellationException) {
                 throw e
