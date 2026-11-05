@@ -234,18 +234,15 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 sonMod = "UYKU"; Settings.sonMod = "UYKU"
                 Settings.derinUyku = true
                 dinlemeAktif = false
-                retryJob?.cancel()
-                retryJob = null
-                try { tts.stop() } catch (_: Exception) {}
                 try {
                     speechRecognizer?.stopListening()
                     speechRecognizer?.cancel()
                     speechRecognizer?.destroy()
-                } catch (_: Exception) {}
+                } catch (e: Exception) {}
                 speechRecognizer = null
-                sttFallbackAktif = false
                 bildirimGuncelle("💤 Uyku — Mikrofon kapalı")
-                android.util.Log.d("EdaService", "UYKU moda geçildi; STT/TTS durduruldu")
+                android.util.Log.d("EdaService", "UYKU moda geçildi")
+                konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") { }
             }
             
             "ACTION_STOP_SPEAK" -> {
@@ -276,18 +273,9 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 sonMod = "UYKU"; Settings.sonMod = "UYKU"
                 Settings.derinUyku = true
                 dinlemeAktif = false
-                retryJob?.cancel()
-                retryJob = null
-                sttFallbackAktif = false
-                try { tts.stop() } catch (_: Exception) {}
-                try {
-                    speechRecognizer?.stopListening()
-                    speechRecognizer?.cancel()
-                    speechRecognizer?.destroy()
-                } catch (_: Exception) {}
-                speechRecognizer = null
+                speechRecognizer?.stopListening()
                 bildirimGuncelle("💤 Derin uyku — Widget ile uyandır")
-                android.util.Log.d("EdaService", "Derin uyku moduna geçildi; STT/TTS durduruldu")
+                android.util.Log.d("EdaService", "Derin uyku moduna geçildi")
             }
             
             else -> {
@@ -444,16 +432,16 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private var offlineDestekYok = false
 
     private fun baslatDinleme() {
-        // Deep sleep is a hard gate: do not start Google/system STT or the
-        // foreground-activity fallback while the user has explicitly put Eda
-        // to sleep. Widget/action wake-up switches the mode back to AKTIF.
+        if (dinlemeAktif) return
+
+        // خواب عمیق باید قبل از هر دو مسیر STT و fallback بررسی شود؛
+        // در غیر این صورت «Bekle» می‌تواند دوباره میکروفون را باز کند.
         if (mod == Mod.UYKU && Settings.derinUyku) {
             dinlemeAktif = false
-            releaseMicrophoneAudioFocus("derin uyku — dinleme engellendi")
-            android.util.Log.d("EdaService", "Derin uyku: STT/fallback başlatılmadı")
+            android.util.Log.d("EdaService", "Derin uyku — dinleme başlatılmadı")
+            bildirimGuncelle("💤 Derin uyku — Widget ile uyandır")
             return
         }
-        if (dinlemeAktif) return
 
         if (sttFallbackAktif) {
             acquireMicrophoneAudioFocus()
@@ -480,12 +468,6 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         }
         if (speechRecognizer == null) return // cihazda konusma tanima yok
         
-        // ═══ خواب عمیق: تو حالت خواب عمیق، میکروفون روشن نمی‌شه ═══
-        if (mod == Mod.UYKU && Settings.derinUyku) {
-            android.util.Log.d("EdaService", "خواب عمیق — dinleme başlatılmadı")
-            bildirimGuncelle("💤 Derin uyku — Widget ile uyandır")
-            return
-        }
         
         acquireMicrophoneAudioFocus()
         dinlemeAktif = true
