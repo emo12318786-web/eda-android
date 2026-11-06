@@ -74,6 +74,9 @@ android {
 }
 
 dependencies {
+    // Offline wake-word recognition; model is downloaded once and then works offline.
+    implementation("com.alphacephei:vosk-android:0.3.47")
+    implementation("net.java.dev.jna:jna:5.13.0@aar")
     testImplementation("junit:junit:4.13.2")
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
