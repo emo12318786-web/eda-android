@@ -153,7 +153,7 @@
                 android:id="@+id/smsTranslationSwitch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Mesajı Türkçeye çevirip sesli oku"
+                android:text="پیام را به فارسی ترجمه کن و با صدا بخوان"
                 android:textColor="@color/text_primary"
                 android:paddingVertical="8dp" />
 
@@ -188,7 +188,7 @@
                 android:id="@+id/gemmaDurum"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Model durumu kontrol ediliyor..."
+                android:text="وضعیت مدل در حال بررسی است..."
                 android:textColor="@color/text_primary"
                 android:textSize="13sp"
                 android:layout_marginBottom="12dp" />
@@ -202,7 +202,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Not: Model dosyası GGUF biçiminde olmalı. Ollama'nın özel klasöründeki blob dosyaları otomatik olarak görünmez; dosyayı önce telefonun ortak depolamasına kopyala."
+                android:text="نکته: فایل مدل باید با قالب GGUF باشد. فایل‌های پوشهٔ اختصاصی اُلاما به‌طور خودکار نمایش داده نمی‌شوند؛ ابتدا فایل را به حافظهٔ مشترک گوشی کپی کن."
                 android:textColor="@color/text_muted"
                 android:textSize="12sp"
                 android:layout_marginTop="8dp" />
