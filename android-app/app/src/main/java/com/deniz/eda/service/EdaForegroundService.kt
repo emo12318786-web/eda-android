@@ -270,10 +270,9 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                     speechRecognizer?.destroy()
                 } catch (e: Exception) {}
                 speechRecognizer = null
-                bildirimGuncelle("💤 Uyku — çevrimdışı uyandırma dinleniyor")
-                offlineWake?.start()
+                bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                 android.util.Log.d("EdaService", "UYKU moda geçildi")
-                konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") { }
+                konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") { offlineWake?.start() }
             }
             
             "ACTION_STOP_SPEAK" -> {
