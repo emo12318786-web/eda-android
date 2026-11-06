@@ -23,7 +23,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Always-offline-after-first-download wake listener.
- * Downloads the small Turkish Vosk model once; after that recognition itself is offline.
+ * Downloads the small English Vosk model once; after that recognition itself is offline.
+ * This is a fallback model: English acoustic/language data may not reliably recognize Turkish "Eda".
  */
 class OfflineWakeWordListener(
     context: Context,
@@ -37,7 +38,6 @@ class OfflineWakeWordListener(
     @Volatile private var model: Model? = null
     @Volatile private var worker: Thread? = null
     @Volatile private var loading = false
-    private val waitingCallbacks = mutableListOf<Pair<() -> Unit, (String) -> Unit>>()
 
     val isListening: Boolean get() = running.get()
     val isReady: Boolean get() = model != null
@@ -45,21 +45,17 @@ class OfflineWakeWordListener(
     fun prepare(onReady: () -> Unit, onError: (String) -> Unit) {
         if (model != null) { main.post(onReady); return }
         synchronized(this) {
-            if (loading) {
-                waitingCallbacks.add(onReady to onError)
-                return
-            }
+            if (loading) return
             loading = true
-            waitingCallbacks.add(onReady to onError)
         }
         Thread({
             try {
-                val root = File(app.filesDir, "vosk-model-small-tr-0.3")
+                val root = File(app.filesDir, "vosk-model-small-en-us-0.15")
                 val marker = File(root, ".ready")
                 if (!marker.exists()) {
                     root.deleteRecursively()
                     root.mkdirs()
-                    main.post { onStatus("İlk kullanım için Türkçe uyanma modeli indiriliyor…") }
+                    main.post { onStatus("دانلود یک‌بارهٔ مدل تشخیص بیدارباش…") }
                     val archive = File(app.cacheDir, "vosk-model.zip")
                     val connection = (URL(MODEL_URL).openConnection() as HttpURLConnection).apply {
                         connectTimeout = 20000; readTimeout = 60000; instanceFollowRedirects = true
@@ -77,37 +73,23 @@ class OfflineWakeWordListener(
                         nested.deleteRecursively()
                     }
                     check(File(root, "am").exists() && File(root, "conf").exists() && File(root, "graph").exists()) {
-                        "Vosk model dosyaları eksik"
+                        "ساختار مدل Vosk ناقص است"
                     }
                     marker.writeText("ok")
                 }
                 model = Model(root.absolutePath)
-                val callbacks = synchronized(this) {
-                    loading = false
-                    waitingCallbacks.toList().also { waitingCallbacks.clear() }
-                }
-                main.post {
-                    onStatus("Türkçe uyanma modeli hazır")
-                    callbacks.forEach { it.first.invoke() }
-                }
+                main.post { onStatus("مدل بیدارباش آماده است"); onReady() }
             } catch (e: Throwable) {
                 Log.e(TAG, "Wake model prepare failed", e)
-                val callbacks = synchronized(this) {
-                    loading = false
-                    waitingCallbacks.toList().also { waitingCallbacks.clear() }
-                }
-                main.post {
-                    onStatus("Vosk modeli hazırlanamadı: " + (e.message ?: "bilinmeyen hata"))
-                    callbacks.forEach { it.second.invoke(e.message ?: "Model hazırlama hatası") }
-                }
-            }
+                main.post { onError(e.message ?: "خطای آماده‌سازی مدل") }
+            } finally { loading = false }
         }, "eda-vosk-model-loader").start()
     }
 
     fun start(): Boolean {
         val m = model ?: return false
         if (ContextCompat.checkSelfPermission(app, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            main.post { onStatus("Uyandırma için mikrofon izni gerekli") }
+            main.post { onStatus("مجوز میکروفون برای بیدارباش لازم است") }
             return false
         }
         if (!running.compareAndSet(false, true)) return true
@@ -137,10 +119,10 @@ class OfflineWakeWordListener(
             check(min > 0) { "AudioRecord buffer unavailable: $min" }
             audio = AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, rate,
                 AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, maxOf(min, rate))
-            check(audio.state == AudioRecord.STATE_INITIALIZED) { "Mikrofon kullanılamıyor" }
+            check(audio.state == AudioRecord.STATE_INITIALIZED) { "میکروفون در دسترس نیست" }
             recognizer = Recognizer(m, rate.toFloat(), "[\"eda\", \"[unk]\"]")
             audio.startRecording()
-            main.post { onStatus("“Eda” uyandırma kelimesi bekleniyor") }
+            main.post { onStatus("در انتظار واژهٔ بیدارباش «اِدا»") }
             val buffer = ShortArray(rate / 10)
             while (running.get()) {
                 val n = audio.read(buffer, 0, buffer.size)
@@ -151,10 +133,7 @@ class OfflineWakeWordListener(
                 if (text.split(Regex("\\s+")).any { it == wakeWord }) { hit = true; break }
             }
         } catch (e: Throwable) {
-            if (running.get()) {
-                Log.e(TAG, "Wake listening failed", e)
-                main.post { onStatus("Vosk dinleme hatası: " + (e.message ?: "mikrofon kullanılamıyor")) }
-            }
+            if (running.get()) Log.e(TAG, "Wake listening failed", e)
         } finally {
             try { audio?.stop() } catch (_: Throwable) {}
             try { audio?.release() } catch (_: Throwable) {}
@@ -183,6 +162,6 @@ class OfflineWakeWordListener(
 
     companion object {
         private const val TAG = "EdaOfflineWake"
-        private const val MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-tr-0.3.zip"
+        private const val MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip"
     }
 }
