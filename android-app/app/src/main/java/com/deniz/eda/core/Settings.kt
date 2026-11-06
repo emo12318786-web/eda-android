@@ -108,6 +108,11 @@ object Settings {
         get() = getBool("vosk_wake_enabled", true)
         set(v) = setBool("vosk_wake_enabled", v)
 
+    // One-word offline wake trigger. The bundled Vosk model is English.
+    var wakeWord: String
+        get() = getString("wake_word", "eda").trim().lowercase().ifBlank { "eda" }
+        set(v) = setString("wake_word", v.trim().lowercase().ifBlank { "eda" })
+
     // ═══ Battery Notifier (سرویس جدا) ═══
     var batteryNotifierAktif: Boolean
         get() = getBool("battery_notifier_aktif", true)
