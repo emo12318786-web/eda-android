@@ -226,9 +226,9 @@ class SettingsActivity : AppCompatActivity() {
                     "android.permission.health.READ_HEART_RATE", "android.permission.health.READ_SLEEP", "android.permission.health.READ_STEPS" -> try { startActivity(Intent("android.health.connect.action.HEALTH_HOME")) } catch (_: Exception) { startActivity(Intent(AndroidSettings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + packageName))) }
                     "android.permission.POST_NOTIFICATIONS" -> if (android.os.Build.VERSION.SDK_INT >= 33) ActivityCompat.requestPermissions(this, arrayOf(p), 270) else startActivity(Intent(AndroidSettings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + packageName)))
                     "android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE", "android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_MICROPHONE", "android.permission.FOREGROUND_SERVICE_DATA_SYNC", "android.permission.FOREGROUND_SERVICE_HEALTH", "com.termux.permission.RUN_COMMAND" -> startActivity(Intent(AndroidSettings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + packageName)))
-                    else -> if (ContextCompat.checkSelfPermission(this, p) == PackageManager.PERMISSION_GRANTED) Toast.makeText(this, "Bu izin zaten verilmiş", Toast.LENGTH_SHORT).show() else ActivityCompat.requestPermissions(this, arrayOf(p), 270)
+                    else -> if (ContextCompat.checkSelfPermission(this, p) == PackageManager.PERMISSION_GRANTED) Toast.makeText(this, "این مجوز از قبل داده شده است", Toast.LENGTH_SHORT).show() else ActivityCompat.requestPermissions(this, arrayOf(p), 270)
                 }
-            } catch (_: Exception) { Toast.makeText(this, "İlgili Android ayarları açılamadı", Toast.LENGTH_SHORT).show() }
+            } catch (_: Exception) { Toast.makeText(this, "بازکردن تنظیمات مربوط به اندروید ممکن نشد", Toast.LENGTH_SHORT).show() }
         }
         val labels = permissions.map { (name, p) -> name + " — " + durum(p) }.toTypedArray()
         AlertDialog.Builder(this).setTitle("İzin Merkezi (27)")
