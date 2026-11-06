@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
         if (mikrofonVar) {
             servisiBaslat()
         } else {
-            durumText.text = "⚠️ اِدا بدون مجوز میکروفون نمی‌تواند کار کند."
+            durumText.text = "⚠️ Mikrofon izni olmadan Eda çalışamaz."
         }
     }
 
@@ -151,7 +151,7 @@ class MainActivity : AppCompatActivity() {
                        intent?.action == "android.intent.action.VOICE_COMMAND"
         if (isAssist) {
             android.util.Log.d("MainActivity", "🎤 از دکمه Asistan باز شد")
-            Toast.makeText(this, "🎤 اِدا در حال فعال‌شدن است...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "🎤 Eda aktif oluyor...", Toast.LENGTH_SHORT).show()
             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                 servisiBaslat()
             }, 500)
@@ -192,20 +192,20 @@ class MainActivity : AppCompatActivity() {
     private fun durumGuncelle() {
         when (Settings.sonMod) {
             "AKTIF" -> {
-                durumText.text = "✅ اِدا فعال است؛ بگو «اِدا» تا شروع به شنیدن کند"
-                durumDeger.text = "فعال"
+                durumText.text = "✅ Eda çalışıyor - 'Eda' de ve dinlemeye başlasın"
+                durumDeger.text = "Aktif"
                 durumDeger.setTextColor(0xFF10B981.toInt())
                 durumIndicator.setBackgroundColor(0xFF10B981.toInt())
             }
             "UYKU" -> {
-                durumText.text = "💤 اِدا در حالت خواب است"
-                durumDeger.text = "خواب"
+                durumText.text = "💤 Eda uyku modunda"
+                durumDeger.text = "Uyku"
                 durumDeger.setTextColor(0xFF60A5FA.toInt())
                 durumIndicator.setBackgroundColor(0xFF60A5FA.toInt())
             }
             else -> {
-                durumText.text = "💤 سرویس اجرا نمی‌شود"
-                durumDeger.text = "خاموش"
+                durumText.text = "💤 Servis çalışmıyor"
+                durumDeger.text = "Kapalı"
                 durumDeger.setTextColor(0xFFEF4444.toInt())
                 durumIndicator.setBackgroundColor(0xFFEF4444.toInt())
             }
@@ -246,7 +246,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         Settings.sonMod = "AKTIF"
-        Toast.makeText(this, "✅ اِدا شروع به کار کرد", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "✅ Eda başlatıldı", Toast.LENGTH_SHORT).show()
 
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
             durumGuncelle()
@@ -256,7 +256,7 @@ class MainActivity : AppCompatActivity() {
     private fun servisiDurdur() {
         stopService(Intent(this, EdaForegroundService::class.java))
         Settings.sonMod = "KAPALI"
-        Toast.makeText(this, "⏹ اِدا متوقف شد", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "⏹ Eda durduruldu", Toast.LENGTH_SHORT).show()
 
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
             durumGuncelle()
