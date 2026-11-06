@@ -432,7 +432,10 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private var offlineDestekYok = false
 
     private fun baslatDinleme() {
-        if (dinlemeAktif) return
+        if (Settings.derinUyku || dinlemeAktif) {
+            if (Settings.derinUyku) android.util.Log.d("EdaService", "Derin uyku: mikrofon başlatılmadı")
+            return
+        }
 
         if (sttFallbackAktif) {
             acquireMicrophoneAudioFocus()
@@ -528,6 +531,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         retryJob = serviceScope.launch {
             delay(bekleme)
             retryJob = null
+            if (Settings.derinUyku) return@launch
             if (mod == Mod.AKTIF && speechRecognizer == null &&
                 SpeechRecognizer.isRecognitionAvailable(this@EdaForegroundService)) {
                 speechRecognizer = createBestRecognizer()?.apply {
@@ -721,12 +725,25 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             when (sonuc) {
                 is KomutSonucu.Cevap -> konus(sonuc.metin) {
                     if (tesekkurKomutu(metin)) {
-                        // Yanıt tamamen söylendikten sonra uyku moduna geç; uyanma kelimesi dinlemesi sürer.
+                        // Teşekkür komutu: konuşma bittikten sonra tam uykuya geç; mikrofonu kapat.
                         mod = Mod.UYKU
                         sonMod = "UYKU"; Settings.sonMod = "UYKU"
-                        bildirimGuncelle(getString(com.deniz.eda.R.string.notif_sleeping))
+                        Settings.derinUyku = true
+                        dinlemeAktif = false
+                        retryJob?.cancel()
+                        retryJob = null
+                        try {
+                            speechRecognizer?.stopListening()
+                            speechRecognizer?.cancel()
+                            speechRecognizer?.destroy()
+                        } catch (_: Exception) {}
+                        speechRecognizer = null
+                        releaseMicrophoneAudioFocus("teşekkür komutu — tam uyku")
+                        bildirimGuncelle("💤 Derin uyku — Mikrofon kapalı; Widget ile uyandır")
+                        android.util.Log.i("EdaService", "Teşekkür komutu: tam uyku, mikrofon/dinleme kapalı")
+                    } else {
+                        baslatDinleme()
                     }
-                    baslatDinleme()
                 }
                 KomutSonucu.UykuyaDon -> {
                     mod = Mod.UYKU

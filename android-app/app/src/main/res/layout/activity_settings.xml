@@ -42,6 +42,13 @@
                 android:fontFamily="sans-serif-black" />
         </LinearLayout>
 
+        <Button
+            android:id="@+id/izinMerkeziButon"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="İZİN MERKEZİ — 27 İZİN"
+            android:layout_marginBottom="16dp" />
+
         <!-- CARD: Kullanıcı -->
         <LinearLayout
             android:layout_width="match_parent"
