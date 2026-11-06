@@ -87,6 +87,20 @@ class SettingsActivity : AppCompatActivity() {
             setOnCheckedChangeListener { _, checked -> Settings.incomingCallAnnouncementEnabled = checked }
         }
 
+        findViewById<Switch>(R.id.voskWakeSwitch).apply {
+            isChecked = Settings.voskWakeEnabled
+            setOnCheckedChangeListener { _, checked ->
+                Settings.voskWakeEnabled = checked
+                val action = if (checked) "ACTION_VOSK_WAKE_ON" else "ACTION_VOSK_WAKE_OFF"
+                startService(Intent(this@SettingsActivity, com.deniz.eda.service.EdaForegroundService::class.java).setAction(action))
+                Toast.makeText(
+                    this@SettingsActivity,
+                    if (checked) "Çevrimdışı uyandırma etkinleştirildi" else "Çevrimdışı uyandırma kapatıldı",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
         // ═══ Header ═══
         findViewById<TextView>(R.id.geriButon).setOnClickListener { finish() }
 

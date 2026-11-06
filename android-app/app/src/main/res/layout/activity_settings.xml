@@ -164,6 +164,14 @@
                 android:text="Gelen aramayı sesli duyur"
                 android:textColor="@color/text_primary"
                 android:paddingVertical="8dp" />
+
+            <Switch
+                android:id="@+id/voskWakeSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Çevrimdışı Eda uyandırma (Vosk)"
+                android:textColor="@color/text_primary"
+                android:paddingVertical="8dp" />
         </LinearLayout>
 
         <!-- CARD: Offline Gemma models -->

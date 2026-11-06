@@ -105,13 +105,22 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             context = this,
             wakeWord = "eda",
             onWake = { onOfflineWakeWord() },
-            onStatus = { status -> android.util.Log.i("EdaOfflineWake", status) }
+            onStatus = { status ->
+                android.util.Log.i("EdaOfflineWake", status)
+                if (Settings.voskWakeEnabled && Settings.derinUyku) bildirimGuncelle(status)
+            }
         ).also { detector ->
             detector.prepare(
                 onReady = {
-                    if (mod == Mod.UYKU && Settings.derinUyku) detector.start()
+                    if (mod == Mod.UYKU && Settings.derinUyku && Settings.voskWakeEnabled) {
+                        val started = detector.start()
+                        bildirimGuncelle(if (started) "Vosk hazır — “Eda” kelimesi bekleniyor" else "Vosk hazır; dinleme başlatılamadı")
+                    }
                 },
-                onError = { error -> android.util.Log.e("EdaOfflineWake", "Wake model unavailable: $error") }
+                onError = { error ->
+                    android.util.Log.e("EdaOfflineWake", "Wake model unavailable: $error")
+                    bildirimGuncelle("Vosk model error: $error")
+                }
             )
         }
 
@@ -217,6 +226,33 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // ═══ هندل کردن action های Widget ═══
         when (intent?.action) {
+            "ACTION_VOSK_WAKE_ON" -> {
+                Settings.voskWakeEnabled = true
+                if (mod == Mod.UYKU && Settings.derinUyku) {
+                    val detector = offlineWake
+                    if (detector != null) {
+                        detector.prepare(
+                            onReady = {
+                                if (Settings.voskWakeEnabled && mod == Mod.UYKU && Settings.derinUyku) {
+                                    val started = detector.start()
+                                    bildirimGuncelle(if (started) "Vosk hazır — “Eda” kelimesi bekleniyor" else "Vosk hazır; dinleme başlatılamadı")
+                                }
+                            },
+                            onError = { error ->
+                                android.util.Log.e("EdaOfflineWake", "Wake model unavailable: $error")
+                                bildirimGuncelle("Vosk model error: $error")
+                            }
+                        )
+                    }
+                }
+                return START_STICKY
+            }
+            "ACTION_VOSK_WAKE_OFF" -> {
+                Settings.voskWakeEnabled = false
+                offlineWake?.stop()
+                bildirimGuncelle(if (Settings.derinUyku) "💤 Uyku — uyandırma kelimesi kapalı" else getString(com.deniz.eda.R.string.notif_active))
+                return START_STICKY
+            }
             "com.deniz.eda.STT_RESULT" -> {
                 val sttText = intent.getStringExtra("stt_text") ?: ""
                 android.util.Log.i("EdaService", "STT fallback sonuc: " + sttText)
@@ -272,7 +308,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                 android.util.Log.d("EdaService", "UYKU moda geçildi")
                 konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") {
-                    offlineWake?.start()
+                    if (Settings.voskWakeEnabled) offlineWake?.start()
                     bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                 }
             }
@@ -310,7 +346,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 try { speechRecognizer?.stopListening(); speechRecognizer?.cancel(); speechRecognizer?.destroy() } catch (_: Exception) {}
                 speechRecognizer = null
                 dinlemeAktif = false
-                offlineWake?.start()
+                if (Settings.voskWakeEnabled) offlineWake?.start()
                 bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                 android.util.Log.d("EdaService", "Derin uyku: Vosk Eda kelimesini bekliyor")
             }
@@ -776,7 +812,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                         } catch (_: Exception) {}
                         speechRecognizer = null
                         releaseMicrophoneAudioFocus("teşekkür komutu — Vosk bekleme")
-                        offlineWake?.start()
+                        if (Settings.voskWakeEnabled) offlineWake?.start()
                         bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                         android.util.Log.i("EdaService", "Teşekkür komutu: Google STT kapandı, Vosk beklemede")
                     } else {
@@ -794,7 +830,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                     speechRecognizer = null
                     bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                     konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") {
-                        offlineWake?.start()
+                        if (Settings.voskWakeEnabled) offlineWake?.start()
                         bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                     }
                 }
