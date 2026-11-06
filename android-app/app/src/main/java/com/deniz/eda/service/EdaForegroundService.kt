@@ -750,12 +750,20 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             when (sonuc) {
                 is KomutSonucu.Cevap -> konus(sonuc.metin) {
                     if (tesekkurKomutu(metin)) {
-                        // Yanıt tamamen söylendikten sonra uyku moduna geç; uyanma kelimesi dinlemesi sürer.
+                        // Google STT kapanır; yalnızca çevrimdışı Eda algılayıcısı çalışır.
                         mod = Mod.UYKU
                         sonMod = "UYKU"; Settings.sonMod = "UYKU"
-                        bildirimGuncelle(getString(com.deniz.eda.R.string.notif_sleeping))
+                        Settings.derinUyku = true
+                        dinlemeAktif = false
+                        retryJob?.cancel()
+                        retryJob = null
+                        try { speechRecognizer?.cancel(); speechRecognizer?.destroy() } catch (_: Exception) {}
+                        speechRecognizer = null
+                        bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
+                        offlineWake?.start()
+                    } else {
+                        baslatDinleme()
                     }
-                    baslatDinleme()
                 }
                 KomutSonucu.UykuyaDon -> {
                     mod = Mod.UYKU
