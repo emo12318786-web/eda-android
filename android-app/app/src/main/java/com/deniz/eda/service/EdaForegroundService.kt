@@ -105,13 +105,22 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             context = this,
             wakeWord = "eda",
             onWake = { onOfflineWakeWord() },
-            onStatus = { status -> android.util.Log.i("EdaOfflineWake", status) }
+            onStatus = { status ->
+                android.util.Log.i("EdaOfflineWake", status)
+                if (Settings.voskWakeEnabled && Settings.derinUyku) bildirimGuncelle(status)
+            }
         ).also { detector ->
             detector.prepare(
                 onReady = {
-                    if (mod == Mod.UYKU && Settings.derinUyku) detector.start()
+                    if (mod == Mod.UYKU && Settings.derinUyku && Settings.voskWakeEnabled) {
+                        val started = detector.start()
+                        bildirimGuncelle(if (started) "Vosk hazır — “Eda” kelimesi bekleniyor" else "Vosk hazır; baş‌کردن گوش‌دادن ناموفق بود")
+                    }
                 },
-                onError = { error -> android.util.Log.e("EdaOfflineWake", "Wake model unavailable: $error") }
+                onError = { error ->
+                    android.util.Log.e("EdaOfflineWake", "Wake model unavailable: $error")
+                    bildirimGuncelle("Vosk model error: $error")
+                }
             )
         }
 
