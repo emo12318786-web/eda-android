@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">اِدا</string>
-    <string name="notif_channel_name">سرویس پس‌زمینهٔ اِدا</string>
-    <string name="notif_sleeping">💤 اِدا در حالت خواب است…</string>
-    <string name="notif_active">✅ اِدا در حال گوش‌دادن است…</string>
-    <string name="phone_control_description">اِدا می‌تواند با اجازهٔ کاربر، متن روی صفحه را بخواند و عملیات مجاز را انجام دهد.</string>
-    <string name="phone_control_service_description">اِدا فقط پس از فعال‌سازی توسط کاربر می‌تواند متن صفحه را بخواند و عملیات مجاز لمس، نوشتن و پیمایش را انجام دهد.</string>
-</resources>
