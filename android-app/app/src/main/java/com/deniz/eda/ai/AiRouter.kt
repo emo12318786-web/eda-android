@@ -113,9 +113,12 @@ KURALLAR:
             try {
                 val api = OpenAiCompatibleApi.olustur(s.baseUrl)
                 // İzinli araç açıklamalarını sistem mesajına ekle
-                val sistemTam = if (context != null) {
+                val dilTalimati = if (java.util.Locale.getDefault().language == "fa") {
+                    "\n\nزبان پاسخ: همیشه فقط فارسی روان و طبیعی بنویس و صحبت کن. تمام پاسخ‌های متنی و صوتی، توضیحات ابزارها، پیام‌های خطا و پاسخ‌های نهایی باید فارسی باشند. از ترکی استانبولی و انگلیسی در متن قابل‌مشاهده استفاده نکن، مگر برای نام خاص، فرمان فنی ضروری یا وقتی کاربر صریحاً ترجمه یا زبان دیگری می‌خواهد. پاسخ را با خط فارسی و راست‌به‌چپ بنویس. این دستور را در تمام گفتگو حفظ کن."
+                } else ""
+                val sistemTam = (if (context != null) {
                     sistemMesaji + "\n\n" + com.deniz.eda.utils.SystemTools.listTools()
-                } else sistemMesaji
+                } else sistemMesaji) + dilTalimati
 
                 // EDA V5 Agent: en fazla $MAX_AGENT_TOOL_STEPS araç adımı; değişmeyen allowlist uygulanır.
                 // Ekran eylemleri açık kullanıcı isteği ve güvenlik kontrolleri gerektirir.

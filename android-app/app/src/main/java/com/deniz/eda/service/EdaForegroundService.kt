@@ -56,6 +56,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private lateinit var tts: TextToSpeech
     private var panelServer: PanelServer? = null
     private var speechRecognizer: SpeechRecognizer? = null
+    private var offlineWake: OfflineWakeWordListener? = null
     private var sttFallbackAktif = false
     private var ardisikHataSayisi = 0
     private var mod = Mod.UYKU
@@ -100,6 +101,22 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         NotificationHelper.channelOlustur(this)
         tts = TextToSpeech(this, this)
 
+        offlineWake = OfflineWakeWordListener(
+            context = this,
+            wakeWord = "eda",
+            onWake = { onOfflineWakeWord() },
+            onStatus = { android.util.Log.i("EdaOfflineWake", it) }
+        ).also { detector ->
+            detector.prepare(
+                onReady = {
+                    if (mod == Mod.UYKU && Settings.derinUyku) detector.start()
+                },
+                onError = { error ->
+                    android.util.Log.e("EdaOfflineWake", "Wake model unavailable: $error")
+                }
+            )
+        }
+
         // GUVENLIK ONLEMI: eski bir surumde STREAM_MUSIC gecici olarak
         // susturuluyordu; bu susturma cihaz genelinde kalici olabildigi
         // icin (uygulama yeniden baslasa bile), burada bir kez zorla
@@ -140,6 +157,19 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         if (Settings.guvenlikModuAktif) securityMode.baslat()
     }
 
+
+    private fun onOfflineWakeWord() {
+        offlineWake?.stop()
+        Settings.derinUyku = false
+        mod = Mod.AKTIF
+        sonMod = "AKTIF"; Settings.sonMod = "AKTIF"
+        dinlemeAktif = false
+        if (speechRecognizer == null && SpeechRecognizer.isRecognitionAvailable(this)) {
+            speechRecognizer = createBestRecognizer()?.apply { setRecognitionListener(recognitionListener) }
+        }
+        bildirimGuncelle("🎙️ Eda uyandı — dinliyorum")
+        baslatDinleme()
+    }
 
     private fun createBestRecognizer(): SpeechRecognizer? {
         // 1. Varsayilan sistem motoru
@@ -240,9 +270,9 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                     speechRecognizer?.destroy()
                 } catch (e: Exception) {}
                 speechRecognizer = null
-                bildirimGuncelle("💤 Uyku — Mikrofon kapalı")
+                bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                 android.util.Log.d("EdaService", "UYKU moda geçildi")
-                konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") { }
+                konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") { offlineWake?.start() }
             }
             
             "ACTION_STOP_SPEAK" -> {
@@ -274,7 +304,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 Settings.derinUyku = true
                 dinlemeAktif = false
                 speechRecognizer?.stopListening()
-                bildirimGuncelle("💤 Derin uyku — Widget ile uyandır")
+                offlineWake?.start()
+                bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                 android.util.Log.d("EdaService", "Derin uyku moduna geçildi")
             }
             
@@ -739,7 +770,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                         } catch (_: Exception) {}
                         speechRecognizer = null
                         releaseMicrophoneAudioFocus("teşekkür komutu — tam uyku")
-                        bildirimGuncelle("💤 Derin uyku — Mikrofon kapalı; Widget ile uyandır")
+                        bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
+                         offlineWake?.start()
                         android.util.Log.i("EdaService", "Teşekkür komutu: tam uyku, mikrofon/dinleme kapalı")
                     } else {
                         baslatDinleme()
@@ -749,7 +781,16 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                     mod = Mod.UYKU
                 sonMod = "UYKU"; Settings.sonMod = "UYKU"
                     bildirimGuncelle(getString(com.deniz.eda.R.string.notif_sleeping))
-                    konus("Uyku moduna dönüyorum ${Settings.kullaniciAdi}.") { baslatDinleme() }
+                    Settings.derinUyku = true
+                     dinlemeAktif = false
+                     retryJob?.cancel()
+                     retryJob = null
+                     try { speechRecognizer?.cancel(); speechRecognizer?.destroy() } catch (_: Exception) {}
+                     speechRecognizer = null
+                     konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") {
+                         offlineWake?.start()
+                         bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
+                     }
                 }
                 KomutSonucu.KapatOnayIste -> {
                     kapatOnayBekleniyor = true
@@ -873,6 +914,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         retryJob?.cancel()
         serviceScope.cancel()
         speechRecognizer?.destroy()
+        offlineWake?.release()
+        offlineWake = null
         if (ttsHazir) tts.shutdown()
         super.onDestroy()
     }
