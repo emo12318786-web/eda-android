@@ -771,7 +771,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                         } catch (_: Exception) {}
                         speechRecognizer = null
                         releaseMicrophoneAudioFocus("teşekkür komutu — tam uyku")
-                        bildirimGuncelle("💤 Derin uyku — Mikrofon kapalı; Widget ile uyandır")
+                        bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
+                         offlineWake?.start()
                         android.util.Log.i("EdaService", "Teşekkür komutu: tam uyku, mikrofon/dinleme kapalı")
                     } else {
                         baslatDinleme()
@@ -781,7 +782,16 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                     mod = Mod.UYKU
                 sonMod = "UYKU"; Settings.sonMod = "UYKU"
                     bildirimGuncelle(getString(com.deniz.eda.R.string.notif_sleeping))
-                    konus("Uyku moduna dönüyorum ${Settings.kullaniciAdi}.") { baslatDinleme() }
+                    Settings.derinUyku = true
+                     dinlemeAktif = false
+                     retryJob?.cancel()
+                     retryJob = null
+                     try { speechRecognizer?.cancel(); speechRecognizer?.destroy() } catch (_: Exception) {}
+                     speechRecognizer = null
+                     konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") {
+                         offlineWake?.start()
+                         bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
+                     }
                 }
                 KomutSonucu.KapatOnayIste -> {
                     kapatOnayBekleniyor = true
