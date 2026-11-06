@@ -114,7 +114,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 onReady = {
                     if (mod == Mod.UYKU && Settings.derinUyku && Settings.voskWakeEnabled) {
                         val started = detector.start()
-                        bildirimGuncelle(if (started) "Vosk hazır — “Eda” kelimesi bekleniyor" else "Vosk hazır; baş‌کردن گوش‌دادن ناموفق بود")
+                        bildirimGuncelle(if (started) "Vosk hazır — “Eda” kelimesi bekleniyor" else "Vosk hazır; dinleme başlatılamadı")
                     }
                 },
                 onError = { error ->
@@ -281,7 +281,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                 android.util.Log.d("EdaService", "UYKU moda geçildi")
                 konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") {
-                    offlineWake?.start()
+                    if (Settings.voskWakeEnabled) offlineWake?.start()
                     bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                 }
             }
