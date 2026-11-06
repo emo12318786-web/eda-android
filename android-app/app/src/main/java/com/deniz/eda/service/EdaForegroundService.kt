@@ -346,7 +346,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 try { speechRecognizer?.stopListening(); speechRecognizer?.cancel(); speechRecognizer?.destroy() } catch (_: Exception) {}
                 speechRecognizer = null
                 dinlemeAktif = false
-                offlineWake?.start()
+                if (Settings.voskWakeEnabled) offlineWake?.start()
                 bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                 android.util.Log.d("EdaService", "Derin uyku: Vosk Eda kelimesini bekliyor")
             }
@@ -812,7 +812,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                         } catch (_: Exception) {}
                         speechRecognizer = null
                         releaseMicrophoneAudioFocus("teşekkür komutu — Vosk bekleme")
-                        offlineWake?.start()
+                        if (Settings.voskWakeEnabled) offlineWake?.start()
                         bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                         android.util.Log.i("EdaService", "Teşekkür komutu: Google STT kapandı, Vosk beklemede")
                     } else {
@@ -830,7 +830,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                     speechRecognizer = null
                     bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                     konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") {
-                        offlineWake?.start()
+                        if (Settings.voskWakeEnabled) offlineWake?.start()
                         bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                     }
                 }
