@@ -226,6 +226,33 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // ═══ هندل کردن action های Widget ═══
         when (intent?.action) {
+            "ACTION_VOSK_WAKE_ON" -> {
+                Settings.voskWakeEnabled = true
+                if (mod == Mod.UYKU && Settings.derinUyku) {
+                    val detector = offlineWake
+                    if (detector != null) {
+                        detector.prepare(
+                            onReady = {
+                                if (Settings.voskWakeEnabled && mod == Mod.UYKU && Settings.derinUyku) {
+                                    val started = detector.start()
+                                    bildirimGuncelle(if (started) "Vosk hazır — “Eda” kelimesi bekleniyor" else "Vosk hazır; dinleme başlatılamadı")
+                                }
+                            },
+                            onError = { error ->
+                                android.util.Log.e("EdaOfflineWake", "Wake model unavailable: $error")
+                                bildirimGuncelle("Vosk model error: $error")
+                            }
+                        )
+                    }
+                }
+                return START_STICKY
+            }
+            "ACTION_VOSK_WAKE_OFF" -> {
+                Settings.voskWakeEnabled = false
+                offlineWake?.stop()
+                bildirimGuncelle(if (Settings.derinUyku) "💤 Uyku — uyandırma kelimesi kapalı" else getString(com.deniz.eda.R.string.notif_active))
+                return START_STICKY
+            }
             "com.deniz.eda.STT_RESULT" -> {
                 val sttText = intent.getStringExtra("stt_text") ?: ""
                 android.util.Log.i("EdaService", "STT fallback sonuc: " + sttText)
