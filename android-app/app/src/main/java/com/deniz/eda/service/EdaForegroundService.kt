@@ -785,9 +785,18 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 }
                 KomutSonucu.UykuyaDon -> {
                     mod = Mod.UYKU
-                sonMod = "UYKU"; Settings.sonMod = "UYKU"
-                    bildirimGuncelle(getString(com.deniz.eda.R.string.notif_sleeping))
-                    konus("Uyku moduna dönüyorum ${Settings.kullaniciAdi}.") { baslatDinleme() }
+                    sonMod = "UYKU"; Settings.sonMod = "UYKU"
+                    Settings.derinUyku = true
+                    dinlemeAktif = false
+                    retryJob?.cancel()
+                    retryJob = null
+                    try { speechRecognizer?.cancel(); speechRecognizer?.destroy() } catch (_: Exception) {}
+                    speechRecognizer = null
+                    bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
+                    konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") {
+                        offlineWake?.start()
+                        bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
+                    }
                 }
                 KomutSonucu.KapatOnayIste -> {
                     kapatOnayBekleniyor = true
