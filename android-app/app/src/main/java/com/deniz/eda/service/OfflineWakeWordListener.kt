@@ -37,6 +37,7 @@ class OfflineWakeWordListener(
     @Volatile private var model: Model? = null
     @Volatile private var worker: Thread? = null
     @Volatile private var loading = false
+    private val waitingCallbacks = mutableListOf<Pair<() -> Unit, (String) -> Unit>>()
 
     val isListening: Boolean get() = running.get()
     val isReady: Boolean get() = model != null
@@ -44,8 +45,12 @@ class OfflineWakeWordListener(
     fun prepare(onReady: () -> Unit, onError: (String) -> Unit) {
         if (model != null) { main.post(onReady); return }
         synchronized(this) {
-            if (loading) return
+            if (loading) {
+                waitingCallbacks.add(onReady to onError)
+                return
+            }
             loading = true
+            waitingCallbacks.add(onReady to onError)
         }
         Thread({
             try {
@@ -77,11 +82,25 @@ class OfflineWakeWordListener(
                     marker.writeText("ok")
                 }
                 model = Model(root.absolutePath)
-                main.post { onStatus("Türkçe uyanma modeli hazır"); onReady() }
+                val callbacks = synchronized(this) {
+                    loading = false
+                    waitingCallbacks.toList().also { waitingCallbacks.clear() }
+                }
+                main.post {
+                    onStatus("Türkçe uyanma modeli hazır")
+                    callbacks.forEach { it.first.invoke() }
+                }
             } catch (e: Throwable) {
                 Log.e(TAG, "Wake model prepare failed", e)
-                main.post { onError(e.message ?: "Model hazırlama hatası") }
-            } finally { loading = false }
+                val callbacks = synchronized(this) {
+                    loading = false
+                    waitingCallbacks.toList().also { waitingCallbacks.clear() }
+                }
+                main.post {
+                    onStatus("Vosk modeli hazırlanamadı: " + (e.message ?: "bilinmeyen hata"))
+                    callbacks.forEach { it.second.invoke(e.message ?: "Model hazırlama hatası") }
+                }
+            }
         }, "eda-vosk-model-loader").start()
     }
 
@@ -132,7 +151,10 @@ class OfflineWakeWordListener(
                 if (text.split(Regex("\\s+")).any { it == wakeWord }) { hit = true; break }
             }
         } catch (e: Throwable) {
-            if (running.get()) Log.e(TAG, "Wake listening failed", e)
+            if (running.get()) {
+                Log.e(TAG, "Wake listening failed", e)
+                main.post { onStatus("Vosk dinleme hatası: " + (e.message ?: "mikrofon kullanılamıyor")) }
+            }
         } finally {
             try { audio?.stop() } catch (_: Throwable) {}
             try { audio?.release() } catch (_: Throwable) {}
