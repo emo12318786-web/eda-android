@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class OfflineWakeWordListener(
     context: Context,
-    private val wakeWord: String = "eda",
+    private val wakeWord: () -> String = { "eda" },
     private val onWake: () -> Unit,
     private val onStatus: (String) -> Unit = {}
 ) {
@@ -120,9 +120,10 @@ class OfflineWakeWordListener(
             audio = AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, rate,
                 AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, maxOf(min, rate))
             check(audio.state == AudioRecord.STATE_INITIALIZED) { "Mikrofon kullanılamıyor" }
-            recognizer = Recognizer(m, rate.toFloat(), "[\"eda\", \"[unk]\"]")
+            val trigger = wakeWord().trim().lowercase().ifBlank { "eda" }
+            recognizer = Recognizer(m, rate.toFloat(), "[${JSONObject.quote(trigger)}, \"[unk]\"]")
             audio.startRecording()
-            main.post { onStatus("“Eda” uyandırma kelimesi bekleniyor") }
+            main.post { onStatus("“${wakeWord()}” uyandırma kelimesi bekleniyor") }
             val buffer = ShortArray(rate / 10)
             while (running.get()) {
                 val n = audio.read(buffer, 0, buffer.size)
@@ -130,7 +131,11 @@ class OfflineWakeWordListener(
                 val result = if (recognizer.acceptWaveForm(buffer, n)) recognizer.result else recognizer.partialResult
                 val obj = JSONObject(result)
                 val text = obj.optString("text", obj.optString("partial", "")).lowercase()
-                if (text.split(Regex("\\s+")).any { it == wakeWord }) { hit = true; break }
+                val trigger = wakeWord().trim().lowercase().ifBlank { "eda" }
+                if (text.split(Regex("\\s+")).any { it.replace(Regex("[^a-z0-9]"), "") == trigger }) {
+                    hit = true
+                    break
+                }
             }
         } catch (e: Throwable) {
             if (running.get()) Log.e(TAG, "Wake listening failed", e)

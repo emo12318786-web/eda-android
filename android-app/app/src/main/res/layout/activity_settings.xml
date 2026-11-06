@@ -172,6 +172,26 @@
                 android:text="Çevrimdışı Eda uyandırma (Vosk)"
                 android:textColor="@color/text_primary"
                 android:paddingVertical="8dp" />
+
+            <EditText
+                android:id="@+id/wakeWordInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Uyandırma kelimesi (ör. Eda, Jarvis)"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_muted"
+                android:inputType="textNoSuggestions"
+                android:maxLength="20"
+                android:singleLine="true"
+                android:layout_marginTop="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Not: Çevrimdışı model İngilizcedir; yaygın İngilizce kelimeler daha iyi tanınabilir."
+                android:textColor="@color/text_muted"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp" />
         </LinearLayout>
 
         <!-- CARD: Offline Gemma models -->

@@ -108,16 +108,28 @@ class SettingsActivity : AppCompatActivity() {
         val kullaniciAdiInput = findViewById<EditText>(R.id.kullaniciAdiInput)
         val groqInput = findViewById<EditText>(R.id.groqInput)
         val navasanInput = findViewById<EditText>(R.id.navasanInput)
+        val wakeWordInput = findViewById<EditText>(R.id.wakeWordInput)
 
         kullaniciAdiInput.setText(Settings.kullaniciAdi)
         groqInput.setText(Settings.groqApiKey)
         navasanInput.setText(Settings.navasanApiKey)
+        wakeWordInput.setText(Settings.wakeWord)
 
         // ═══ Kaydet ═══
         findViewById<Button>(R.id.kaydetButon).setOnClickListener {
             Settings.kullaniciAdi = kullaniciAdiInput.text.toString().trim()
             Settings.groqApiKey = groqInput.text.toString().trim()
             Settings.navasanApiKey = navasanInput.text.toString().trim()
+            val wakeWord = wakeWordInput.text.toString().trim().lowercase()
+            if (!wakeWord.matches(Regex("[a-zA-Z0-9]{2,20}"))) {
+                wakeWordInput.error = "2–20 harf veya rakamdan oluşan tek kelime gir"
+                return@setOnClickListener
+            }
+            val wakeWordChanged = wakeWord != Settings.wakeWord
+            Settings.wakeWord = wakeWord
+            if (wakeWordChanged) {
+                startService(Intent(this, com.deniz.eda.service.EdaForegroundService::class.java).setAction("ACTION_WAKE_WORD_CHANGED"))
+            }
 
             Toast.makeText(this, "✅ Ayarlar kaydedildi", Toast.LENGTH_SHORT).show()
             finish()
