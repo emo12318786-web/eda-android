@@ -72,7 +72,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     // FAZ 2: guvenlik modu - hareket algilanirsa TTS ile yuksek uyari verir.
     private val securityMode by lazy {
         SecurityMode(this) {
-            konus("Dikkat! Hareket algılandı, güvenlik modu tetiklendi!")
+            konus("توجه! حرکت تشخیص داده شد و حالت امنیتی فعال شد!")
         }
     }
 
@@ -125,7 +125,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             // Cihazda hicbir konusma tanima servisi yok (orn. Google uygulamasi
             // olmayan bir ROM) - sonsuz hata donguyu onlemek icin hic denemeyip
             // bildirimi guncelliyoruz.
-            bildirimGuncelle("⚠️ Bu cihazda konuşma tanıma servisi bulunamadı.")
+            bildirimGuncelle("⚠️ سرویس تشخیص گفتار در این دستگاه پیدا نشد.")
         } else {
             speechRecognizer = createBestRecognizer()?.apply {
                 setRecognitionListener(recognitionListener)
@@ -224,7 +224,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
                 android.util.Log.d("EdaService", "AKTIF moda geçildi")
                 healthMonitorBaslat()
-                konus("Aktif modda çalışıyorum, ${Settings.kullaniciAdi}.") { baslatDinleme() }
+                konus("در حالت فعال کار می‌کنم، ${Settings.kullaniciAdi}.") { baslatDinleme() }
             }
             
             "ACTION_UYKU" -> {
@@ -240,9 +240,9 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                     speechRecognizer?.destroy()
                 } catch (e: Exception) {}
                 speechRecognizer = null
-                bildirimGuncelle("💤 Uyku — Mikrofon kapalı")
+                bildirimGuncelle("💤 حالت خواب — میکروفون خاموش است")
                 android.util.Log.d("EdaService", "UYKU moda geçildi")
-                konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") { }
+                konus("به حالت خواب می‌روم، ${Settings.kullaniciAdi}.") { }
             }
             
             "ACTION_STOP_SPEAK" -> {
@@ -274,7 +274,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 Settings.derinUyku = true
                 dinlemeAktif = false
                 speechRecognizer?.stopListening()
-                bildirimGuncelle("💤 Derin uyku — Widget ile uyandır")
+                bildirimGuncelle("💤 خواب عمیق — با ابزارک بیدارم کن")
                 android.util.Log.d("EdaService", "Derin uyku moduna geçildi")
             }
             
@@ -316,6 +316,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
+            val dil = if (java.util.Locale.getDefault().language == "fa") java.util.Locale("fa", "IR") else java.util.Locale("tr", "TR")
+            tts.language = dil
             tts.language = Locale("tr", "TR")
         }
         ttsHazir = true
@@ -347,7 +349,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                         val seviye = (yuzde / 5) * 5
                         if (seviye != sonPilUyariSeviyesi) {
                             sonPilUyariSeviyesi = seviye
-                            konus("Acil! Pil yüzde $yuzde. Hemen şarja tak!")
+                            konus("هشدار! باتری $yuzde درصد است. همین حالا شارژر را وصل کن!")
                             continue
                         }
                     }
@@ -356,13 +358,13 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                         val seviye = (yuzde / 5) * 5
                         if (seviye != sonPilUyariSeviyesi) {
                             sonPilUyariSeviyesi = seviye
-                            konus("Dikkat! Pil yüzde $yuzde. Şarj etmen iyi olur")
+                            konus("توجه! باتری $yuzde درصد است. بهتر است شارژش کنی.")
                             continue
                         }
                     }
 
                     // ═══ عادی (بالای ۳۰٪) ═══
-                    konus("Pil yüzde $yuzde ${Settings.kullaniciAdi}.")
+                    konus("باتری ${Settings.kullaniciAdi}، $yuzde درصد است.")
                 }
             }
         }
@@ -375,7 +377,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             while (isActive) {
                 delay(30_000L)
                 val tetiklenenler = ReminderChecker.kontrolEt(this@EdaForegroundService)
-                tetiklenenler.forEach { mesaj -> konus("Hatırlatma: $mesaj") }
+                tetiklenenler.forEach { mesaj -> konus("یادآوری: $mesaj") }
             }
         }
     }
@@ -465,7 +467,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         // ═══ خواب عمیق: تو حالت خواب عمیق، میکروفون روشن نمی‌شه ═══
         if (mod == Mod.UYKU && Settings.derinUyku) {
             android.util.Log.d("EdaService", "خواب عمیق — dinleme başlatılmadı")
-            bildirimGuncelle("💤 Derin uyku — Widget ile uyandır")
+            bildirimGuncelle("💤 خواب عمیق — با ابزارک بیدارم کن")
             return
         }
         
@@ -474,7 +476,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         if (mod == Mod.AKTIF) {
             // Bildirim durumunu gerçek dinleme döngüsüyle eşleştir; eski
             // "mikrofon kapalı" metni aktif dinlemeye geçince kalmasın.
-            bildirimGuncelle("🎙️ Aktif — Mikrofon dinliyor")
+            bildirimGuncelle("🎙️ فعال — میکروفون در حال شنیدن است")
         }
         val uykuModu = mod == Mod.UYKU
         val offlineDenensin = uykuModu && !offlineDestekYok
@@ -646,7 +648,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 mod = Mod.AKTIF
                 sonMod = "AKTIF"; Settings.sonMod = "AKTIF"
                 bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
-                konus("Buradayım ${Settings.kullaniciAdi}! Dinliyorum.") { baslatDinleme() }
+                konus("اینجا هستم ${Settings.kullaniciAdi}! گوش می‌دهم.") { baslatDinleme() }
             } else {
                 baslatDinleme()
             }
@@ -659,9 +661,9 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             val onaylandi = metin != null && listOf("evet", "eminim", "tamam", "kapat")
                 .any { it in metin.lowercase(Locale.getDefault()) }
             if (onaylandi) {
-                konus("Görüşmek üzere ${Settings.kullaniciAdi}.") { stopSelf() }
+                konus("خداحافظ ${Settings.kullaniciAdi}.") { stopSelf() }
             } else {
-                konus("Tamam, kapatmıyorum ${Settings.kullaniciAdi}.") { baslatDinleme() }
+                konus("باشه، خاموش نمی‌کنم ${Settings.kullaniciAdi}.") { baslatDinleme() }
             }
             return
         }
@@ -739,7 +741,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                         } catch (_: Exception) {}
                         speechRecognizer = null
                         releaseMicrophoneAudioFocus("teşekkür komutu — tam uyku")
-                        bildirimGuncelle("💤 Derin uyku — Mikrofon kapalı; Widget ile uyandır")
+                        bildirimGuncelle("💤 خواب عمیق — میکروفون خاموش است; Widget ile uyandır")
                         android.util.Log.i("EdaService", "Teşekkür komutu: tam uyku, mikrofon/dinleme kapalı")
                     } else {
                         baslatDinleme()
@@ -749,13 +751,13 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                     mod = Mod.UYKU
                 sonMod = "UYKU"; Settings.sonMod = "UYKU"
                     bildirimGuncelle(getString(com.deniz.eda.R.string.notif_sleeping))
-                    konus("Uyku moduna dönüyorum ${Settings.kullaniciAdi}.") { baslatDinleme() }
+                    konus("به حالت خواب برمی‌گردم ${Settings.kullaniciAdi}.") { baslatDinleme() }
                 }
                 KomutSonucu.KapatOnayIste -> {
                     kapatOnayBekleniyor = true
-                    konus("Kapatmak istediğine emin misin ${Settings.kullaniciAdi}?") { baslatDinleme() }
+                    konus("مطمئنی می‌خواهی خاموشم کنی، ${Settings.kullaniciAdi}؟") { baslatDinleme() }
                 }
-                KomutSonucu.Kapat -> konus("Görüşmek üzere ${Settings.kullaniciAdi}.") { stopSelf() }
+                KomutSonucu.Kapat -> konus("خداحافظ ${Settings.kullaniciAdi}.") { stopSelf() }
                 is KomutSonucu.GuvenlikModuDegisti -> {
                     if (sonuc.aktif) securityMode.baslat() else securityMode.durdur()
                     konus(
@@ -774,7 +776,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                         speechRecognizer?.stopListening()
                         speechRecognizer?.cancel()
                     } catch (e: Exception) {}
-                    bildirimGuncelle("💤 Geçici uyku — ${"%.1f".format(sureDakika)} dk")
+                    bildirimGuncelle("💤 خواب موقت — ${"%.1f".format(sureDakika)} دقیقه")
                     konus(sonuc.mesaj) {
                         // بعد از مدت مشخص، خودکار بیدار شو
                         serviceScope.launch {
@@ -783,7 +785,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                             mod = Mod.AKTIF
                             sonMod = "AKTIF"; Settings.sonMod = "AKTIF"
                             bildirimGuncelle(getString(com.deniz.eda.R.string.notif_active))
-                            konus("Geri döndüm, ${Settings.kullaniciAdi}, dinliyorum.") {
+                            konus("برگشتم ${Settings.kullaniciAdi}، گوش می‌دهم.") {
                                 baslatDinleme()
                             }
                         }
