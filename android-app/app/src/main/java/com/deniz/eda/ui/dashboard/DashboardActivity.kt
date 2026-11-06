@@ -213,7 +213,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
     }
     // Use observable dashboard state; Compose cannot observe mutable Settings directly.
     val active = state.mod == "AKTIF"
-    val sleeping = state.mod == "UYKU"
+    val sleeping = state.mod == "خواب"
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -247,7 +247,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                             fontWeight = if (selectedTab == 0) FontWeight.Black else FontWeight.Normal
                         )
                     },
-                    label = { Text("Merkez", fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) },
+                    label = { Text("خانه", fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Violet,
                         selectedTextColor = Violet,
@@ -267,7 +267,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                             fontWeight = if (selectedTab == 1) FontWeight.Black else FontWeight.Normal
                         )
                     },
-                    label = { Text("Kontrol", fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) },
+                    label = { Text("کنترل", fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Violet,
                         selectedTextColor = Violet,
@@ -287,7 +287,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                             fontWeight = if (selectedTab == 2) FontWeight.Black else FontWeight.Normal
                         )
                     },
-                    label = { Text("Sistem", fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal) },
+                    label = { Text("سامانه", fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Violet,
                         selectedTextColor = Violet,
@@ -328,7 +328,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text("EDA", fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
-                    Text("KİŞİSEL ASİSTAN • V5", fontSize = 9.sp, color = Muted, letterSpacing = 1.4.sp)
+                    Text("دستیار شخصی • نسخهٔ ۵", fontSize = 9.sp, color = Muted, letterSpacing = 1.4.sp)
                 }
                 Text(ThemeConfig.icon("crown"), modifier = Modifier.clickable { context.startActivity(Intent(context, ThemeActivity::class.java)) }.padding(8.dp), color = Cyan, fontSize = 22.sp)
                 Text(ThemeConfig.icon("settings"), modifier = Modifier.clickable { onAction("ACTION_SETTINGS") }.padding(8.dp), color = Violet, fontSize = 24.sp)
@@ -337,7 +337,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(7.dp).background(statusColor, CircleShape))
                         Spacer(Modifier.width(6.dp))
-                        Text(if (active) "AKTİF" else if (sleeping) "UYKU" else "KAPALI",
+                        Text(if (active) "فعال" else if (sleeping) "خواب" else "خاموش",
                             color = statusColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
@@ -374,25 +374,25 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             } else if (selectedTab == 1) {
                 HeroMini("KONTROL", "Eda’nın çalışma durumunu buradan yönet.")
                 SectionHeader("DERİN SOHBET", "Yerel Gemma 2:2B · Termux / Ollama")
-                ControlTile("✧", "Derin sohbeti aç", "Uzun sorularını yerel Gemma modeliyle konuş", Violet) {
+                ControlTile("✧", "گفت‌وگوی عمیق", "پرسش‌های طولانی با مدل محلی جما", Violet) {
                     onAction("ACTION_AI_OLLAMA")
                     deepChatOpen = true
                 }
                 SectionHeader("EDA · SESLİ TELEFON KOMUTLARI", "Ayrı Jarvis veya kontrol ekranı açmadan")
-                InfoNotice("📱  Telefonu Eda ile yönet", "Eda aktifken doğrudan söyle: “Eda, aşağı kaydır ve ekrandakini oku”, “Eda, ekranı oku”, “Eda, bildirimleri aç”, “Eda, geri git” veya “Eda, ekrandaki metne dokun, Ayarlar”. Basit komutlar yerel erişilebilirlik üzerinden doğrudan çalışır; normal sohbet ve derin sohbet akışı değişmez.")
-                InfoNotice("🔐  İlk kurulum", "Yalnızca bir kez Android Erişilebilirlik ayarlarında EDA hizmetini aç. Kilidi aşma, parola/OTP okuma, mesaj gönderme, silme, ödeme veya son onay işlemleri otomatik yapılmaz.")
+                InfoNotice("📱  کنترل گوشی با اِدا", "وقتی اِدا فعال است، بگو: «اِدا، پایین برو و متن صفحه را بخوان»، «صفحه را بخوان»، «اعلان‌ها را باز کن» یا «برگرد». فرمان‌های ساده از طریق دسترس‌پذیری گوشی اجرا می‌شوند.")
+                InfoNotice("🔐  راه‌اندازی اولیه", "فقط یک بار سرویس اِدا را در تنظیمات دسترس‌پذیری اندروید فعال کن. بازکردن قفل، خواندن رمز یا کد یک‌بارمصرف، ارسال پیام، حذف و پرداخت خودکار انجام نمی‌شود.")
                 SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
-                ControlTile("▶", "Eda’yı başlat", "Eda’yı dinlemeye hazır hâle getir", Good) { onAction("ACTION_AKTIF") }
-                ControlTile("☾", "Uyku moduna al", "Uyandırma kelimesiyle yeniden etkinleşir", Cyan) { onAction("ACTION_UYKU") }
-                ControlTile("■", "Eda'yı durdur", "Arka plan servisini kapat", Bad) { onAction("ACTION_STOP") }
+                ControlTile("▶", "شروع اِدا", "اِدا را برای شنیدن آماده کن", Good) { onAction("ACTION_AKTIF") }
+                ControlTile("☾", "رفتن به حالت خواب", "با گفتن واژهٔ بیدارباش دوباره فعال می‌شود", Cyan) { onAction("ACTION_UYKU") }
+                ControlTile("■", "توقف اِدا", "سرویس پس‌زمینه را متوقف کن", Bad) { onAction("ACTION_STOP") }
                 SectionHeader("ÖZEL MODLAR", "Sesli komutla güvenli kontrol")
-                InfoNotice("🚘  Araba modu", "Eda'ya “araba modunu aç” diyebilirsin. Bu panel mevcut durumu gösterir.")
-                InfoNotice("🛡  Güvenlik modu", "Eda’ya “güvenlik modunu aç” diyerek etkinleştirebilirsin.")
-                InfoNotice("🎙  Sesli kullanım", "Eda aktifken “Eda” diye seslenip ardından isteğini söyle.")
+                InfoNotice("🚘  حالت رانندگی", "می‌توانی بگویی «حالت رانندگی را روشن کن». این بخش وضعیت فعلی را نشان می‌دهد.")
+                InfoNotice("🛡  حالت امنیتی", "برای فعال‌کردن آن بگو «حالت امنیتی را روشن کن».")
+                InfoNotice("🎙  استفادهٔ صوتی", "وقتی اِدا فعال است، صدایش کن و سپس درخواستت را بگو.")
             } else {
                 HeroMini("SİSTEM DURUMU", "Bağlantıları ve kayıtlarını buradan kontrol et.")
                 SectionHeader("YAPAY ZEKÂ BAĞLANTILARI", "Son bağlantı kontrolünün sonucu")
-                StatusLine("🌐 İnternet", if (state.internetStatus) "Bağlı" else "Bağlı değil", state.internetStatus)
+                StatusLine("🌐 İnternet", if (state.internetStatus) "متصل" else "Bağlı değil", state.internetStatus)
                 StatusLine("🦙 Ollama · Termux", state.ollamaStatus,
                     state.ollamaStatus.contains("açık", true) || state.ollamaStatus.contains("acik", true) ||
                         state.ollamaStatus.contains("hazır", true))
@@ -404,21 +404,21 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                         state.pollinationsStatus.contains("çalışıyor", true) || state.pollinationsStatus.contains("calisiyor", true))
                 SectionHeader("KAYITLARIN", "Bu telefonda saklanan bilgiler")
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıt", Violet, Modifier.weight(1f))
+                    MetricCard("حافظه", "✧", state.hafizaSayi.toString(), "kayıt", Violet, Modifier.weight(1f))
                     MetricCard("GÜNLÜK", "▤", state.gunlukSayi.toString(), "kayıt", Cyan, Modifier.weight(1f))
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    MetricCard("HATIRLATMA", "◷", state.hatirlatmaSayi.toString(), "bekleyen", Warn, Modifier.weight(1f))
+                    MetricCard("یادآوری", "◷", state.hatirlatmaSayi.toString(), "bekleyen", Warn, Modifier.weight(1f))
                     MetricCard("LOG", "≋", state.logSayi.toString(), "kayıt", Good, Modifier.weight(1f))
                 }
                 SectionHeader("ARAÇLAR", "Sistem işlemleri")
                 Button(onClick = { viewModel.yenile() }, modifier = Modifier.fillMaxWidth().height(52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻   Durumu yeniden kontrol et") }
+                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻   بررسی دوبارهٔ وضعیت") }
                 Button(onClick = onShareLog, modifier = Modifier.fillMaxWidth().height(52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("⇧   Tanılama kayıtlarını paylaş") }
+                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("⇧   اشتراک‌گذاری گزارش‌های عیب‌یابی") }
                 LogsPanel(state.sonLoglar)
             }
-            Text("EDA • YARDIMA HAZIR", Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 14.dp),
+            Text("اِدا • آمادهٔ کمک", Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 14.dp),
                 color = Muted, fontSize = 9.sp, letterSpacing = 2.sp, textAlign = TextAlign.Center)
             }
         }
@@ -431,27 +431,27 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 Column(Modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("EDA · PHONE CONTROL", color = Cyan, fontWeight = FontWeight.Bold)
-                            Text("Phone Harness esinli · Yerel erişilebilirlik", color = Muted, fontSize = 11.sp)
+                            Text("اِدا · کنترل گوشی", color = Cyan, fontWeight = FontWeight.Bold)
+                            Text("کنترل محلی از طریق دسترس‌پذیری", color = Muted, fontSize = 11.sp)
                         }
                         Text("✕", Modifier.clickable { phoneControlOpen = false }.padding(8.dp), color = Muted)
                     }
-                    Text("Bu güçlü bir izindir. Telefon kilidi aşılmaz; gönderme, silme, ödeme ve satın alma işlemleri otomatik yapılmaz.", color = Warn, fontSize = 12.sp)
+                    Text("این مجوز قدرتمندی است. قفل گوشی دور زده نمی‌شود و ارسال، حذف، پرداخت یا خرید خودکار انجام نمی‌شود.", color = Warn, fontSize = 12.sp)
                     Button(onClick = {
                         runCatching { context.startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
                             .onFailure { phoneControlStatus = "Erişilebilirlik ayarları açılamadı." }
-                    }, modifier = Modifier.fillMaxWidth()) { Text("Erişilebilirlik ayarlarında EDA'yı etkinleştir") }
+                    }, modifier = Modifier.fillMaxWidth()) { Text("فعال‌کردن اِدا در تنظیمات دسترس‌پذیری") }
                     OutlinedButton(onClick = {
                         phoneControlStatus = if (com.deniz.eda.phone.PhoneControlService.isEnabled()) {
                             "Ekran kontrolü etkin. Şimdi ekranı okuyabilir veya görevi Jarvis'e verebilirsin."
                         } else {
                             "EDA'nın erişilebilirlik izni henüz etkin değil. Ayarlardan EDA hizmetini açıp geri dön."
                         }
-                    }, modifier = Modifier.fillMaxWidth()) { Text("Erişilebilirlik iznini kontrol et") }
+                    }, modifier = Modifier.fillMaxWidth()) { Text("بررسی مجوز دسترس‌پذیری") }
                     Button(onClick = {
                         phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("read")
                         phoneScreenText = phoneControlStatus
-                    }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻ Ekranı oku") }
+                    }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻ خواندن صفحه") }
                     OutlinedButton(onClick = {
                         phoneControlStatus = "Görsel OCR çalışıyor…"
                         chatScope.launch {
@@ -461,19 +461,19 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                             phoneControlStatus = "Görsel OCR tamamlandı."
                             phoneScreenText = visualText
                         }
-                    }, modifier = Modifier.fillMaxWidth()) { Text("⌕ Ekranı görsel OCR ile oku") }
+                    }, modifier = Modifier.fillMaxWidth()) { Text("⌕ خواندن تصویری صفحه") }
                     Text(phoneControlStatus, color = Muted, fontSize = 12.sp)
                     Column(Modifier.weight(1f).fillMaxWidth().background(PanelRaised, themeShape(12))
                         .verticalScroll(rememberScrollState()).padding(10.dp)) {
                         Text(phoneScreenText, color = Color.White, fontSize = 13.sp, lineHeight = 19.sp)
                     }
-                    OutlinedTextField(value = phoneTarget, onValueChange = { phoneTarget = it }, label = { Text("Dokunulacak öğenin metni") },
+                    OutlinedTextField(value = phoneTarget, onValueChange = { phoneTarget = it }, label = { Text("متن موردنظر برای لمس") },
                         modifier = Modifier.fillMaxWidth(), maxLines = 1)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Button(enabled = phoneTarget.isNotBlank(), onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("tap", phoneTarget)
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
-                        }, modifier = Modifier.weight(1f)) { Text("Metne dokun") }
+                        }, modifier = Modifier.weight(1f)) { Text("لمس متن") }
                         OutlinedButton(enabled = phoneTarget.isNotBlank(), onClick = {
                             phoneControlStatus = "OCR metin eşleşmesi aranıyor…"
                             chatScope.launch {
@@ -485,62 +485,62 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                                 phoneControlStatus = actionResult
                                 phoneScreenText = visualText
                             }
-                        }, modifier = Modifier.weight(1f)) { Text("OCR ile dokun") }
+                        }, modifier = Modifier.weight(1f)) { Text("لمس با تشخیص متن") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("up")
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
-                        }, modifier = Modifier.weight(1f)) { Text("↑ Yukarı") }
+                        }, modifier = Modifier.weight(1f)) { Text("↑ بالا") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("down")
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
-                        }, modifier = Modifier.weight(1f)) { Text("↓ Aşağı") }
+                        }, modifier = Modifier.weight(1f)) { Text("↓ پایین") }
                     }
                     OutlinedTextField(value = phoneTypedText, onValueChange = { phoneTypedText = it },
-                        label = { Text("Etkin alana yazılacak metin") }, modifier = Modifier.fillMaxWidth(), maxLines = 2)
+                        label = { Text("متنی که در کادر فعال نوشته می‌شود") }, modifier = Modifier.fillMaxWidth(), maxLines = 2)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         OutlinedButton(enabled = phoneTypedText.isNotBlank(), onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("type", phoneTypedText)
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
-                        }, modifier = Modifier.weight(1f)) { Text("Yaz") }
+                        }, modifier = Modifier.weight(1f)) { Text("نوشتن") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("back")
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
-                        }, modifier = Modifier.weight(1f)) { Text("Geri") }
+                        }, modifier = Modifier.weight(1f)) { Text("بازگشت") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("notifications")
                             phoneScreenText = com.deniz.eda.phone.PhoneControlService.run("read")
-                        }, modifier = Modifier.weight(1f)) { Text("Bildirimler") }
+                        }, modifier = Modifier.weight(1f)) { Text("اعلان‌ها") }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("home")
                             phoneScreenText = phoneControlStatus
-                        }, modifier = Modifier.weight(1f)) { Text("Ana ekran") }
+                        }, modifier = Modifier.weight(1f)) { Text("صفحهٔ اصلی") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("recents")
                             phoneScreenText = phoneControlStatus
-                        }, modifier = Modifier.weight(1f)) { Text("Son uygulamalar") }
+                        }, modifier = Modifier.weight(1f)) { Text("برنامه‌های اخیر") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("quick_settings")
                             phoneScreenText = phoneControlStatus
-                        }, modifier = Modifier.weight(1f)) { Text("Hızlı ayarlar") }
+                        }, modifier = Modifier.weight(1f)) { Text("تنظیمات سریع") }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("power_dialog")
                             phoneScreenText = phoneControlStatus
-                        }, modifier = Modifier.weight(1f)) { Text("Güç menüsü") }
+                        }, modifier = Modifier.weight(1f)) { Text("منوی خاموش‌کردن") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("screenshot")
                             phoneControlStatus += "\n" + com.deniz.eda.phone.PhoneControlService.run("vision")
                             phoneScreenText = phoneControlStatus
-                        }, modifier = Modifier.weight(1f)) { Text("Ekran görüntüsü") }
+                        }, modifier = Modifier.weight(1f)) { Text("عکس از صفحه") }
                         OutlinedButton(onClick = {
                             phoneControlStatus = com.deniz.eda.phone.PhoneControlService.run("lock_screen")
                             phoneScreenText = phoneControlStatus
-                        }, modifier = Modifier.weight(1f)) { Text("Kilitle") }
+                        }, modifier = Modifier.weight(1f)) { Text("قفل‌کردن") }
                     }
-                    Text("EDA normal uygulama izinleriyle korumalı alanları, kilit ekranını aşamaz; para transferi, silme ve gönderme gibi son işlemleri kendisi onaylamaz.", color = Muted, fontSize = 11.sp)
+                    Text("اِدا نمی‌تواند از محدودیت‌های اندروید یا صفحهٔ قفل عبور کند و تأیید نهایی انتقال پول، حذف یا ارسال را انجام نمی‌دهد.", color = Muted, fontSize = 11.sp)
                 }
             }
         }
@@ -557,8 +557,8 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("EDA · JARVIS GÖREV AJANI", color = Cyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            Text("Gemma 2:2B · Yalnızca yerel Ollama", color = Muted, fontSize = 11.sp)
+                            Text("اِدا · عامل انجام وظیفه", color = Cyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("جما ۲:۲B · فقط اُلامای محلی", color = Muted, fontSize = 11.sp)
                         }
                         Text("✕", color = Muted,
                             modifier = Modifier.clickable(enabled = !jarvisBusy) { jarvisOpen = false }.padding(8.dp))
@@ -570,8 +570,8 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     OutlinedTextField(
                         value = jarvisTask,
                         onValueChange = { jarvisTask = it },
-                        label = { Text("Yapılacak görev") },
-                        placeholder = { Text("Örn. YouTube'u aç ve arama kutusuna ... yaz; aramayı gönderme.") },
+                        label = { Text("وظیفهٔ موردنظر") },
+                        placeholder = { Text("مثلاً یوتیوب را باز کن و در کادر جست‌وجو بنویس…؛ جست‌وجو را ارسال نکن.") },
                         enabled = !jarvisBusy,
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 2,
@@ -589,7 +589,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     }
                     if (jarvisBusy) {
                         LinearProgressIndicator(Modifier.fillMaxWidth(), color = Cyan)
-                        Text("Yerel model görev üzerinde çalışıyor. İşlem sayısı sınırlandırılmıştır.", color = Muted, fontSize = 11.sp)
+                        Text("مدل محلی در حال انجام وظیفه است. تعداد عملیات محدود است.", color = Muted, fontSize = 11.sp)
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
@@ -606,7 +606,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                                     .onFailure { jarvisReply = "Ses tanıma açılamadı. Görevi yazarak girebilirsin." }
                             },
                             modifier = Modifier.weight(0.8f)
-                        ) { Text("🎙 Ses") }
+                        ) { Text("🎙 صدا") }
                         OutlinedButton(
                             enabled = jarvisReply.isNotBlank() && !jarvisBusy,
                             onClick = {
@@ -617,7 +617,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                                 runCatching { context.startService(speak) }
                             },
                             modifier = Modifier.weight(0.9f)
-                        ) { Text("Yanıtı oku") }
+                        ) { Text("خواندن پاسخ") }
                         Button(
                             enabled = jarvisTask.isNotBlank() && !jarvisBusy,
                             onClick = {
@@ -690,8 +690,8 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 Column(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("EDA · DERİN SOHBET", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
-                            Text("Gemma 2:2B · Yerel yapay zekâ", color = Muted, fontSize = 11.sp)
+                            Text("اِدا · گفت‌وگوی عمیق", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                            Text("جما ۲:۲B · هوش مصنوعی محلی", color = Muted, fontSize = 11.sp)
                         }
                         Text("✕", color = Muted, modifier = Modifier.clickable { if (!deepChatBusy) deepChatOpen = false }.padding(8.dp))
                     }
@@ -704,7 +704,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                         OutlinedButton(onClick = {
                             val stop = Intent(context, EdaForegroundService::class.java).setAction("ACTION_STOP_SPEAK")
                             runCatching { context.startService(stop) }
-                        }, modifier = Modifier.weight(1f)) { Text("■ Durdur", fontSize = 12.sp) }
+                        }, modifier = Modifier.weight(1f)) { Text("■ توقف", fontSize = 12.sp) }
                         OutlinedButton(onClick = {
                             if (deepChatReply.isNotBlank() && deepChatReply != "Düşünüyorum…") {
                                 val speak = Intent(context, EdaForegroundService::class.java).apply {
@@ -712,11 +712,11 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                                 }
                                 runCatching { context.startService(speak) }
                             }
-                        }, modifier = Modifier.weight(1f)) { Text("↻ Tekrar dinle", fontSize = 12.sp) }
+                        }, modifier = Modifier.weight(1f)) { Text("↻ شنیدن دوباره", fontSize = 12.sp) }
                     }
                     OutlinedTextField(
                         value = deepChatInput, onValueChange = { deepChatInput = it },
-                        label = { Text("Mesajın") }, placeholder = { Text("Eda'ya ne sormak istiyorsun?") },
+                        label = { Text("پیامت") }, placeholder = { Text("از اِدا چه می‌خواهی بپرسی؟") },
                         enabled = !deepChatBusy, modifier = Modifier.fillMaxWidth(), maxLines = 3
                     )
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -730,7 +730,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                             }
                             runCatching { voiceInput.launch(intent) }
                                 .onFailure { android.widget.Toast.makeText(context, "Ses tanıma açılamadı.", android.widget.Toast.LENGTH_SHORT).show() }
-                        }, modifier = Modifier.weight(0.85f)) { Text("🎙 Ses") }
+                        }, modifier = Modifier.weight(0.85f)) { Text("🎙 صدا") }
                         Button(enabled = deepChatInput.isNotBlank() && !deepChatBusy, onClick = {
                             val question = deepChatInput.trim()
                             deepChatInput = ""; deepChatBusy = true; deepChatReply = "Düşünüyorum…"
@@ -752,23 +752,23 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
 
 @Composable
 private fun DashboardLiveMetrics(state: DashboardViewModel.DashboardState) {
-    SectionHeader("CANLI DURUM", "Telefon ve Eda’nın durumu")
+    SectionHeader("وضعیت زنده", "وضعیت گوشی و اِدا")
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        MetricCard("BATARYA", ThemeConfig.icon("battery"), "${state.pilYuzde}%", state.pilDurum,
+        MetricCard("باتری", ThemeConfig.icon("battery"), "${state.pilYuzde}%", state.pilDurum,
             if (state.pilYuzde <= 20) Bad else Good, Modifier.weight(1f))
-        MetricCard("BAĞLANTI", ThemeConfig.icon("network"), if (state.internetStatus) "Bağlı" else "Bağlı değil",
-            "Ağ bağlantısı", if (state.internetStatus) Cyan else Warn, Modifier.weight(1f))
+        MetricCard("BAĞLANTI", ThemeConfig.icon("network"), if (state.internetStatus) "متصل" else "Bağlı değil",
+            "اتصال شبکه", if (state.internetStatus) Cyan else Warn, Modifier.weight(1f))
     }
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        MetricCard("HAFIZA", ThemeConfig.icon("memory"), state.hafizaSayi.toString(), "kayıtlı bilgi", Violet, Modifier.weight(1f))
-        MetricCard("HATIRLATMA", ThemeConfig.icon("reminder"), state.hatirlatmaSayi.toString(),
-            "bekleyen hatırlatma", Warn, Modifier.weight(1f))
+        MetricCard("حافظه", ThemeConfig.icon("memory"), state.hafizaSayi.toString(), "kayıtlı bilgi", Violet, Modifier.weight(1f))
+        MetricCard("یادآوری", ThemeConfig.icon("reminder"), state.hatirlatmaSayi.toString(),
+            "یادآوری در انتظار", Warn, Modifier.weight(1f))
     }
 }
 
 @Composable
 private fun DashboardProviderSection(state: DashboardViewModel.DashboardState, onAction: (String) -> Unit) {
-    SectionHeader("YAPAY ZEKÂ", "Öncelikli sağlayıcı")
+    SectionHeader("هوش مصنوعی", "ارائه‌دهندهٔ اصلی")
     ProviderPanel(state.aiSaglayici, onAction)
 }
 
@@ -794,18 +794,18 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(ThemeConfig.icon("brand"), color = Violet, fontSize = 35.sp)
-                Text("MERHABA, ${name.uppercase()}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
-                Text("Ben Eda.\nBuradayım.", fontSize = 29.sp, lineHeight = 34.sp,
+                Text("سلام، ${name}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                Text("من اِدا هستم.\nاینجا هستم.", fontSize = 29.sp, lineHeight = 34.sp,
                     fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
                 HeroMeta(time, date)
                 HeroActions(active, sleeping, onAction)
-                Text("“Eda” de, konuşmaya başlayalım.", color = Color.White.copy(alpha = .72f), fontSize = 11.sp)
+                Text("بگو «اِدا» تا شروع کنیم.", color = Color.White.copy(alpha = .72f), fontSize = 11.sp)
             }
             2 -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("EDA / SYSTEM ONLINE", color = Muted, fontSize = 9.sp, letterSpacing = 1.6.sp)
-                        Text("Ben Eda.\nBuradayım.", fontSize = 26.sp, lineHeight = 30.sp,
+                        Text("اِدا / سامانه فعال", color = Muted, fontSize = 9.sp, letterSpacing = 1.6.sp)
+                        Text("من اِدا هستم.\nاینجا هستم.", fontSize = 26.sp, lineHeight = 30.sp,
                             fontWeight = FontWeight.Bold, color = Color.White)
                         HeroMeta(time, date)
                     }
@@ -814,21 +814,21 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.size(7.dp).background(status, CircleShape))
                             Spacer(Modifier.width(5.dp))
-                            Text(if (active) "AKTİF" else if (sleeping) "UYKU" else "KAPALI",
+                            Text(if (active) "فعال" else if (sleeping) "خواب" else "خاموش",
                                 color = status, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
                 HeroActions(active, sleeping, onAction)
-                Text("Yerel kontrol • Canlı durum", color = Muted, fontSize = 10.sp)
+                Text("کنترل محلی • وضعیت زنده", color = Muted, fontSize = 10.sp)
             }
             3 -> Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                    Text("MERHABA, ${name.uppercase()}", color = Muted, fontSize = 9.sp, letterSpacing = 1.5.sp)
-                    Text("Ben Eda.\nBuradayım.", fontSize = 25.sp, lineHeight = 30.sp,
+                    Text("سلام، ${name}", color = Muted, fontSize = 9.sp, letterSpacing = 1.5.sp)
+                    Text("من اِدا هستم.\nاینجا هستم.", fontSize = 25.sp, lineHeight = 30.sp,
                         fontWeight = FontWeight.Bold, color = Color.White)
                     HeroMeta(time, date)
-                    Text("Her zaman yanında.", color = Color.White.copy(alpha = .72f), fontSize = 10.sp)
+                    Text("همیشه کنار توام.", color = Color.White.copy(alpha = .72f), fontSize = 10.sp)
                 }
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.width(94.dp), horizontalAlignment = Alignment.CenterHorizontally,
@@ -853,12 +853,12 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
                 }
             }
             else -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("MERHABA, ${name.uppercase()}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
-                Text("Ben Eda.\nBuradayım.", fontSize = 31.sp, lineHeight = 36.sp,
+                Text("سلام، ${name}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                Text("من اِدا هستم.\nاینجا هستم.", fontSize = 31.sp, lineHeight = 36.sp,
                     fontWeight = FontWeight.Bold, color = Color.White)
                 HeroMeta(time, date)
                 HeroActions(active, sleeping, onAction)
-                Text("“Eda” de, konuşmaya başlayalım.", color = Color.White.copy(alpha = .68f), fontSize = 11.sp)
+                Text("بگو «اِدا» تا شروع کنیم.", color = Color.White.copy(alpha = .68f), fontSize = 11.sp)
             }
         }
     }
@@ -879,17 +879,17 @@ private fun ThemeHeroVariant(
     when (mode) {
         4 -> Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                Text("KURT • YEREL AJAN", color = Muted, fontSize = 9.sp, letterSpacing = 1.8.sp)
-                Text("Sana sadığım.\nDaima yanındayım.", fontSize = 24.sp, lineHeight = 29.sp,
+                Text("گرگ • عامل محلی", color = Muted, fontSize = 9.sp, letterSpacing = 1.8.sp)
+                Text("کنارت می‌مانم.\nهمیشه همراهت هستم.", fontSize = 24.sp, lineHeight = 29.sp,
                     fontWeight = FontWeight.Bold, color = Color.White)
                 HeroMeta(time, date)
-                Text("MERHABA, ${name.uppercase()}", color = Violet, fontSize = 9.sp)
+                Text("سلام، ${name}", color = Violet, fontSize = 9.sp)
             }
             Column(Modifier.width(86.dp), horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(emblem, color = Violet, fontSize = 56.sp)
                 Box(Modifier.size(8.dp).background(status, CircleShape))
-                Text(if (active) "AKTİF" else if (sleeping) "UYKU" else "KAPALI",
+                Text(if (active) "فعال" else if (sleeping) "خواب" else "خاموش",
                     color = status, fontSize = 8.sp, fontWeight = FontWeight.Bold)
             }
         }
@@ -900,7 +900,7 @@ private fun ThemeHeroVariant(
         ) {
             Text(emblem, color = Violet, fontSize = 58.sp)
             Text("E C L I P S E", color = Violet, fontSize = 10.sp, letterSpacing = 3.sp)
-            Text("Karanlıktan\naydınlığa.", fontSize = 28.sp, lineHeight = 32.sp,
+            Text("از تاریکی\nبه سوی روشنایی.", fontSize = 28.sp, lineHeight = 32.sp,
                 fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
             HeroMeta(time, date)
             HeroActions(active, sleeping, onAction)
@@ -912,16 +912,16 @@ private fun ThemeHeroVariant(
         ) {
             Text(emblem, color = Violet, fontSize = 54.sp)
             Text("EDA • THRONE", color = Muted, fontSize = 9.sp, letterSpacing = 2.8.sp)
-            Text("GÜÇ. ZEKÂ. KONTROL.", color = Color.White, fontSize = 20.sp,
+            Text("قدرت. هوش. کنترل.", color = Color.White, fontSize = 20.sp,
                 fontWeight = FontWeight.Black, textAlign = TextAlign.Center)
             HeroMeta(time, date)
             HeroActions(active, sleeping, onAction)
-            Text("Kontrol sende; karar sende.", color = Muted, fontSize = 10.sp)
+            Text("کنترل و تصمیم با توست.", color = Muted, fontSize = 10.sp)
         }
         7 -> Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("BLACK SUN / V5", color = Violet, fontSize = 9.sp, letterSpacing = 1.8.sp)
-                Text("Her soru\nyeni bir evren.", color = Color.White, fontSize = 24.sp,
+                Text("هر پرسش،\nجهانی تازه.", color = Color.White, fontSize = 24.sp,
                     lineHeight = 29.sp, fontWeight = FontWeight.Bold)
                 HeroMeta(time, date)
                 Text(if (active) "● DİNLİYORUM" else "○ BEKLEMEDE",
@@ -935,7 +935,7 @@ private fun ThemeHeroVariant(
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text("DARK ANGEL", color = Muted, fontSize = 9.sp, letterSpacing = 2.sp)
-                    Text("Sessizce yanında.", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text("بی‌صدا کنار توام.", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                     Text(name, color = Violet, fontSize = 11.sp)
                 }
             }
@@ -946,7 +946,7 @@ private fun ThemeHeroVariant(
         9 -> Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("DRAGON CORE", color = Violet, fontSize = 9.sp, letterSpacing = 2.sp)
-                Text("Ateş gibi hızlı.\nGüvenli ve kararlı.", color = Color.White,
+                Text("چون آتش سریع؛\nایمن و استوار.", color = Color.White,
                     fontSize = 22.sp, lineHeight = 27.sp, fontWeight = FontWeight.Bold)
                 HeroMeta(time, date)
             }
@@ -966,7 +966,7 @@ private fun ThemeHeroVariant(
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("FALLEN ANGEL", color = Muted, fontSize = 9.sp, letterSpacing = 1.7.sp)
-                Text("Güzellik, tehlike\nve sadakat.", color = Color.White,
+                Text("زیبایی، خطر\nو وفاداری.", color = Color.White,
                     fontSize = 20.sp, lineHeight = 25.sp, fontWeight = FontWeight.Bold)
                 HeroMeta(time, date)
                 Text(if (sleeping) "UYKU MODU" else if (active) "SENİNLEYİM" else "HAZIRIM",
@@ -980,9 +980,9 @@ private fun ThemeHeroVariant(
         ) {
             Text(emblem, color = Violet, fontSize = 60.sp)
             Text("NIGHT QUEEN", color = Violet, fontSize = 10.sp, letterSpacing = 3.sp)
-            Text("Söz değil, sadakat.", color = Color.White, fontSize = 26.sp,
+            Text("نه حرف، که وفاداری.", color = Color.White, fontSize = 26.sp,
                 fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-            Text("Merhaba, ${name}.", color = Muted, fontSize = 12.sp)
+            Text("سلام، ${name}.", color = Muted, fontSize = 12.sp)
             HeroMeta(time, date)
             HeroActions(active, sleeping, onAction)
         }
@@ -1002,7 +1002,7 @@ private fun ThemeHeroVariant(
                 }
             }
             Text("SPACE GATE", color = Muted, fontSize = 10.sp, letterSpacing = 2.5.sp)
-            Text("Kapı hazır.\nSeçim senin.", color = Color.White, fontSize = 25.sp,
+            Text("دروازه آماده است.\nانتخاب با توست.", color = Color.White, fontSize = 25.sp,
                 lineHeight = 30.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
             HeroMeta(time, date)
             HeroActions(active, sleeping, onAction)
@@ -1011,7 +1011,7 @@ private fun ThemeHeroVariant(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Text("NEON ABYSS // EDA V5", color = Violet, fontSize = 9.sp, letterSpacing = 1.6.sp)
-                    Text("Sınır yok.\nGereksiz risk yok.", color = Color.White,
+                    Text("بدون محدودیت؛\nبدون خطر بیهوده.", color = Color.White,
                         fontSize = 23.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold)
                 }
                 Text(emblem, color = Violet, fontSize = 56.sp)
@@ -1023,7 +1023,7 @@ private fun ThemeHeroVariant(
                 Text(if (active) "SİSTEM AKTİF" else if (sleeping) "UYKU GÜVENLİ" else "SİSTEM HAZIR",
                     color = status, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
-                Text("YEREL MOD", color = Muted, fontSize = 9.sp)
+                Text("حالت محلی", color = Muted, fontSize = 9.sp)
             }
             HeroActions(active, sleeping, onAction)
         }
@@ -1100,7 +1100,7 @@ private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
     val main = selected.split(" → ").firstOrNull().orEmpty()
     Column(Modifier.fillMaxWidth().background(Panel, themeShape(20)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Öncelik zinciri", color = Muted, fontSize = 10.sp)
+        Text("ترتیب اولویت‌ها", color = Muted, fontSize = 10.sp)
         Text(selected, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("Groq", "Pollinations", "Ollama · Termux").forEach { provider ->
@@ -1168,7 +1168,7 @@ private fun LogsPanel(logs: List<String>) {
     Column(Modifier.fillMaxWidth().background(Panel, themeShape(18)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (logs.isEmpty()) {
-            Text("Henüz kayıt yok. Eda'yı kullandıkça burada görünecek.", color = Muted, fontSize = 11.sp)
+            Text("هنوز موردی ثبت نشده است. با استفاده از اِدا، موارد اینجا نمایش داده می‌شوند.", color = Muted, fontSize = 11.sp)
         } else {
             logs.take(8).forEachIndexed { index, log ->
                 Row(verticalAlignment = Alignment.Top) {
