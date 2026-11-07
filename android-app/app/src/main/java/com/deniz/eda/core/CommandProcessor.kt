@@ -407,8 +407,11 @@ object CommandProcessor {
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
-                    val hr = cachedHeartRate
+                    // Read Health Connect on demand so voice answers do not depend on
+                    // HealthMonitorService having refreshed the cache beforehand.
+                    val hr = hm.getLatestHeartRate(1440) ?: cachedHeartRate
                     if (hr != null) {
+                        cachedHeartRate = hr
                         val durum = when {
                             hr < 60 -> "biraz düşük"
                             hr in 60..100 -> "normal"
@@ -433,8 +436,9 @@ object CommandProcessor {
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
-                    val sleep = cachedSleepHours
+                    val sleep = hm.getLastNightSleepHours() ?: cachedSleepHours
                     if (sleep != null) {
+                        cachedSleepHours = sleep
                         val durum = when {
                             sleep < 5 -> "çok az, dinlenmen lazım"
                             sleep < 7 -> "yeterli değil"
@@ -454,7 +458,8 @@ object CommandProcessor {
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
-                    val steps = cachedSteps ?: 0L
+                    val steps = hm.getTodaySteps().takeIf { it > 0L } ?: cachedSteps ?: 0L
+                    cachedSteps = steps
                     val durum = when {
                         steps < 2000 -> "biraz az, biraz yürüyüş yap"
                         steps < 5000 -> "iyi gidiyorsun"
@@ -471,9 +476,11 @@ object CommandProcessor {
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
-                    val hr = cachedHeartRate
-                    val sleep = cachedSleepHours
+                    val hr = hm.getLatestHeartRate(1440) ?: cachedHeartRate
+                    val sleep = hm.getLastNightSleepHours() ?: cachedSleepHours
                     if (hr != null && sleep != null) {
+                        cachedHeartRate = hr
+                        cachedSleepHours = sleep
                         val stres = when {
                             hr > 95 && sleep < 5 -> "yüksek"
                             hr > 85 || sleep < 6 -> "orta"
