@@ -536,7 +536,7 @@ function updateUI(data) {
     voskEl.className = 'status-value ' + (['LISTENING','TRIGGERED'].includes(vosk.state) ? 'mode-active' : (vosk.state === 'ERROR' ? 'mode-off' : 'mode-sleep'));
     voskEl.title = vosk.detail || '';
     const heardEl = document.getElementById('s-wake-heard');
-    heardEl.textContent = 'Beklenen: ' + (wake.wakeWord || vosk.expected || 'eda') + ' · Duyulan: ' + (vosk.lastHeard || '—') + ' · Eşleşme: ' + (vosk.lastMatch ? 'EVET' : 'hayır');
+    heardEl.textContent = 'Motor: ' + (wake.activeEngine || '—') + ' · Beklenen: ' + (wake.wakeWord || vosk.expected || 'eda') + ' · Duyulan: ' + (wake.lastHeard || '—') + ' · Eşleşme: ' + (wake.lastMatch ? 'EVET' : 'hayır');
     heardEl.title = 'Son kullanılan motor: ' + (wake.activeEngine || '—');
 
     // ═══ Chip active state ═══
