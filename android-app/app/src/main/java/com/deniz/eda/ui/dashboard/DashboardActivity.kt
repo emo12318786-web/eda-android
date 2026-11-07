@@ -402,6 +402,32 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 StatusLine("🌸 Pollinations", state.pollinationsStatus,
                     state.pollinationsStatus.contains("açık", true) || state.pollinationsStatus.contains("acik", true) ||
                         state.pollinationsStatus.contains("çalışıyor", true) || state.pollinationsStatus.contains("calisiyor", true))
+                SectionHeader("ÇEVRİMDIŞI UYANDIRMA MOTORLARI", "Canlı çalışma durumu · Ayarlar’dan ayrı ayrı aç/kapat")
+                val wakeStatus = com.deniz.eda.service.WakeEngineStatus
+                val sherpaState = wakeStatus.sherpaState
+                val sherpaLabel = when (sherpaState) {
+                    "LISTENING" -> "Aktif · Dinliyor"
+                    "READY" -> "Hazır · Beklemede"
+                    "PREPARING" -> "Hazırlanıyor"
+                    "DOWNLOADING" -> "İndiriliyor"
+                    "TRIGGERED" -> "Uyandırdı"
+                    "ERROR" -> "Hata: ${wakeStatus.sherpaDetail}"
+                    else -> "Kapalı / başlatılmadı"
+                }
+                StatusLine("🎯 Sherpa · Ana motor", if (wakeStatus.sherpaEnabled) sherpaLabel else "Kapalı (Ayarlar’dan aç)", wakeStatus.sherpaEnabled && sherpaState in setOf("LISTENING", "READY", "TRIGGERED"))
+                val voskState = wakeStatus.voskState
+                val voskLabel = when (voskState) {
+                    "LISTENING" -> "Aktif · Dinliyor"
+                    "READY" -> "Hazır · Yedekte"
+                    "PREPARING" -> "Hazırlanıyor"
+                    "DOWNLOADING" -> "İndiriliyor"
+                    "TRIGGERED" -> "Uyandırdı"
+                    "ERROR" -> "Hata: ${wakeStatus.voskDetail}"
+                    else -> "Kapalı / başlatılmadı"
+                }
+                StatusLine("🎙 Vosk · Yedek motor", if (wakeStatus.voskEnabled) voskLabel else "Kapalı (Ayarlar’dan aç)", wakeStatus.voskEnabled && voskState in setOf("LISTENING", "READY", "TRIGGERED"))
+                StatusLine("🗣 Uyandırma ifadesi", "Beklenen: ${wakeStatus.sherpaExpected} · Son duyulan: ${wakeStatus.sherpaLastHeard.ifBlank { wakeStatus.voskLastHeard.ifBlank { "—" } }}", wakeStatus.sherpaLastMatch || wakeStatus.voskLastMatch)
+                StatusLine("📦 Sherpa modeli", "APK içinde paketli; kurulum sonrası indirme gerekmez", true)
                 SectionHeader("KAYITLARIN", "Bu telefonda saklanan bilgiler")
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıt", Violet, Modifier.weight(1f))
