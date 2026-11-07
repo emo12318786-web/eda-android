@@ -77,9 +77,10 @@ class HealthConnectManager(private val context: Context) {
                     timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
                 )
             )
-            response.records.lastOrNull()?.let {
-                ChronoUnit.MINUTES.between(it.startTime, it.endTime) / 60.0
-            }
+            response.records
+                .filter { !it.endTime.isAfter(endTime) }
+                .maxByOrNull { it.endTime }
+                ?.let { ChronoUnit.MINUTES.between(it.startTime, it.endTime) / 60.0 }
         } catch (e: Exception) { null }
     }
 
