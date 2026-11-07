@@ -87,6 +87,18 @@ class SettingsActivity : AppCompatActivity() {
             setOnCheckedChangeListener { _, checked -> Settings.incomingCallAnnouncementEnabled = checked }
         }
 
+        findViewById<Switch>(R.id.sherpaWakeSwitch).apply {
+            isChecked = Settings.sherpaWakeEnabled
+            setOnCheckedChangeListener { _, checked ->
+                Settings.sherpaWakeEnabled = checked
+                val action = if (checked) "ACTION_SHERPA_WAKE_ON" else "ACTION_SHERPA_WAKE_OFF"
+                startService(Intent(this@SettingsActivity, com.deniz.eda.service.EdaForegroundService::class.java).setAction(action))
+                Toast.makeText(this@SettingsActivity,
+                    if (checked) "Sherpa ana motoru etkinleştirildi" else "Sherpa ana motoru kapatıldı",
+                    Toast.LENGTH_SHORT).show()
+            }
+        }
+
         findViewById<Switch>(R.id.voskWakeSwitch).apply {
             isChecked = Settings.voskWakeEnabled
             setOnCheckedChangeListener { _, checked ->
