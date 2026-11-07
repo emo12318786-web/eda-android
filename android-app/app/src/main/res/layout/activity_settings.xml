@@ -169,7 +169,7 @@
                 android:id="@+id/voskWakeSwitch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Çevrimdışı Eda uyandırma (Vosk)"
+                android:text="Çevrimdışı uyandırma (Sherpa ana motor, Vosk yedek)"
                 android:textColor="@color/text_primary"
                 android:paddingVertical="8dp" />
 
