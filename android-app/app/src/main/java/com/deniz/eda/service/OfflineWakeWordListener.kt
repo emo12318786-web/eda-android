@@ -135,7 +135,8 @@ class OfflineWakeWordListener(
                 val obj = JSONObject(result)
                 val text = normalizeTranscript(obj.optString("text", ""))
                 val trigger = normalizeTranscript(wakeWord().ifBlank { "eda" })
-                Log.i(TAG, "Final wake transcript: \"$text\"; expected: \"$trigger\"")
+                // Log every finalized utterance so false activations can be diagnosed in Logcat.
+                Log.i(TAG, "ENGINE=VOSK FINAL_HEARD=\"$text\" EXPECTED_WAKE=\"$trigger\" MATCH=${text == trigger}")
 
                 // Strict mode: the whole finalized utterance must equal the wake phrase.
                 // This reduces matches when the trigger appears inside ordinary speech.
@@ -158,7 +159,7 @@ class OfflineWakeWordListener(
 
     private fun normalizeTranscript(value: String): String =
         value.lowercase().trim()
-            .replace(Regex("[^a-z0-9\\s]"), " ")
+            .replace(Regex("[^\\p{L}\\p{N}\\s]"), " ")
             .replace(Regex("\\s+"), " ")
             .trim()
 
