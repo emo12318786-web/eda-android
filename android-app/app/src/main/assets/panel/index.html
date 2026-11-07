@@ -522,17 +522,18 @@ function updateUI(data) {
         'LISTENING': '🟢 Dinliyor',
         'READY': '🟡 Hazır (beklemede)',
         'PREPARING': '🟡 Hazırlanıyor',
+        'DOWNLOADING': '🔵 İndiriliyor',
         'TRIGGERED': '🟢 Tetiklendi',
         'ERROR': '🔴 Hata',
         'STOPPED': '⚪ Kapalı',
         'NOT_INTEGRATED': '⚪ Henüz entegre değil'
     }[state] || (state || 'Bilinmiyor'));
     const sherpaEl = document.getElementById('s-sherpa');
-    sherpaEl.textContent = stateLabel(sherpa.state);
+    sherpaEl.textContent = (wake.sherpaEnabled === false ? '⛔ Kapalı · ' : '') + stateLabel(sherpa.state);
     sherpaEl.className = 'status-value ' + (['LISTENING','READY','TRIGGERED'].includes(sherpa.state) ? 'mode-active' : (sherpa.state === 'ERROR' ? 'mode-off' : 'mode-sleep'));
     sherpaEl.title = sherpa.detail || '';
     const voskEl = document.getElementById('s-vosk');
-    voskEl.textContent = stateLabel(vosk.state);
+    voskEl.textContent = (wake.voskEnabled === false ? '⛔ Kapalı · ' : '') + stateLabel(vosk.state);
     voskEl.className = 'status-value ' + (['LISTENING','TRIGGERED'].includes(vosk.state) ? 'mode-active' : (vosk.state === 'ERROR' ? 'mode-off' : 'mode-sleep'));
     voskEl.title = vosk.detail || '';
     const heardEl = document.getElementById('s-wake-heard');
