@@ -44,7 +44,7 @@ class OfflineWakeWordListener(
 
     fun prepare(onReady: () -> Unit, onError: (String) -> Unit) {
         if (model != null) { main.post(onReady); return }
-        WakeEngineStatus.voskState = "PREPARING"
+        WakeEngineStatus.voskState = "DOWNLOADING"
         WakeEngineStatus.voskDetail = "Preparing/downloading English Vosk model"
         synchronized(this) {
             if (loading) return
