@@ -24,6 +24,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Report test build revision
+        run: |
+          echo "Testing commit: $GITHUB_SHA"
+          git log -1 --format="%h %s"
+
       # Keep one repository-local debug signing identity across CI builds so Android
       # can update the installed APK instead of reporting a signature conflict.
       - name: Restore stable debug keystore
