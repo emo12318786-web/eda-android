@@ -21,6 +21,8 @@ object WakeEngineStatus {
 
     fun toJson(): JSONObject = JSONObject().apply {
         put("activeEngine", activeEngine)
+        put("sherpaEnabled", com.deniz.eda.core.Settings.sherpaWakeEnabled)
+        put("voskEnabled", com.deniz.eda.core.Settings.voskWakeEnabled)
         put("wakeWord", if (activeEngine == "SHERPA") sherpaExpected else voskExpected)
         put("lastHeard", if (activeEngine == "SHERPA") sherpaLastHeard else voskLastHeard)
         put("lastMatch", if (activeEngine == "SHERPA") sherpaLastMatch else voskLastMatch)
