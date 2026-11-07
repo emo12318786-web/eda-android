@@ -121,8 +121,8 @@ class SettingsActivity : AppCompatActivity() {
             Settings.groqApiKey = groqInput.text.toString().trim()
             Settings.navasanApiKey = navasanInput.text.toString().trim()
             val wakeWord = wakeWordInput.text.toString().trim().lowercase()
-            if (!wakeWord.matches(Regex("[a-zA-Z0-9]{2,20}"))) {
-                wakeWordInput.error = "2–20 harf veya rakamdan oluşan tek kelime gir"
+            if (!wakeWord.matches(Regex("[\\p{L}\\p{N}]{2,20}"))) {
+                wakeWordInput.error = "2–20 harften veya rakamdan oluşan tek kelime gir"
                 return@setOnClickListener
             }
             val wakeWordChanged = wakeWord != Settings.wakeWord
