@@ -27,6 +27,7 @@ jobs:
       - name: Report test build revision
         run: |
           echo "Testing commit: $GITHUB_SHA"
+          echo "Includes live Health Connect voice reads and native Sherpa/Vosk status rows."
           git log -1 --format="%h %s"
 
       # Keep one repository-local debug signing identity across CI builds so Android
