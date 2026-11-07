@@ -405,24 +405,18 @@ object CommandProcessor {
             v(metin, "nabız", "nabiz", "kalp", "kalbim", "kalp atışı", "sağlık durumum", "saglik durumum", "sağlığım nasıl", "sagligim nasil", "sağlık verilerim") -> {
                 val hm = healthManager
                 if (hm == null) {
-                    KomutSonucu.Cevap("Sağlık bağlantısı henüz başlatılmadı $hitap.")
-                } else if (!hm.isAvailable()) {
-                    KomutSonucu.Cevap("Bu telefonda Health Connect kullanılamıyor $hitap.")
-                } else if (!hm.canReadHeartRate()) {
-                    KomutSonucu.Cevap("Eda'nın Health Connect içindeki nabız verilerini okuma izni yok. Health Connect izinlerinden Eda için Kalp Atış Hızı iznini açmalısın $hitap.")
+                    KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
-                    // Refresh on every request; don't trust a cache captured only when the app launched.
-                    val hr = hm.getLatestHeartRate(7L * 24L * 60L)
-                    cachedHeartRate = hr
+                    val hr = cachedHeartRate
                     if (hr != null) {
                         val durum = when {
-                            hr < 50 -> "düşük görünüyor"
-                            hr in 50..100 -> "dinlenme halinde çoğu yetişkin için genel aralıkta"
-                            else -> "yüksek görünüyor"
+                            hr < 60 -> "biraz düşük"
+                            hr in 60..100 -> "normal"
+                            else -> "biraz yüksek"
                         }
-                        KomutSonucu.Cevap("Health Connect'te bulunan son nabız verin dakikada $hr atım; $durum $hitap. Bu tek ölçüm tıbbi değerlendirme değildir.")
+                        KomutSonucu.Cevap("Nabzın $hr atış, $durum görünüyor $hitap.")
                     } else {
-                        KomutSonucu.Cevap("Eda Health Connect'e erişebiliyor ama son 7 günde okunabilir nabız ölçümü bulamadı. Bu, bilekliğin bağlı olduğu anlamına gelmez; Zepp uygulamasında eşitlemeyi ve Health Connect'te veri kaynağını kontrol et $hitap.")
+                        KomutSonucu.Cevap("Nabız verisi bulamadım $hitap. Bileklik bağlı mı?")
                     }
                 }
             }
@@ -437,22 +431,19 @@ object CommandProcessor {
             v(metin, "uykum", "uyudum", "uyku süresi", "kaç saat uyudum", "dün gece uyudum", "uyku durumum", "nasıl uyudum", "nasil uyudum", "uyku kalitem") -> {
                 val hm = healthManager
                 if (hm == null) {
-                    KomutSonucu.Cevap("Sağlık bağlantısı henüz başlatılmadı $hitap.")
-                } else if (!hm.isAvailable()) {
-                    KomutSonucu.Cevap("Health Connect bu telefonda kullanılamıyor $hitap.")
+                    KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
-                    val sleep = hm.getLastNightSleepHours()
-                    cachedSleepHours = sleep
+                    val sleep = cachedSleepHours
                     if (sleep != null) {
                         val durum = when {
-                            sleep < 5 -> "kısa; dinlenmeye dikkat et"
-                            sleep < 7 -> "çoğu yetişkin için önerilen süreden az"
-                            sleep < 9 -> "çoğu yetişkin için genel öneri aralığında"
-                            else -> "uzun"
+                            sleep < 5 -> "çok az, dinlenmen lazım"
+                            sleep < 7 -> "yeterli değil"
+                            sleep < 9 -> "iyi"
+                            else -> "çok iyi"
                         }
-                        KomutSonucu.Cevap("Health Connect'teki son uyku kaydına göre yaklaşık ${DigitUtils.formatFloat(sleep)} saat uyumuşsun; bu süre $durum $hitap.")
+                        KomutSonucu.Cevap("Dün gece ${DigitUtils.formatFloat(sleep)} saat uyumuşsun, $durum $hitap.")
                     } else {
-                        KomutSonucu.Cevap("Health Connect'te son iki gün için okunabilir uyku kaydı bulamadım. Zepp uygulamasında uyku verisinin eşitlendiğini ve Eda'nın Uyku Oturumu iznini kontrol et $hitap.")
+                        KomutSonucu.Cevap("Uyku verisi bulamadım $hitap. Bileklik takılı mıydı?")
                     }
                 }
             }
@@ -475,27 +466,24 @@ object CommandProcessor {
             }
 
             // ─── استرس (تخمینی از HR + خواب) ───
-            v(metin, "stres", "stresli", "gergin", "rahat mıyım", "stres durumum", "stres seviyem") -> {
+            v(metin, "stres", "stresli", "gergin", "rahat mıyım") -> {
                 val hm = healthManager
                 if (hm == null) {
-                    KomutSonucu.Cevap("Sağlık bağlantısı henüz başlatılmadı $hitap.")
-                } else if (!hm.isAvailable()) {
-                    KomutSonucu.Cevap("Health Connect bu telefonda kullanılamıyor $hitap.")
+                    KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
-                    val hr = hm.getLatestHeartRate(24L * 60L)
-                    val sleep = hm.getLastNightSleepHours()
-                    cachedHeartRate = hr
-                    cachedSleepHours = sleep
+                    val hr = cachedHeartRate
+                    val sleep = cachedSleepHours
                     if (hr != null && sleep != null) {
-                        val gösterge = when {
-                            hr > 95 && sleep < 5 -> "nabız yüksek ve uyku kısa; yüklenme veya stres olasılığı olabilir"
-                            hr > 85 || sleep < 6 -> "nabız veya uyku süresi dikkat gerektiriyor"
-                            hr < 75 && sleep >= 7 -> "nabız ve uyku süresi görece rahat görünüyor"
-                            else -> "veriler tek başına net bir stres düzeyi göstermiyor"
+                        val stres = when {
+                            hr > 95 && sleep < 5 -> "yüksek"
+                            hr > 85 || sleep < 6 -> "orta"
+                            hr < 75 && sleep > 7 -> "düşük"
+                            else -> "normal"
                         }
-                        KomutSonucu.Cevap("Son 24 saatteki son kayıtlı nabzın ${hr} atım/dakika, son uyku kaydın ${DigitUtils.formatFloat(sleep)} saat. $gösterهنده $hitap. Bu yalnızca nabız ve uykuya dayalı kaba bir göstergedir; bilekliğin ölçtüğü gerçek stres değeri değildir.")
+                        KomutSonucu.Cevap("Nabzın $hr, uykun ${DigitUtils.formatFloat(sleep)} saat. " +
+                                "Stres seviyesi $stres görünüyor $hitap.")
                     } else {
-                        KomutSonucu.Cevap("Stresi güvenilir biçimde değerlendirmek için yeterli güncel nabız ve uyku verisi yok. Zepp eşitlemesini ve Health Connect izinlerini kontrol et $hitap.")
+                        KomutSonucu.Cevap("Stres hesabı için yeterli veri yok $hitap.")
                     }
                 }
             }
