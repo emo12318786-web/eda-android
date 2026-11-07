@@ -137,9 +137,9 @@ class SherpaWakeWordListener(
                             val result = kws.getResult(stream).keyword
                             if (result.isNotBlank()) {
                                 val heard = normalize(result)
-                                WakeEngineStatus.voskExpected = phrase
-                                WakeEngineStatus.voskLastHeard = heard
-                                WakeEngineStatus.voskLastMatch = heard == phrase || heard.replace('_', ' ') == phrase
+                                WakeEngineStatus.sherpaExpected = phrase
+                                WakeEngineStatus.sherpaLastHeard = heard
+                                WakeEngineStatus.sherpaLastMatch = heard == phrase || heard.replace('_', ' ') == phrase
                                 WakeEngineStatus.activeEngine = "SHERPA"
                                 Log.i(TAG, "ENGINE=SHERPA FINAL_HEARD=\"$heard\" EXPECTED_WAKE=\"$phrase\" MATCH=true")
                                 Log.i(TAG, "WAKE_REASON=SHERPA_KEYWORD_SPOTTER HEARD=\"$heard\"")
