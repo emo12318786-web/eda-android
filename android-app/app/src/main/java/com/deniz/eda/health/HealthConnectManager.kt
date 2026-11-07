@@ -33,22 +33,38 @@ class HealthConnectManager(private val context: Context) {
         return try {
             healthConnectClient.permissionController.getGrantedPermissions()
         } catch (e: Exception) {
+            android.util.Log.e(TAG, "Could not read Health Connect permissions", e)
             emptySet()
         }
+    }
+
+    suspend fun canReadHeartRate(): Boolean {
+        if (!isAvailable()) return false
+        val permission = HealthPermission.getReadPermission(HeartRateRecord::class)
+        return permission in getGrantedPermissions()
     }
 
     suspend fun getLatestHeartRate(minutesAgo: Long = 1440): Int? {
         val endTime = Instant.now()
         val startTime = endTime.minus(minutesAgo, ChronoUnit.MINUTES)
         return try {
+            if (!isAvailable() || !canReadHeartRate()) return null
             val response = healthConnectClient.readRecords(
                 ReadRecordsRequest(
                     recordType = HeartRateRecord::class,
                     timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
                 )
             )
-            response.records.lastOrNull()?.samples?.lastOrNull()?.beatsPerMinute?.toInt()
-        } catch (e: Exception) { null }
+            response.records
+                .flatMap { record -> record.samples.map { sample -> sample } }
+                .filter { !it.time.isAfter(endTime) && !it.time.isBefore(startTime) }
+                .maxByOrNull { it.time }
+                ?.beatsPerMinute
+                ?.toInt()
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Heart-rate query failed", e)
+            null
+        }
     }
 
     suspend fun getLastNightSleepHours(): Double? {
