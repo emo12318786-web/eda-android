@@ -4,8 +4,7 @@ import org.json.JSONObject
 
 /**
  * Live status shared by wake-word listeners and the local control panel.
- * "NOT_INTEGRATED" is intentionally distinct from "OFF" so the UI never
- * claims an engine is installed or running when it is not.
+ * Engine states reflect runtime initialization; a stopped service is not reported as listening.
  */
 object WakeEngineStatus {
     @Volatile var voskState: String = "STOPPED"
@@ -17,8 +16,8 @@ object WakeEngineStatus {
     @Volatile var sherpaExpected: String = "eda"
     @Volatile var sherpaLastMatch: Boolean = false
     @Volatile var activeEngine: String = "VOSK"
-    @Volatile var sherpaState: String = "NOT_INTEGRATED"
-    @Volatile var sherpaDetail: String = "Sherpa-ONNX is not integrated in this build"
+    @Volatile var sherpaState: String = "STOPPED"
+    @Volatile var sherpaDetail: String = "Service has not initialized Sherpa yet"
 
     fun toJson(): JSONObject = JSONObject().apply {
         put("activeEngine", activeEngine)
