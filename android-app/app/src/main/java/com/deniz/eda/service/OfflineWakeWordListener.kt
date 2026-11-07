@@ -128,11 +128,18 @@ class OfflineWakeWordListener(
             while (running.get()) {
                 val n = audio.read(buffer, 0, buffer.size)
                 if (n <= 0) { if (n < 0) break else continue }
-                val result = if (recognizer.acceptWaveForm(buffer, n)) recognizer.result else recognizer.partialResult
+                // Do not wake from partial hypotheses. Wait for Vosk's final utterance result.
+                if (!recognizer.acceptWaveForm(buffer, n)) continue
+
+                val result = recognizer.result
                 val obj = JSONObject(result)
-                val text = obj.optString("text", obj.optString("partial", "")).lowercase()
-                val trigger = wakeWord().trim().lowercase().ifBlank { "eda" }
-                if (text.split(Regex("\\s+")).any { it.replace(Regex("[^a-z0-9]"), "") == trigger }) {
+                val text = normalizeTranscript(obj.optString("text", ""))
+                val trigger = normalizeTranscript(wakeWord().ifBlank { "eda" })
+                Log.i(TAG, "Final wake transcript: \"$text\"; expected: \"$trigger\"")
+
+                // Strict mode: the whole finalized utterance must equal the wake phrase.
+                // This reduces matches when the trigger appears inside ordinary speech.
+                if (trigger.isNotBlank() && text == trigger) {
                     hit = true
                     break
                 }
@@ -148,6 +155,12 @@ class OfflineWakeWordListener(
             if (hit) main.post { onWake() }
         }
     }
+
+    private fun normalizeTranscript(value: String): String =
+        value.lowercase().trim()
+            .replace(Regex("[^a-z0-9\\s]"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
 
     private fun unzipSafely(zip: File, destination: File) {
         val base = destination.canonicalPath + File.separator
