@@ -68,6 +68,22 @@ jobs:
           test "$BG_COUNT" -eq 14
           test "$ICON_COUNT" -eq 14
 
+      - name: Prepare Sherpa-ONNX keyword spotting model
+        working-directory: android-app/app/src/main/assets
+        run: |
+          set -euo pipefail
+          MODEL=sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01
+          mkdir -p .
+          curl -fL --retry 3 "https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/$MODEL.tar.bz2" -o "$MODEL.tar.bz2"
+          tar -xjf "$MODEL.tar.bz2"
+          rm "$MODEL.tar.bz2"
+          test -s "$MODEL/encoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx"
+          test -s "$MODEL/decoder-epoch-12-avg-2-chunk-16-left-64.onnx"
+          test -s "$MODEL/joiner-epoch-12-avg-2-chunk-16-left-64.int8.onnx"
+          test -s "$MODEL/tokens.txt"
+          test -s "$MODEL/bpe.model"
+          echo "Sherpa KWS model ready: $(du -sh "$MODEL" | cut -f1)"
+
       - name: Build Debug APK
         working-directory: android-app
         run: |
