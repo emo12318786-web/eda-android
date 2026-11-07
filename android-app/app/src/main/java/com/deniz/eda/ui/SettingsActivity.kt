@@ -120,9 +120,10 @@ class SettingsActivity : AppCompatActivity() {
             Settings.kullaniciAdi = kullaniciAdiInput.text.toString().trim()
             Settings.groqApiKey = groqInput.text.toString().trim()
             Settings.navasanApiKey = navasanInput.text.toString().trim()
-            val wakeWord = wakeWordInput.text.toString().trim().lowercase()
-            if (!wakeWord.matches(Regex("[a-zA-Z0-9]{2,20}"))) {
-                wakeWordInput.error = "2–20 harf veya rakamdan oluşan tek kelime gir"
+            val wakeWord = wakeWordInput.text.toString().trim().lowercase(java.util.Locale.ROOT)
+            if (!wakeWord.matches(Regex("[a-z0-9]+([ '-][a-z0-9]+)*")) ||
+                wakeWord.replace(Regex("[^a-z0-9]"), "").length !in 2..30) {
+                wakeWordInput.error = "İngilizce uyandırma kelimesi veya kısa ifade gir (ör. Eda / Hey Eda)"
                 return@setOnClickListener
             }
             val wakeWordChanged = wakeWord != Settings.wakeWord
