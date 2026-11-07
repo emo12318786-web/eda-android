@@ -217,6 +217,9 @@ object CommandProcessor {
     }
 
     suspend fun isle(context: Context, metinHam: String): KomutSonucu {
+        // Always initialize Health Connect before matching health-related voice commands.
+        // Otherwise the commands can report "not initialized" even when Android permissions are granted.
+        initHealth(context)
         val hitap = Settings.kullaniciAdi
         var metin = metinHam.lowercase(Locale.getDefault()).trim()
 
