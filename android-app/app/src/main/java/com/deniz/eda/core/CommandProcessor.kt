@@ -399,21 +399,27 @@ object CommandProcessor {
             // ═══ HEALTH COMMANDS (Health Connect) ═══
 
             // ─── ضربان قلب ───
-            v(metin, "nabız", "nabiz", "kalp", "kalbim", "kalp atışı") -> {
+            v(metin, "nabız", "nabiz", "kalp", "kalbim", "kalp atışı", "sağlık durumum", "saglik durumum", "sağlığım nasıl", "sagligim nasil", "sağlık verilerim") -> {
                 val hm = healthManager
                 if (hm == null) {
-                    KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
+                    KomutSonucu.Cevap("Sağlık bağlantısı henüz başlatılmadı $hitap.")
+                } else if (!hm.isAvailable()) {
+                    KomutSonucu.Cevap("Bu telefonda Health Connect kullanılamıyor $hitap.")
+                } else if (!hm.canReadHeartRate()) {
+                    KomutSonucu.Cevap("Eda'nın Health Connect içindeki nabız verilerini okuma izni yok. Health Connect izinlerinden Eda için Kalp Atış Hızı iznini açmalısın $hitap.")
                 } else {
-                    val hr = cachedHeartRate
+                    // Refresh on every request; don't trust a cache captured only when the app launched.
+                    val hr = hm.getLatestHeartRate(7L * 24L * 60L)
+                    cachedHeartRate = hr
                     if (hr != null) {
                         val durum = when {
-                            hr < 60 -> "biraz düşük"
-                            hr in 60..100 -> "normal"
-                            else -> "biraz yüksek"
+                            hr < 50 -> "düşük görünüyor"
+                            hr in 50..100 -> "dinlenme halinde çoğu yetişkin için genel aralıkta"
+                            else -> "yüksek görünüyor"
                         }
-                        KomutSonucu.Cevap("Nabzın $hr atış, $durum görünüyor $hitap.")
+                        KomutSonucu.Cevap("Health Connect'te bulunan son nabız verin dakikada $hr atım; $durum $hitap. Bu tek ölçüm tıbbi değerlendirme değildir.")
                     } else {
-                        KomutSonucu.Cevap("Nabız verisi bulamadım $hitap. Bileklik bağlı mı?")
+                        KomutSonucu.Cevap("Eda Health Connect'e erişebiliyor ama son 7 günde okunabilir nabız ölçümü bulamadı. Bu, bilekliğin bağlı olduğu anlamına gelmez; Zepp uygulamasında eşitlemeyi ve Health Connect'te veri kaynağını kontrol et $hitap.")
                     }
                 }
             }
