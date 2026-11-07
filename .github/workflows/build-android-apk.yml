@@ -56,6 +56,11 @@ jobs:
         with:
           gradle-version: 8.7
 
+      - name: Setup Python for theme asset generation
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Generate and verify fourteen theme wallpapers
         working-directory: android-app
         run: |
