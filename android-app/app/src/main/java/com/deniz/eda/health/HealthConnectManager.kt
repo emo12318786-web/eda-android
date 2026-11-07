@@ -44,6 +44,12 @@ class HealthConnectManager(private val context: Context) {
         return permission in getGrantedPermissions()
     }
 
+    suspend fun canReadSleep(): Boolean {
+        if (!isAvailable()) return false
+        val permission = HealthPermission.getReadPermission(SleepSessionRecord::class)
+        return permission in getGrantedPermissions()
+    }
+
     suspend fun getLatestHeartRate(minutesAgo: Long = 1440): Int? {
         val endTime = Instant.now()
         val startTime = endTime.minus(minutesAgo, ChronoUnit.MINUTES)
@@ -68,6 +74,7 @@ class HealthConnectManager(private val context: Context) {
     }
 
     suspend fun getLastNightSleepHours(): Double? {
+        if (!isAvailable() || !canReadSleep()) return null
         val endTime = Instant.now()
         val startTime = endTime.minus(2, ChronoUnit.DAYS)
         return try {
