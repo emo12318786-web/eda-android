@@ -103,7 +103,11 @@ object Settings {
         get() = getBool("derin_uyku", false)  // پیش‌فرض: خواب بیدار (مثل APK فعلی)
         set(v) = setBool("derin_uyku", v)
 
-    // Vosk offline wake-word listener settings.
+    // Wake engines have independent switches; Vosk remains the optional fallback.
+    var sherpaWakeEnabled: Boolean
+        get() = getBool("sherpa_wake_enabled", true)
+        set(v) = setBool("sherpa_wake_enabled", v)
+
     var voskWakeEnabled: Boolean
         get() = getBool("vosk_wake_enabled", true)
         set(v) = setBool("vosk_wake_enabled", v)
