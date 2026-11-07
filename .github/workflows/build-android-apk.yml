@@ -56,10 +56,15 @@ jobs:
         with:
           gradle-version: 8.7
 
+      - name: Setup Python for wallpaper generation
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Generate and verify fourteen theme wallpapers
         working-directory: android-app
         run: |
-          python3 -m pip install --disable-pip-version-check Pillow==11.0.0
+          python -m pip install --disable-pip-version-check Pillow==11.0.0
           python3 -m py_compile generate_theme_backgrounds.py
           python3 generate_theme_backgrounds.py
           BG_COUNT=$(find app/src/main/res/drawable-nodpi -maxdepth 1 -name 'bg_theme_*.webp' | wc -l)
