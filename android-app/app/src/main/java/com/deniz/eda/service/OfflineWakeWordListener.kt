@@ -44,6 +44,8 @@ class OfflineWakeWordListener(
 
     fun prepare(onReady: () -> Unit, onError: (String) -> Unit) {
         if (model != null) { main.post(onReady); return }
+        WakeEngineStatus.voskState = "PREPARING"
+        WakeEngineStatus.voskDetail = "Preparing/downloading English Vosk model"
         synchronized(this) {
             if (loading) return
             loading = true
@@ -78,10 +80,14 @@ class OfflineWakeWordListener(
                     marker.writeText("ok")
                 }
                 model = Model(root.absolutePath)
-                main.post { onStatus("Uyandırma modeli hazır"); onReady() }
+                WakeEngineStatus.voskState = "READY"
+                WakeEngineStatus.voskDetail = "English Vosk model loaded"
+                main.post { onStatus("Vosk modeli hazır"); onReady() }
             } catch (e: Throwable) {
+                WakeEngineStatus.voskState = "ERROR"
+                WakeEngineStatus.voskDetail = e.message ?: "Model preparation failed"
                 Log.e(TAG, "Wake model prepare failed", e)
-                main.post { onError(e.message ?: "خطای آماده‌سازی مدل") }
+                main.post { onError(e.message ?: "Model preparation failed") }
             } finally { loading = false }
         }, "eda-vosk-model-loader").start()
     }
@@ -93,12 +99,22 @@ class OfflineWakeWordListener(
             return false
         }
         if (!running.compareAndSet(false, true)) return true
+        WakeEngineStatus.voskState = "LISTENING"
+        WakeEngineStatus.voskDetail = "Listening for: ${wakeWord()}"
+        WakeEngineStatus.voskExpected = wakeWord()
         worker = Thread({ listen(m) }, "eda-vosk-wake").also { it.start() }
         return true
     }
 
     fun stop() {
         running.set(false)
+        if (model != null) {
+            WakeEngineStatus.voskState = "READY"
+            WakeEngineStatus.voskDetail = "Model ready; not listening"
+        } else {
+            WakeEngineStatus.voskState = "STOPPED"
+            WakeEngineStatus.voskDetail = "Model not loaded"
+        }
         val t = worker
         if (t != null && t !== Thread.currentThread()) try { t.join(1800) } catch (_: InterruptedException) {}
     }
@@ -120,19 +136,35 @@ class OfflineWakeWordListener(
             audio = AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, rate,
                 AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, maxOf(min, rate))
             check(audio.state == AudioRecord.STATE_INITIALIZED) { "Mikrofon kullanılamıyor" }
-            val trigger = wakeWord().trim().lowercase().ifBlank { "eda" }
+            val trigger = normalizePhrase(wakeWord())
+            WakeEngineStatus.voskExpected = trigger
             recognizer = Recognizer(m, rate.toFloat(), "[${JSONObject.quote(trigger)}, \"[unk]\"]")
             audio.startRecording()
-            main.post { onStatus("“${wakeWord()}” uyandırma kelimesi bekleniyor") }
+            WakeEngineStatus.voskState = "LISTENING"
+            WakeEngineStatus.voskDetail = "Listening for English wake phrase: $trigger"
+            main.post { onStatus("Waiting for wake phrase: “$trigger”") }
             val buffer = ShortArray(rate / 10)
             while (running.get()) {
                 val n = audio.read(buffer, 0, buffer.size)
                 if (n <= 0) { if (n < 0) break else continue }
-                val result = if (recognizer.acceptWaveForm(buffer, n)) recognizer.result else recognizer.partialResult
+                val finalized = recognizer.acceptWaveForm(buffer, n)
+                if (!finalized) continue
+                val result = recognizer.result
                 val obj = JSONObject(result)
-                val text = obj.optString("text", obj.optString("partial", "")).lowercase()
-                val trigger = wakeWord().trim().lowercase().ifBlank { "eda" }
-                if (text.split(Regex("\\s+")).any { it.replace(Regex("[^a-z0-9]"), "") == trigger }) {
+                val text = normalizePhrase(obj.optString("text", ""))
+                val trigger = normalizePhrase(wakeWord()).ifBlank { "eda" }
+                val matched = text == trigger || text.contains(" $trigger ") ||
+                    text.startsWith("$trigger ") || text.endsWith(" $trigger")
+                WakeEngineStatus.voskLastHeard = text
+                WakeEngineStatus.voskExpected = trigger
+                WakeEngineStatus.voskLastMatch = matched
+                WakeEngineStatus.voskState = "LISTENING"
+                Log.i(TAG, "ENGINE=VOSK FINAL_HEARD=\"$text\" EXPECTED_WAKE=\"$trigger\" MATCH=$matched")
+                if (matched) {
+                    Log.i(TAG, "WAKE_REASON=EXACT_FINAL_PHRASE ENGINE=VOSK HEARD=\"$text\"")
+                    WakeEngineStatus.activeEngine = "VOSK"
+                    WakeEngineStatus.voskState = "TRIGGERED"
+                    WakeEngineStatus.voskDetail = "Wake phrase matched: $text"
                     hit = true
                     break
                 }
@@ -145,9 +177,19 @@ class OfflineWakeWordListener(
             try { recognizer?.close() } catch (_: Throwable) {}
             running.set(false)
             worker = null
+            if (!hit && WakeEngineStatus.voskState != "ERROR") {
+                WakeEngineStatus.voskState = if (model != null) "READY" else "STOPPED"
+                WakeEngineStatus.voskDetail = "Model ready; not listening"
+            }
             if (hit) main.post { onWake() }
         }
     }
+
+    private fun normalizePhrase(value: String): String =
+        value.lowercase(java.util.Locale.ROOT)
+            .replace(Regex("[^a-z0-9' -]"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
 
     private fun unzipSafely(zip: File, destination: File) {
         val base = destination.canonicalPath + File.separator
