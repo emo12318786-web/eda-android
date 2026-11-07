@@ -414,7 +414,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     "ERROR" -> "Hata: ${wakeStatus.sherpaDetail}"
                     else -> "Kapalı / başlatılmadı"
                 }
-                StatusLine("🎯 Sherpa · Ana motor", if (com.deniz.eda.core.Settings.sherpaWakeEnabled) sherpaLabel else "Kapalı (Ayarlar’dan aç)", wakeStatus.sherpaEnabled && sherpaState in setOf("LISTENING", "READY", "TRIGGERED"))
+                StatusLine("🎯 Sherpa · Ana motor", if (com.deniz.eda.core.Settings.sherpaWakeEnabled) sherpaLabel else "Kapalı (Ayarlar’dan aç)", com.deniz.eda.core.Settings.sherpaWakeEnabled && sherpaState in setOf("LISTENING", "READY", "TRIGGERED"))
                 val voskState = wakeStatus.voskState
                 val voskLabel = when (voskState) {
                     "LISTENING" -> "Aktif · Dinliyor"
@@ -425,7 +425,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     "ERROR" -> "Hata: ${wakeStatus.voskDetail}"
                     else -> "Kapalı / başlatılmadı"
                 }
-                StatusLine("🎙 Vosk · Yedek motor", if (com.deniz.eda.core.Settings.voskWakeEnabled) voskLabel else "Kapalı (Ayarlar’dan aç)", wakeStatus.voskEnabled && voskState in setOf("LISTENING", "READY", "TRIGGERED"))
+                StatusLine("🎙 Vosk · Yedek motor", if (com.deniz.eda.core.Settings.voskWakeEnabled) voskLabel else "Kapalı (Ayarlar’dan aç)", com.deniz.eda.core.Settings.voskWakeEnabled && voskState in setOf("LISTENING", "READY", "TRIGGERED"))
                 StatusLine("🗣 Uyandırma ifadesi", "Beklenen: ${wakeStatus.sherpaExpected} · Son duyulan: ${wakeStatus.sherpaLastHeard.ifBlank { wakeStatus.voskLastHeard.ifBlank { "—" } }}", wakeStatus.sherpaLastMatch || wakeStatus.voskLastMatch)
                 StatusLine("📦 Sherpa modeli", "APK içinde paketli; kurulum sonrası indirme gerekmez", true)
                 SectionHeader("KAYITLARIN", "Bu telefonda saklanan bilgiler")
