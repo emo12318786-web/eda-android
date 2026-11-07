@@ -102,6 +102,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         NotificationHelper.channelOlustur(this)
         tts = TextToSpeech(this, this)
 
+        WakeEngineStatus.sherpaState = "PREPARING"
+        WakeEngineStatus.sherpaDetail = "Sherpa engine is being initialized"
         offlineWake = OfflineWakeWordListener(
             context = this,
             wakeWord = { Settings.wakeWord },
@@ -292,23 +294,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         when (intent?.action) {
             "ACTION_VOSK_WAKE_ON" -> {
                 Settings.voskWakeEnabled = true
-                if (mod == Mod.UYKU && Settings.derinUyku) {
-                    val detector = offlineWake
-                    if (detector != null) {
-                        detector.prepare(
-                            onReady = {
-                                if (Settings.voskWakeEnabled && mod == Mod.UYKU && Settings.derinUyku) {
-                                    val started = detector.start()
-                                    bildirimGuncelle(if (started) "Vosk hazır — “Eda” kelimesi bekleniyor" else "Vosk hazır; dinleme başlatılamadı")
-                                }
-                            },
-                            onError = { error ->
-                                android.util.Log.e("EdaOfflineWake", "Wake model unavailable: $error")
-                                bildirimGuncelle("Vosk model error: $error")
-                            }
-                        )
-                    }
-                }
+                if (mod == Mod.UYKU && Settings.derinUyku) startWakeEngine()
                 return START_STICKY
             }
             "ACTION_VOSK_WAKE_OFF" -> {
@@ -319,22 +305,9 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 return START_STICKY
             }
             "ACTION_WAKE_WORD_CHANGED" -> {
+                sherpaWake?.stop()
                 offlineWake?.stop()
-                val detector = offlineWake
-                if (detector != null && Settings.voskWakeEnabled && mod == Mod.UYKU && Settings.derinUyku) {
-                    detector.prepare(
-                        onReady = {
-                            if (Settings.voskWakeEnabled && mod == Mod.UYKU && Settings.derinUyku) {
-                                val started = detector.start()
-                                bildirimGuncelle(if (started) "Vosk hazır — “${Settings.wakeWord}” kelimesi bekleniyor" else "Vosk hazır; dinleme başlatılamadı")
-                            }
-                        },
-                        onError = { error ->
-                            android.util.Log.e("EdaOfflineWake", "Wake model unavailable: $error")
-                            bildirimGuncelle("Vosk model error: $error")
-                        }
-                    )
-                }
+                if (Settings.voskWakeEnabled && mod == Mod.UYKU && Settings.derinUyku) startWakeEngine()
                 return START_STICKY
             }
             "com.deniz.eda.STT_RESULT" -> {
