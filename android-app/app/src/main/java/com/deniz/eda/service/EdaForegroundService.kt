@@ -210,6 +210,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             android.util.Log.w("EdaWake", "Recognizer cleanup before sleep: ${e.message}")
         }
         speechRecognizer = null
+        WakeDiagnostics.breadcrumb(this, "SpeechRecognizer released")
         dinlemeAktif = false
         releaseMicrophoneAudioFocus(reason)
         serviceScope.launch {
@@ -217,7 +218,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             if (mod == Mod.UYKU && Settings.derinUyku &&
                 (Settings.sherpaWakeEnabled || Settings.voskWakeEnabled)) {
                 android.util.Log.i("EdaWake", "Starting wake engine after microphone handoff: $reason")
-                WakeDiagnostics.breadcrumb(this, "wake engine start after mic release: $reason")
+                WakeDiagnostics.breadcrumb(this@EdaForegroundService, "wake engine start after mic release: $reason")
                 startWakeEngine()
             }
         }
