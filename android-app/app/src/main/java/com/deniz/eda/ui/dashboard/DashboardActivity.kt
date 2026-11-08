@@ -446,7 +446,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 SectionHeader("UYANDIRMA TANILAMASI", "Son işlem adımları ve uygulama kapanma nedeni")
                 Button(onClick = { wakeDiagnosticsRefresh++ }, modifier = Modifier.fillMaxWidth().height(44.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻   Tanılama kayıtlarını yenile") }
-                Text("SON ÇALIŞMA ADIMLARI", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text("SON ÇALIŞMA ADIMLARI · $wakeDiagnosticsRefresh", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Text(
                     text = com.deniz.eda.service.WakeDiagnostics.readSteps(context),
                     modifier = Modifier.fillMaxWidth().heightIn(max = 150.dp).verticalScroll(rememberScrollState())
