@@ -76,6 +76,7 @@ class SherpaWakeWordListener(
                     keywordsThreshold = 0.25f,
                     numTrailingBlanks = 1
                 )
+                WakeDiagnostics.breadcrumb(context, "Sherpa native KeywordSpotter init starting; modelType=zipformer2; threads=1")
                 spotter = KeywordSpotter(assetManager = context.assets, config = config)
                 WakeDiagnostics.breadcrumb(context, "KeywordSpotter created")
                 WakeEngineStatus.sherpaState = "READY"
