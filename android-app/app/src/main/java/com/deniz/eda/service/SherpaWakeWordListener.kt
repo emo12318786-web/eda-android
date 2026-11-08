@@ -111,107 +111,104 @@ class SherpaWakeWordListener(
             return false
         }
         if (released || !running.compareAndSet(false, true)) return running.get()
-        val minBytes = AudioRecord.getMinBufferSize(
-            RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT
-        )
-        if (minBytes <= 0) {
-            running.set(false)
-            reportError("AudioRecord buffer unavailable: $minBytes")
-            return false
-        }
-        try {
-            WakeDiagnostics.breadcrumb(context, "Sherpa AudioRecord creation started")
-            val audio = AudioRecord(
-                MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                RATE,
-                AudioFormat.CHANNEL_IN_MONO,
-                AudioFormat.ENCODING_PCM_16BIT,
-                maxOf(minBytes * 2, RATE / 2)
-            )
-            if (audio.state != AudioRecord.STATE_INITIALIZED) {
-                audio.release()
-                running.set(false)
-                reportError("AudioRecord failed to initialize")
-                return false
-            }
-            recorder = audio
-            audio.startRecording()
-            WakeDiagnostics.breadcrumb(context, "Sherpa AudioRecord started")
-            val phrase = normalize(wakeWord()).ifBlank { "eda" }
-            WakeEngineStatus.activeEngine = "SHERPA"
-            WakeEngineStatus.sherpaState = "LISTENING"
-            WakeEngineStatus.sherpaDetail = "Listening for English phrase: $phrase"
-            onStatus("Sherpa dinliyor: $phrase")
-            Log.i(TAG, "ENGINE=SHERPA LISTENING=true EXPECTED_WAKE=\"$phrase\"")
-            worker = thread(name = "eda-sherpa-kws") {
-                var stream: com.k2fsa.sherpa.onnx.OnlineStream? = null
-                var detectedWake: String? = null
-                try {
-                    val activeStream = kws.createStream(phrase)
-                    stream = activeStream
-                    WakeDiagnostics.breadcrumb(context, "Sherpa keyword stream created for: $phrase")
-                    var firstDecodeRecorded = false
-                    val shortBuffer = ShortArray(1600)
-                    while (running.get()) {
-                        val count = audio.read(shortBuffer, 0, shortBuffer.size)
-                        if (count <= 0) {
-                            if (count < 0 && running.get()) throw IllegalStateException("AudioRecord read failed: $count")
-                            continue
-                        }
-                        val samples = FloatArray(count) { shortBuffer[it] / 32768.0f }
-                        activeStream.acceptWaveform(samples, sampleRate = RATE)
-                        while (running.get() && kws.isReady(activeStream)) {
-                            kws.decode(activeStream)
-                            if (!firstDecodeRecorded) {
-                                firstDecodeRecorded = true
-                                WakeDiagnostics.breadcrumb(context, "Sherpa first decode completed")
-                            }
-                            val result = kws.getResult(activeStream).keyword
-                            if (result.isNotBlank()) {
-                                val heard = normalize(result)
-                                WakeEngineStatus.sherpaExpected = phrase
-                                WakeEngineStatus.sherpaLastHeard = heard
-                                WakeEngineStatus.sherpaLastMatch = heard == phrase || heard.replace('_', ' ') == phrase
-                                WakeEngineStatus.activeEngine = "SHERPA"
-                                Log.i(TAG, "ENGINE=SHERPA FINAL_HEARD=\"$heard\" EXPECTED_WAKE=\"$phrase\" MATCH=true")
-                                Log.i(TAG, "WAKE_REASON=SHERPA_KEYWORD_SPOTTER HEARD=\"$heard\"")
-                                WakeEngineStatus.sherpaState = "TRIGGERED"
-                                WakeEngineStatus.sherpaDetail = "Wake phrase detected: $heard"
-                                detectedWake = heard
-                                running.set(false)
-                                break
-                            }
-                        }
-                    }
-                } catch (e: Throwable) {
-                    if (running.get()) {
-                        WakeDiagnostics.breadcrumb(context, "Sherpa decode failed: ${e.javaClass.simpleName}: ${e.message}")
-                        Log.e(TAG, "Sherpa listening failed", e)
-                        reportError(e.message ?: "Sherpa listening failed")
-                    }
-                } finally {
-                    running.set(false)
-                    WakeDiagnostics.breadcrumb(context, "Sherpa worker cleanup started")
-                    try { stream?.release() } catch (_: Throwable) {}
-                    try { if (audio.recordingState == AudioRecord.RECORDSTATE_RECORDING) audio.stop() } catch (_: Throwable) {}
-                    try { audio.release() } catch (_: Throwable) {}
-                    WakeDiagnostics.breadcrumb(context, "Sherpa AudioRecord released")
-                    if (recorder === audio) recorder = null
-                    if (WakeEngineStatus.sherpaState == "LISTENING") {
-                        WakeEngineStatus.sherpaState = "READY"
-                        WakeEngineStatus.sherpaDetail = "Model ready; not listening"
-                    }
-                    // Do not reopen SpeechRecognizer until Sherpa has released AudioRecord.
-                    detectedWake?.let { heard -> main.post { onWake(heard) } }
+
+        // AudioRecord creation/start and native decode stay off the service's main thread.
+        val activeWorker = thread(start = false, name = "eda-sherpa-kws") {
+            var audio: AudioRecord? = null
+            var stream: com.k2fsa.sherpa.onnx.OnlineStream? = null
+            var detectedWake: String? = null
+            try {
+                WakeDiagnostics.breadcrumb(context, "Sherpa background microphone setup started")
+                val minBytes = AudioRecord.getMinBufferSize(
+                    RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT
+                )
+                if (minBytes <= 0) throw IllegalStateException("AudioRecord buffer unavailable: $minBytes")
+                val createdAudio = AudioRecord(
+                    MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                    RATE,
+                    AudioFormat.CHANNEL_IN_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT,
+                    maxOf(minBytes * 2, RATE / 2)
+                )
+                audio = createdAudio
+                recorder = createdAudio
+                if (createdAudio.state != AudioRecord.STATE_INITIALIZED) {
+                    throw IllegalStateException("AudioRecord failed to initialize")
                 }
+                if (!running.get()) return@thread
+                createdAudio.startRecording()
+                WakeDiagnostics.breadcrumb(context, "Sherpa AudioRecord started")
+                val phrase = normalize(wakeWord()).ifBlank { "eda" }
+                WakeEngineStatus.activeEngine = "SHERPA"
+                WakeEngineStatus.sherpaState = "LISTENING"
+                WakeEngineStatus.sherpaDetail = "Listening for English phrase: $phrase"
+                main.post { onStatus("Sherpa dinliyor: $phrase") }
+                Log.i(TAG, "ENGINE=SHERPA LISTENING=true EXPECTED_WAKE=\"$phrase\"")
+
+                val activeStream = kws.createStream(phrase)
+                stream = activeStream
+                WakeDiagnostics.breadcrumb(context, "Sherpa keyword stream created for: $phrase")
+                var firstDecodeRecorded = false
+                val shortBuffer = ShortArray(1600)
+                while (running.get()) {
+                    val count = createdAudio.read(shortBuffer, 0, shortBuffer.size)
+                    if (count <= 0) {
+                        if (count < 0 && running.get()) throw IllegalStateException("AudioRecord read failed: $count")
+                        continue
+                    }
+                    val samples = FloatArray(count) { shortBuffer[it] / 32768.0f }
+                    activeStream.acceptWaveform(samples, sampleRate = RATE)
+                    while (running.get() && kws.isReady(activeStream)) {
+                        kws.decode(activeStream)
+                        if (!firstDecodeRecorded) {
+                            firstDecodeRecorded = true
+                            WakeDiagnostics.breadcrumb(context, "Sherpa first decode completed")
+                        }
+                        val result = kws.getResult(activeStream).keyword
+                        if (result.isNotBlank()) {
+                            val heard = normalize(result)
+                            WakeEngineStatus.sherpaExpected = phrase
+                            WakeEngineStatus.sherpaLastHeard = heard
+                            WakeEngineStatus.sherpaLastMatch = heard == phrase || heard.replace('_', ' ') == phrase
+                            WakeEngineStatus.activeEngine = "SHERPA"
+                            Log.i(TAG, "ENGINE=SHERPA FINAL_HEARD=\"$heard\" EXPECTED_WAKE=\"$phrase\" MATCH=true")
+                            Log.i(TAG, "WAKE_REASON=SHERPA_KEYWORD_SPOTTER HEARD=\"$heard\"")
+                            WakeEngineStatus.sherpaState = "TRIGGERED"
+                            WakeEngineStatus.sherpaDetail = "Wake phrase detected: $heard"
+                            detectedWake = heard
+                            running.set(false)
+                            break
+                        }
+                    }
+                }
+            } catch (e: Throwable) {
+                if (running.get()) {
+                    WakeDiagnostics.breadcrumb(context, "Sherpa decode/start failed: ${e.javaClass.simpleName}: ${e.message}")
+                    Log.e(TAG, "Sherpa listening failed", e)
+                    reportError(e.message ?: "Sherpa listening failed")
+                }
+            } finally {
+                running.set(false)
+                WakeDiagnostics.breadcrumb(context, "Sherpa worker cleanup started")
+                try { stream?.release() } catch (_: Throwable) {}
+                try {
+                    val activeAudio = audio
+                    if (activeAudio?.recordingState == AudioRecord.RECORDSTATE_RECORDING) activeAudio.stop()
+                } catch (_: Throwable) {}
+                try { audio?.release() } catch (_: Throwable) {}
+                if (recorder === audio) recorder = null
+                WakeDiagnostics.breadcrumb(context, "Sherpa AudioRecord released")
+                if (WakeEngineStatus.sherpaState == "LISTENING") {
+                    WakeEngineStatus.sherpaState = "READY"
+                    WakeEngineStatus.sherpaDetail = "Model ready; not listening"
+                }
+                // Reopen SpeechRecognizer only after AudioRecord and stream are released.
+                detectedWake?.let { heard -> main.post { onWake(heard) } }
             }
-            return true
-        } catch (e: Throwable) {
-            running.set(false)
-            WakeDiagnostics.breadcrumb(context, "Sherpa start failed: ${e.javaClass.simpleName}: ${e.message}")
-            reportError(e.message ?: "Could not start Sherpa microphone")
-            return false
         }
+        worker = activeWorker
+        activeWorker.start()
+        return true
     }
 
     fun stop() {
