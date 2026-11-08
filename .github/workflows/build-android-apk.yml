@@ -142,7 +142,7 @@ jobs:
               pieces.append(piece)
               offset += len(piece)
           out = model / "test_wavs" / "test_keywords.txt"
-          out.write_text(" ".join(pieces) + "\\n", encoding="utf-8")
+          out.write_text(" ".join(pieces) + "\n", encoding="utf-8")
           print(f"Sherpa default keyword tokenized: {' '.join(pieces)}")
           PY
           test -s "$MODEL/test_wavs/test_keywords.txt"
