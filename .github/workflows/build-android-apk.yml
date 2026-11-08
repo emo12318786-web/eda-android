@@ -85,7 +85,14 @@ jobs:
           set -euo pipefail
           MODEL=sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01
           mkdir -p .
-          curl -fL --retry 3 "https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/$MODEL.tar.bz2" -o "$MODEL.tar.bz2"
+          URL="https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/$MODEL.tar.bz2"
+          # Release downloads can temporarily return HTTP 5xx (including 504).
+          # Retry transient HTTP/network failures for several minutes before failing.
+          curl --fail --location --show-error \
+            --connect-timeout 30 --max-time 240 \
+            --retry 8 --retry-all-errors --retry-delay 5 --retry-max-time 300 \
+            "$URL" -o "$MODEL.tar.bz2"
+          test -s "$MODEL.tar.bz2"
           tar -xjf "$MODEL.tar.bz2"
           rm "$MODEL.tar.bz2"
           test -s "$MODEL/encoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx"
