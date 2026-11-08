@@ -195,6 +195,30 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         )
     }
 
+    // Wait for Android SpeechRecognizer to fully release the microphone before
+    // opening AudioRecord for Sherpa/Vosk. Starting both at once can kill the
+    // recognition service (and, on some devices, the whole process).
+    private fun startWakeEngineAfterMicRelease(reason: String) {
+        try {
+            speechRecognizer?.stopListening()
+            speechRecognizer?.cancel()
+            speechRecognizer?.destroy()
+        } catch (e: Exception) {
+            android.util.Log.w("EdaWake", "Recognizer cleanup before sleep: ${e.message}")
+        }
+        speechRecognizer = null
+        dinlemeAktif = false
+        releaseMicrophoneAudioFocus(reason)
+        serviceScope.launch {
+            delay(900L)
+            if (mod == Mod.UYKU && Settings.derinUyku &&
+                (Settings.sherpaWakeEnabled || Settings.voskWakeEnabled)) {
+                android.util.Log.i("EdaWake", "Starting wake engine after microphone handoff: $reason")
+                startWakeEngine()
+            }
+        }
+    }
+
     private fun startWakeEngine() {
         if ((!Settings.sherpaWakeEnabled && !Settings.voskWakeEnabled) || mod != Mod.UYKU || !Settings.derinUyku) return
         if (!Settings.sherpaWakeEnabled) { startVoskFallback("Sherpa disabled in settings"); return }
@@ -369,7 +393,9 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 bildirimGuncelle("💤 Uyku — “${Settings.wakeWord}” kelimesi bekleniyor")
                 android.util.Log.d("EdaService", "UYKU moda geçildi")
                 konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") {
-                    if (Settings.sherpaWakeEnabled || Settings.voskWakeEnabled) startWakeEngine()
+                    if (Settings.sherpaWakeEnabled || Settings.voskWakeEnabled) {
+                        startWakeEngineAfterMicRelease("ACTION_UYKU TTS finished")
+                    }
                     bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                 }
             }
@@ -407,7 +433,9 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 try { speechRecognizer?.stopListening(); speechRecognizer?.cancel(); speechRecognizer?.destroy() } catch (_: Exception) {}
                 speechRecognizer = null
                 dinlemeAktif = false
-                if (Settings.sherpaWakeEnabled || Settings.voskWakeEnabled) startWakeEngine()
+                if (Settings.sherpaWakeEnabled || Settings.voskWakeEnabled) {
+                    startWakeEngineAfterMicRelease("ACTION_DERIN_UYKU")
+                }
                 bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                 android.util.Log.d("EdaService", "Derin uyku: Vosk Eda kelimesini bekliyor")
             }
