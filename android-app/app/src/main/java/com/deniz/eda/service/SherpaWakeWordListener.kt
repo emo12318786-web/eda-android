@@ -50,7 +50,26 @@ class SherpaWakeWordListener(
         WakeEngineStatus.sherpaState = "PREPARING"
         WakeEngineStatus.sherpaDetail = "Loading bundled English KWS model"
         thread(name = "eda-sherpa-prepare") {
+            WakeDiagnostics.breadcrumb(context, "Sherpa prepare started")
             try {
+                val requiredAssets = listOf(ENCODER, DECODER, JOINER, TOKENS, BPE, KEYWORDS_FILE)
+                requiredAssets.forEach { asset -> context.assets.open(asset).use { } }
+                val tokenText = context.assets.open(TOKENS).bufferedReader().use { it.readText() }
+                val keywordText = context.assets.open(KEYWORDS_FILE).bufferedReader().use { it.readText() }
+                require(keywordText.isNotBlank()) { "Sherpa keywords file is empty" }
+                val availableTokens = tokenText.lineSequence().mapNotNull { line ->
+                    line.trim().split(Regex("\\s+")).firstOrNull()?.removePrefix("▁")?.lowercase(Locale.ROOT)
+                }.toSet()
+                val keywordWords = keywordText.lineSequence().flatMap { line ->
+                    line.substringBefore("#").lowercase(Locale.ROOT)
+                        .replace(Regex("[^a-z0-9' -]"), " ")
+                        .split(Regex("\\s+")).asSequence()
+                }.filter { it.matches(Regex("[a-z][a-z0-9']*")) && it != "0" && it != "1" }.toList()
+                val missing = keywordWords.filter { word -> word !in availableTokens && "▁$word" !in tokenText }
+                if (missing.isNotEmpty()) {
+                    throw IllegalStateException("Sherpa keyword token(s) missing: ${missing.distinct().joinToString()}")
+                }
+                WakeDiagnostics.breadcrumb(context, "Sherpa assets and keyword tokens checked")
                 val config = KeywordSpotterConfig(
                     featConfig = FeatureConfig(sampleRate = RATE, featureDim = 80),
                     modelConfig = OnlineModelConfig(
@@ -71,11 +90,13 @@ class SherpaWakeWordListener(
                     numTrailingBlanks = 1
                 )
                 spotter = KeywordSpotter(assetManager = context.assets, config = config)
+                WakeDiagnostics.breadcrumb(context, "KeywordSpotter created")
                 WakeEngineStatus.sherpaState = "READY"
                 WakeEngineStatus.sherpaDetail = "English KWS model loaded; not listening"
                 Log.i(TAG, "ENGINE=SHERPA MODEL_READY=true")
                 main.post(onReady)
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
+                WakeDiagnostics.breadcrumb(context, "Sherpa prepare failed: ${e.javaClass.simpleName}: ${e.message}")
                 WakeEngineStatus.sherpaState = "ERROR"
                 WakeEngineStatus.sherpaDetail = e.message ?: "Sherpa model initialization failed"
                 Log.e(TAG, "ENGINE=SHERPA MODEL_READY=false", e)
@@ -99,6 +120,7 @@ class SherpaWakeWordListener(
             return false
         }
         try {
+            WakeDiagnostics.breadcrumb(context, "Sherpa AudioRecord creation started")
             val audio = AudioRecord(
                 MediaRecorder.AudioSource.VOICE_RECOGNITION,
                 RATE,
@@ -114,6 +136,7 @@ class SherpaWakeWordListener(
             }
             recorder = audio
             audio.startRecording()
+            WakeDiagnostics.breadcrumb(context, "Sherpa AudioRecord started")
             val phrase = normalize(wakeWord()).ifBlank { "eda" }
             WakeEngineStatus.activeEngine = "SHERPA"
             WakeEngineStatus.sherpaState = "LISTENING"
@@ -126,6 +149,8 @@ class SherpaWakeWordListener(
                 try {
                     val activeStream = kws.createStream(phrase)
                     stream = activeStream
+                    WakeDiagnostics.breadcrumb(context, "Sherpa keyword stream created for: $phrase")
+                    var firstDecodeRecorded = false
                     val shortBuffer = ShortArray(1600)
                     while (running.get()) {
                         val count = audio.read(shortBuffer, 0, shortBuffer.size)
@@ -137,6 +162,10 @@ class SherpaWakeWordListener(
                         activeStream.acceptWaveform(samples, sampleRate = RATE)
                         while (running.get() && kws.isReady(activeStream)) {
                             kws.decode(activeStream)
+                            if (!firstDecodeRecorded) {
+                                firstDecodeRecorded = true
+                                WakeDiagnostics.breadcrumb(context, "Sherpa first decode completed")
+                            }
                             val result = kws.getResult(activeStream).keyword
                             if (result.isNotBlank()) {
                                 val heard = normalize(result)
@@ -154,16 +183,19 @@ class SherpaWakeWordListener(
                             }
                         }
                     }
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     if (running.get()) {
+                        WakeDiagnostics.breadcrumb(context, "Sherpa decode failed: ${e.javaClass.simpleName}: ${e.message}")
                         Log.e(TAG, "Sherpa listening failed", e)
                         reportError(e.message ?: "Sherpa listening failed")
                     }
                 } finally {
                     running.set(false)
-                    try { stream?.release() } catch (_: Exception) {}
-                    try { if (audio.recordingState == AudioRecord.RECORDSTATE_RECORDING) audio.stop() } catch (_: Exception) {}
-                    try { audio.release() } catch (_: Exception) {}
+                    WakeDiagnostics.breadcrumb(context, "Sherpa worker cleanup started")
+                    try { stream?.release() } catch (_: Throwable) {}
+                    try { if (audio.recordingState == AudioRecord.RECORDSTATE_RECORDING) audio.stop() } catch (_: Throwable) {}
+                    try { audio.release() } catch (_: Throwable) {}
+                    WakeDiagnostics.breadcrumb(context, "Sherpa AudioRecord released")
                     if (recorder === audio) recorder = null
                     if (WakeEngineStatus.sherpaState == "LISTENING") {
                         WakeEngineStatus.sherpaState = "READY"
@@ -174,21 +206,28 @@ class SherpaWakeWordListener(
                 }
             }
             return true
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             running.set(false)
+            WakeDiagnostics.breadcrumb(context, "Sherpa start failed: ${e.javaClass.simpleName}: ${e.message}")
             reportError(e.message ?: "Could not start Sherpa microphone")
             return false
         }
     }
 
     fun stop() {
+        WakeDiagnostics.breadcrumb(context, "Sherpa stop requested")
         running.set(false)
         val audio = recorder
         try { if (audio?.recordingState == AudioRecord.RECORDSTATE_RECORDING) audio.stop() } catch (_: Exception) {}
         val activeWorker = worker
         if (activeWorker != null && activeWorker !== Thread.currentThread()) {
-            try { activeWorker.join(1500L) } catch (_: InterruptedException) {
+            try { activeWorker.join(3000L) } catch (_: InterruptedException) {
                 Thread.currentThread().interrupt()
+            }
+            if (activeWorker.isAlive) {
+                Log.w(TAG, "Worker still alive after stop join; defer native spotter release")
+                WakeDiagnostics.breadcrumb(context, "Sherpa worker still alive after 3000ms join")
+                return
             }
         }
         if (recorder == null && WakeEngineStatus.sherpaState == "LISTENING") {
@@ -200,7 +239,7 @@ class SherpaWakeWordListener(
     fun release() {
         released = true
         stop()
-        try { spotter?.release() } catch (_: Exception) {}
+        try { spotter?.release() } catch (_: Throwable) {}
         spotter = null
         WakeEngineStatus.sherpaState = "STOPPED"
         WakeEngineStatus.sherpaDetail = "Released"
