@@ -220,27 +220,41 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     }
 
     private fun startWakeEngine() {
-        if ((!Settings.sherpaWakeEnabled && !Settings.voskWakeEnabled) || mod != Mod.UYKU || !Settings.derinUyku) return
+        if (mod != Mod.UYKU || !Settings.derinUyku) return
 
-        // SAFETY ROLLBACK: Sherpa currently crashes on some devices during the
-        // deep-sleep microphone handoff. Keep the Sherpa code/settings available,
-        // but use the already-supported Vosk engine for the sleep wake loop until
-        // the Sherpa keyword assets/native path are validated on-device.
-        // Vosk is the fallback by design; if Sherpa alone was selected, enable
-        // the fallback for this session rather than leaving the microphone closed.
-        if (Settings.sherpaWakeEnabled && !Settings.voskWakeEnabled) {
-            Settings.voskWakeEnabled = true
-            android.util.Log.w("EdaWake", "SAFETY_FALLBACK=VOSK reason=Sherpa deep-sleep stability")
-        }
-        if (Settings.voskWakeEnabled) {
+        val useSherpa = Settings.sherpaWakeEnabled
+        val useVosk = Settings.voskWakeEnabled
+        if (!useSherpa && !useVosk) {
             sherpaWake?.stop()
-            startVoskFallback("Safety fallback: Vosk selected for stable deep-sleep microphone")
+            offlineWake?.stop()
+            bildirimGuncelle("Uyandırma motorları kapalı")
+            android.util.Log.i("EdaWake", "No wake engine enabled; microphone remains closed")
             return
         }
 
-        // No wake engine is enabled; do not open the microphone unexpectedly.
-        bildirimGuncelle("Uyandırma motorları kapalı")
-        android.util.Log.w("EdaWake", "No wake engine enabled; microphone remains closed")
+        // Respect the user's independent switches: Sherpa is attempted first
+        // when enabled. Vosk is only used when explicitly enabled as fallback.
+        if (useSherpa) {
+            sherpaWake?.stop()
+            android.util.Log.i("EdaWake", "WAKE_ENGINE=SHERPA selected; VoskEnabled=$useVosk")
+            sherpaWake?.prepare(
+                onReady = {
+                    if (Settings.sherpaWakeEnabled && mod == Mod.UYKU && Settings.derinUyku) {
+                        val started = sherpaWake?.start() == true
+                        if (!started && Settings.voskWakeEnabled) {
+                            startVoskFallback("Sherpa start returned false")
+                        } else if (!started) {
+                            bildirimGuncelle("Sherpa başlatılamadı; Vosk yedek motoru kapalı")
+                        }
+                    }
+                }
+            )
+            return
+        }
+
+        if (useVosk) {
+            startVoskFallback("Vosk selected in settings")
+        }
     }
 
     private fun onOfflineWakeWord() {
