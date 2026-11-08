@@ -448,7 +448,6 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻   Tanılama kayıtlarını yenile") }
                 Text("SON ÇALIŞMA ADIMLARI", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Text(
-                    key = wakeDiagnosticsRefresh,
                     text = com.deniz.eda.service.WakeDiagnostics.readSteps(context),
                     modifier = Modifier.fillMaxWidth().heightIn(max = 150.dp).verticalScroll(rememberScrollState())
                         .background(PanelRaised, RoundedCornerShape(12.dp)).padding(10.dp),
@@ -456,7 +455,6 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 )
                 Text("SON KAPANMA / ÇÖKME KAYDI", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Text(
-                    key = wakeDiagnosticsRefresh,
                     text = com.deniz.eda.service.WakeDiagnostics.readCrash(context),
                     modifier = Modifier.fillMaxWidth().heightIn(max = 180.dp).verticalScroll(rememberScrollState())
                         .background(PanelRaised, RoundedCornerShape(12.dp)).padding(10.dp),
