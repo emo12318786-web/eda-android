@@ -84,17 +84,25 @@ jobs:
         run: |
           set -euo pipefail
           MODEL=sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01
-          mkdir -p .
-          URL="https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/$MODEL.tar.bz2"
-          # Release downloads can temporarily return HTTP 5xx (including 504).
-          # Retry transient HTTP/network failures for several minutes before failing.
-          curl --fail --location --show-error \
-            --connect-timeout 30 --max-time 240 \
-            --retry 8 --retry-all-errors --retry-delay 5 --retry-max-time 300 \
-            "$URL" -o "$MODEL.tar.bz2"
-          test -s "$MODEL.tar.bz2"
-          tar -xjf "$MODEL.tar.bz2"
-          rm "$MODEL.tar.bz2"
+          MIRROR="https://huggingface.co/mobilebytesensei/sherpa-onnx-kws-zipformer-gigaspeech-3.3M/resolve/main"
+          mkdir -p "$MODEL"
+          cd "$MODEL"
+          # The upstream GitHub release repeatedly returns HTTP 504 in CI.
+          # Download the exact upstream model files from a verified mirror instead.
+          fetch() {
+            local file="$1" expected="$2"
+            curl --fail --location --show-error \
+              --connect-timeout 30 --max-time 240 \
+              --retry 5 --retry-all-errors --retry-delay 3 \
+              "$MIRROR/$file" -o "$file"
+            echo "$expected  $file" | sha256sum --check --status
+          }
+          fetch "encoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx" "7d5a25fbc14b423074fe0c58e1be388ccf3f1a815c649980232a0c47f81875e4"
+          fetch "decoder-epoch-12-avg-2-chunk-16-left-64.onnx" "f61ebd3eed3773a44d088d53dfae92dbb6aec4839f4dcaee2d402414741663a3"
+          fetch "joiner-epoch-12-avg-2-chunk-16-left-64.int8.onnx" "eae9da0c7e1e6c6a3f4cc42d167899c388f6c6701b94cb96320e4f55df79624c"
+          fetch "tokens.txt" "fd2ded4050a55d2b1578870ba8697d02371980217806b7558bd0a5cc60f3ba53"
+          fetch "bpe.model" "c8a2a0129c4ab8e463164c142f82d25649661b122c8cd0b7aab5c9e80b90ad24"
+          cd ..
           test -s "$MODEL/encoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx"
           test -s "$MODEL/decoder-epoch-12-avg-2-chunk-16-left-64.onnx"
           test -s "$MODEL/joiner-epoch-12-avg-2-chunk-16-left-64.int8.onnx"
