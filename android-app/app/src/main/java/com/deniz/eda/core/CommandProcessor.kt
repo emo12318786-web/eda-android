@@ -413,6 +413,56 @@ object CommandProcessor {
                 }
             }
 
+            // Tek komutla bileklikten okunabilen sağlık özeti.
+            v(metin, "kontrol بدن", "kontrol badan", "kontrol beden", "beden kontrolü",
+                "beden kontrolu", "vücudumu kontrol et", "vucudumu kontrol et",
+                "vücut durumum", "vucut durumum", "sağlığımı kontrol et",
+                "sagligimi kontrol et", "genel sağlık raporu", "genel saglik raporu") -> {
+                val hm = healthManager
+                if (hm == null) {
+                    KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap. EDA'yı yeniden başlat.")
+                } else {
+                    val hr = hm.getLatestHeartRate(1440) ?: cachedHeartRate
+                    val sleep = hm.getLastNightSleepHours() ?: cachedSleepHours
+                    val steps = hm.getTodaySteps().takeIf { it > 0L } ?: cachedSteps
+                    if (hr != null) cachedHeartRate = hr
+                    if (sleep != null) cachedSleepHours = sleep
+                    if (steps != null) cachedSteps = steps
+                    val lines = mutableListOf<String>()
+                    if (hr != null) {
+                        val pulseStatus = when {
+                            hr < 60 -> "düşük"
+                            hr <= 100 -> "genel dinlenme aralığında"
+                            else -> "yüksek"
+                        }
+                        lines.add("Nabız: $hr atım/dakika, $pulseStatus.")
+                    } else lines.add("Nabız verisi bulunamadı.")
+                    if (sleep != null) {
+                        val sleepStatus = when {
+                            sleep < 5 -> "çok az"
+                            sleep < 7 -> "yetersiz"
+                            sleep < 9 -> "iyi"
+                            else -> "uzun"
+                        }
+                        lines.add("Dün gece uyku: ${DigitUtils.formatFloat(sleep)} saat, $sleepStatus.")
+                    } else lines.add("Uyku verisi bulunamadı.")
+                    if (steps != null) lines.add("Bugünkü adım: $steps.")
+                    if (hr != null && sleep != null) {
+                        val stress = when {
+                            hr > 95 && sleep < 5 -> "yüksek olabilir"
+                            hr > 85 || sleep < 6 -> "orta düzeyde olabilir"
+                            hr < 75 && sleep > 7 -> "düşük olabilir"
+                            else -> "belirgin yüksek görünmüyor"
+                        }
+                        lines.add("Tahmini stres: $stress. Bu, bileklikten alınan doğrudan stres ölçümü değil; nabız ve uykuya dayalı yaklaşık yorumdur.")
+                    } else {
+                        lines.add("Stres tahmini için nabız ve uyku verilerinin ikisi de gerekli.")
+                    }
+                    lines.add("Eksik veriler varsa Zepp Life ve Health Connect senkronizasyonunu kontrol et.")
+                    KomutSonucu.Cevap("Vücut kontrolün $hitap. " + lines.joinToString(" "))
+                }
+            }
+
             // ─── ضربان قلب ───
             v(metin, "nabız", "nabiz", "kalp", "kalbim", "kalp atışı", "kalp atışım", "kalp atışım nasıl", "nabzım nasıl", "nabzim nasil", "nabzımı söyle", "nabzimi soyle", "sağlık durumum", "saglik durumum", "sağlığım nasıl", "sagligim nasil", "sağlık verilerim", "bileklik nabız", "bileklik nabiz") -> {
                 val hm = healthManager
