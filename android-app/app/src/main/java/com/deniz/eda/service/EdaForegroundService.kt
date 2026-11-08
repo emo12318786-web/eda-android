@@ -102,8 +102,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         NotificationHelper.channelOlustur(this)
         tts = TextToSpeech(this, this)
 
-        WakeEngineStatus.sherpaState = "PREPARING"
-        WakeEngineStatus.sherpaDetail = "Sherpa engine is being initialized"
+        WakeEngineStatus.sherpaState = "STOPPED"
+        WakeEngineStatus.sherpaDetail = "Sherpa model will load when enabled and requested"
         // Create Vosk lazily. Preparing it here downloaded its ~127 MB model
         // even when the user had disabled Vosk and selected Sherpa only.
         offlineWake = OfflineWakeWordListener(
