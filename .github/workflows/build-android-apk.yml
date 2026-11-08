@@ -129,7 +129,7 @@ jobs:
               fields = line.strip().split()
               if fields and not fields[0].startswith("#"):
                   tokens.append(fields[0])
-          phrase = "▁EDA"
+          phrase = "▁eda"
           vocab = sorted(set(tokens), key=len, reverse=True)
           pieces = []
           offset = 0
