@@ -254,7 +254,7 @@ class SherpaWakeWordListener(
                 token.takeIf { it.isNotEmpty() && !it.startsWith("#") }
             }.toList()
         }
-        val text = "▁" + value.trim().uppercase(Locale.ROOT).replace(Regex("\\s+"), "▁")
+        val text = "▁" + value.trim().lowercase(Locale.ROOT).replace(Regex("\\s+"), "▁")
         val pieces = vocab.distinct().sortedByDescending { it.length }
         val output = mutableListOf<String>()
         var offset = 0
