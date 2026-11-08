@@ -402,7 +402,7 @@ object CommandProcessor {
             // ═══ HEALTH COMMANDS (Health Connect) ═══
 
             // ─── ضربان قلب ───
-            v(metin, "nabız", "nabiz", "kalp", "kalbim", "kalp atışı", "sağlık durumum", "saglik durumum", "sağlığım nasıl", "sagligim nasil", "sağlık verilerim") -> {
+            v(metin, "nabız", "nabiz", "kalp", "kalbim", "kalp atışı", "kalp atışım", "kalp atışım nasıl", "nabzım nasıl", "nabzim nasil", "nabzımı söyle", "nabzimi soyle", "sağlık durumum", "saglik durumum", "sağlığım nasıl", "sagligim nasil", "sağlık verilerim", "bileklik nabız", "bileklik nabiz") -> {
                 val hm = healthManager
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
@@ -431,7 +431,7 @@ object CommandProcessor {
 
             // ─── خواب (فقط اطلاعات خواب) ───
             // نکته: کلمه "uyku" تنها، نمی‌تونه اینجا باشه چون تعارض با "uyku modu" داره
-            v(metin, "uykum", "uyudum", "uyku süresi", "kaç saat uyudum", "dün gece uyudum", "uyku durumum", "nasıl uyudum", "nasil uyudum", "uyku kalitem") -> {
+            v(metin, "uykum", "uykum nasıl", "uykum nasil", "uyku nasıldı", "uyku nasildi", "uyudum", "uyku süresi", "kaç saat uyudum", "kaç saat uyudum dün gece", "dün gece kaç saat uyudum", "dün gece ne kadar uyudum", "dün gece uyudum", "uyku durumum", "uyku seviyem", "nasıl uyudum", "nasil uyudum", "uyku kalitem", "uyku kalitesi", "bileklik uyku", "uyku raporum") -> {
                 val hm = healthManager
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
@@ -471,7 +471,7 @@ object CommandProcessor {
             }
 
             // ─── استرس (تخمینی از HR + خواب) ───
-            v(metin, "stres", "stresli", "gergin", "rahat mıyım") -> {
+            v(metin, "stres", "stresim", "stres seviyem", "stres seviyem nasıl", "stresim nasıl", "stresli", "gergin", "rahat mıyım", "bileklik stresi", "uyku ve stres") -> {
                 val hm = healthManager
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
