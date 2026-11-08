@@ -121,13 +121,15 @@ class SherpaWakeWordListener(
             onStatus("Sherpa dinliyor: $phrase")
             Log.i(TAG, "ENGINE=SHERPA LISTENING=true EXPECTED_WAKE=\"$phrase\"")
             worker = thread(name = "eda-sherpa-kws") {
+                var stream: com.k2fsa.sherpa.onnx.OnlineStream? = null
+                var detectedWake: String? = null
                 try {
-                    val stream = kws.createStream(phrase)
+                    stream = kws.createStream(phrase)
                     val shortBuffer = ShortArray(1600)
                     while (running.get()) {
                         val count = audio.read(shortBuffer, 0, shortBuffer.size)
                         if (count <= 0) {
-                            if (count < 0) throw IllegalStateException("AudioRecord read failed: $count")
+                            if (count < 0 && running.get()) throw IllegalStateException("AudioRecord read failed: $count")
                             continue
                         }
                         val samples = FloatArray(count) { shortBuffer[it] / 32768.0f }
@@ -145,13 +147,12 @@ class SherpaWakeWordListener(
                                 Log.i(TAG, "WAKE_REASON=SHERPA_KEYWORD_SPOTTER HEARD=\"$heard\"")
                                 WakeEngineStatus.sherpaState = "TRIGGERED"
                                 WakeEngineStatus.sherpaDetail = "Wake phrase detected: $heard"
+                                detectedWake = heard
                                 running.set(false)
-                                main.post { onWake(heard) }
                                 break
                             }
                         }
                     }
-                    stream.release()
                 } catch (e: Exception) {
                     if (running.get()) {
                         Log.e(TAG, "Sherpa listening failed", e)
@@ -159,6 +160,7 @@ class SherpaWakeWordListener(
                     }
                 } finally {
                     running.set(false)
+                    try { stream?.release() } catch (_: Exception) {}
                     try { if (audio.recordingState == AudioRecord.RECORDSTATE_RECORDING) audio.stop() } catch (_: Exception) {}
                     try { audio.release() } catch (_: Exception) {}
                     if (recorder === audio) recorder = null
@@ -166,6 +168,8 @@ class SherpaWakeWordListener(
                         WakeEngineStatus.sherpaState = "READY"
                         WakeEngineStatus.sherpaDetail = "Model ready; not listening"
                     }
+                    // Do not reopen SpeechRecognizer until Sherpa has released AudioRecord.
+                    detectedWake?.let { heard -> main.post { onWake(heard) } }
                 }
             }
             return true
@@ -180,7 +184,13 @@ class SherpaWakeWordListener(
         running.set(false)
         val audio = recorder
         try { if (audio?.recordingState == AudioRecord.RECORDSTATE_RECORDING) audio.stop() } catch (_: Exception) {}
-        if (WakeEngineStatus.sherpaState == "LISTENING") {
+        val activeWorker = worker
+        if (activeWorker != null && activeWorker !== Thread.currentThread()) {
+            try { activeWorker.join(1500L) } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
+        }
+        if (recorder == null && WakeEngineStatus.sherpaState == "LISTENING") {
             WakeEngineStatus.sherpaState = if (spotter != null) "READY" else "STOPPED"
             WakeEngineStatus.sherpaDetail = "Model ready; not listening"
         }
