@@ -255,12 +255,16 @@ class SherpaWakeWordListener(
             }.toList()
         }
         val text = "▁" + value.trim().lowercase(Locale.ROOT).replace(Regex("\\s+"), "▁")
+        // SentencePiece tokens may preserve capitalization while the requested wake
+        // phrase is normalized to lowercase. Match case-insensitively, but pass the
+        // exact token spelling from tokens.txt to Sherpa.
         val pieces = vocab.distinct().sortedByDescending { it.length }
         val output = mutableListOf<String>()
         var offset = 0
         while (offset < text.length) {
-            val token = pieces.firstOrNull { text.startsWith(it, offset) }
-                ?: throw IllegalArgumentException("Wake phrase cannot be tokenized by Sherpa vocabulary near: ${text.substring(offset)}")
+            val token = pieces.firstOrNull { candidate ->
+                text.regionMatches(offset, candidate, 0, candidate.length, ignoreCase = true)
+            } ?: throw IllegalArgumentException("Wake phrase cannot be tokenized by Sherpa vocabulary near: ${text.substring(offset)}")
             output += token
             offset += token.length
         }
