@@ -54,22 +54,11 @@ class SherpaWakeWordListener(
             try {
                 val requiredAssets = listOf(ENCODER, DECODER, JOINER, TOKENS, BPE, KEYWORDS_FILE)
                 requiredAssets.forEach { asset -> context.assets.open(asset).use { } }
-                val tokenText = context.assets.open(TOKENS).bufferedReader().use { it.readText() }
                 val keywordText = context.assets.open(KEYWORDS_FILE).bufferedReader().use { it.readText() }
                 require(keywordText.isNotBlank()) { "Sherpa keywords file is empty" }
-                val availableTokens = tokenText.lineSequence().mapNotNull { line ->
-                    line.trim().split(Regex("\\s+")).firstOrNull()?.removePrefix("▁")?.lowercase(Locale.ROOT)
-                }.toSet()
-                val keywordWords = keywordText.lineSequence().flatMap { line ->
-                    line.substringBefore("#").lowercase(Locale.ROOT)
-                        .replace(Regex("[^a-z0-9' -]"), " ")
-                        .split(Regex("\\s+")).asSequence()
-                }.filter { it.matches(Regex("[a-z][a-z0-9']*")) && it != "0" && it != "1" }.toList()
-                val missing = keywordWords.filter { word -> word !in availableTokens && "▁$word" !in tokenText }
-                if (missing.isNotEmpty()) {
-                    throw IllegalStateException("Sherpa keyword token(s) missing: ${missing.distinct().joinToString()}")
-                }
-                WakeDiagnostics.breadcrumb(context, "Sherpa assets and keyword tokens checked")
+                // BPE word pieces are not necessarily represented as whole-word tokens.
+                // Do not reject valid wake phrases using a naive whole-word token check.
+                WakeDiagnostics.breadcrumb(context, "Sherpa assets checked; keyword token validation delegated to Sherpa")
                 val config = KeywordSpotterConfig(
                     featConfig = FeatureConfig(sampleRate = RATE, featureDim = 80),
                     modelConfig = OnlineModelConfig(
