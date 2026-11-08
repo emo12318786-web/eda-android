@@ -50,6 +50,34 @@ class HealthConnectManager(private val context: Context) {
         return permission in getGrantedPermissions()
     }
 
+    /** Diagnose whether EDA can read synced Health Connect data. */
+    suspend fun getConnectionDiagnostic(): String {
+        if (!isAvailable()) {
+            android.util.Log.w(TAG, "Health Connect SDK/provider is not available")
+            return "Health Connect kullanılamıyor. Google Health Connect uygulamasını kontrol et."
+        }
+        val granted = getGrantedPermissions()
+        val missing = requiredPermissions - granted
+        if (missing.isNotEmpty()) {
+            android.util.Log.w(TAG, "Health permissions missing: $missing")
+            val labels = buildList {
+                if (HealthPermission.getReadPermission(HeartRateRecord::class) in missing) add("nabız")
+                if (HealthPermission.getReadPermission(SleepSessionRecord::class) in missing) add("uyku")
+                if (HealthPermission.getReadPermission(StepsRecord::class) in missing) add("adım")
+            }.joinToString(", ")
+            return "Health Connect izinleri eksik: $labels. EDA'nın sağlık izinlerini Health Connect ayarlarından yeniden aç."
+        }
+        val hr = getLatestHeartRate(7 * 24 * 60L)
+        val sleep = getLastNightSleepHours()
+        android.util.Log.i(TAG, "Health diagnostic: permissions=OK, HR=$hr, sleepHours=$sleep")
+        return when {
+            hr != null && sleep != null -> "Health Connect izinleri açık. Son nabız verisi $hr; uyku kaydı " + String.format(java.util.Locale.ROOT, "%.1f", sleep) + " saat."
+            hr != null -> "Health Connect izinleri açık ve nabız verisi var ($hr), ancak uyku kaydı bulunamadı. Zepp Life senkronizasyonunu kontrol et."
+            sleep != null -> "Health Connect izinleri açık ve uyku kaydı var, ancak nabız verisi bulunamadı. Zepp Life senkronizasyonunu kontrol et."
+            else -> "Health Connect izinleri açık, ancak nabız ve uyku verisi gelmiyor. Zepp Life verilerinin Health Connect'e senkronize edildiğini kontrol et."
+        }
+    }
+
     suspend fun getLatestHeartRate(minutesAgo: Long = 1440): Int? {
         val endTime = Instant.now()
         val startTime = endTime.minus(minutesAgo, ChronoUnit.MINUTES)
