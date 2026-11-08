@@ -166,10 +166,18 @@
                 android:paddingVertical="8dp" />
 
             <Switch
+                android:id="@+id/sherpaWakeSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Sherpa-ONNX ana motoru"
+                android:textColor="@color/text_primary"
+                android:paddingVertical="8dp" />
+
+            <Switch
                 android:id="@+id/voskWakeSwitch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Çevrimdışı Eda uyandırma (Vosk)"
+                android:text="Vosk yedek motoru (ayrı aç/kapat)"
                 android:textColor="@color/text_primary"
                 android:paddingVertical="8dp" />
 

@@ -57,6 +57,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private var panelServer: PanelServer? = null
     private var speechRecognizer: SpeechRecognizer? = null
     private var offlineWake: OfflineWakeWordListener? = null
+    private var sherpaWake: SherpaWakeWordListener? = null
     private var sttFallbackAktif = false
     private var ardisikHataSayisi = 0
     private var mod = Mod.UYKU
@@ -80,6 +81,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     override fun onCreate() {
         super.onCreate()
         Settings.init(this)
+        WakeDiagnostics.install(this)
+        WakeDiagnostics.breadcrumb(this, "EdaForegroundService onCreate")
 
         // ═══ Panel Server (kontrol paneli web sunucusu) ═══
         try {
@@ -101,6 +104,10 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         NotificationHelper.channelOlustur(this)
         tts = TextToSpeech(this, this)
 
+        WakeEngineStatus.sherpaState = "STOPPED"
+        WakeEngineStatus.sherpaDetail = "Sherpa model will load when enabled and requested"
+        // Create Vosk lazily. Preparing it here downloaded its ~127 MB model
+        // even when the user had disabled Vosk and selected Sherpa only.
         offlineWake = OfflineWakeWordListener(
             context = this,
             wakeWord = { Settings.wakeWord },
@@ -109,20 +116,24 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 android.util.Log.i("EdaOfflineWake", status)
                 if (Settings.voskWakeEnabled && Settings.derinUyku) bildirimGuncelle(status)
             }
-        ).also { detector ->
-            detector.prepare(
-                onReady = {
-                    if (mod == Mod.UYKU && Settings.derinUyku && Settings.voskWakeEnabled) {
-                        val started = detector.start()
-                        bildirimGuncelle(if (started) "Vosk hazır — “${Settings.wakeWord}” kelimesi bekleniyor" else "Vosk hazır; dinleme başlatılamadı")
-                    }
-                },
-                onError = { error ->
-                    android.util.Log.e("EdaOfflineWake", "Wake model unavailable: $error")
-                    bildirimGuncelle("Vosk model error: $error")
-                }
-            )
-        }
+        )
+
+        sherpaWake = SherpaWakeWordListener(
+            context = this,
+            wakeWord = { Settings.wakeWord },
+            onWake = { heard ->
+                android.util.Log.i("EdaWake", "WAKE_ENGINE=SHERPA HEARD=\"$heard\"")
+                onOfflineWakeWord()
+            },
+            onStatus = { status ->
+                android.util.Log.i("EdaSherpaWake", status)
+                if (Settings.sherpaWakeEnabled && Settings.derinUyku) bildirimGuncelle(status)
+            },
+            onError = { error ->
+                android.util.Log.e("EdaSherpaWake", "Sherpa failed; using Vosk: $error")
+                startVoskFallback("Sherpa error: $error")
+            }
+        )
 
         // GUVENLIK ONLEMI: eski bir surumde STREAM_MUSIC gecici olarak
         // susturuluyordu; bu susturma cihaz genelinde kalici olabildigi
@@ -165,7 +176,95 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     }
 
 
+    private fun startVoskFallback(reason: String) {
+        if (!Settings.voskWakeEnabled || mod != Mod.UYKU || !Settings.derinUyku) return
+        android.util.Log.w("EdaWake", "WAKE_ENGINE=VOSK FALLBACK_REASON=\"$reason\"")
+        WakeEngineStatus.activeEngine = "VOSK"
+        val detector = offlineWake ?: return
+        detector.prepare(
+            onReady = {
+                if (Settings.voskWakeEnabled && mod == Mod.UYKU && Settings.derinUyku) {
+                    val started = detector.start()
+                    bildirimGuncelle(if (started) "Vosk yedek motor dinliyor — “${Settings.wakeWord}”" else "Vosk yedek motor başlatılamadı")
+                }
+            },
+            onError = { error ->
+                WakeEngineStatus.voskState = "ERROR"
+                WakeEngineStatus.voskDetail = error
+                android.util.Log.e("EdaWake", "Vosk fallback failed: $error")
+                bildirimGuncelle("Sherpa ve Vosk uyandırma motorları başlatılamadı")
+            }
+        )
+    }
+
+    // Wait for Android SpeechRecognizer to fully release the microphone before
+    // opening AudioRecord for Sherpa/Vosk. Starting both at once can kill the
+    // recognition service (and, on some devices, the whole process).
+    private fun startWakeEngineAfterMicRelease(reason: String) {
+        WakeDiagnostics.breadcrumb(this, "sleep entered / microphone handoff requested: $reason")
+        try {
+            speechRecognizer?.stopListening()
+            speechRecognizer?.cancel()
+            speechRecognizer?.destroy()
+        } catch (e: Exception) {
+            android.util.Log.w("EdaWake", "Recognizer cleanup before sleep: ${e.message}")
+        }
+        speechRecognizer = null
+        WakeDiagnostics.breadcrumb(this, "SpeechRecognizer released")
+        dinlemeAktif = false
+        releaseMicrophoneAudioFocus(reason)
+        serviceScope.launch {
+            delay(900L)
+            if (mod == Mod.UYKU && Settings.derinUyku &&
+                (Settings.sherpaWakeEnabled || Settings.voskWakeEnabled)) {
+                android.util.Log.i("EdaWake", "Starting wake engine after microphone handoff: $reason")
+                WakeDiagnostics.breadcrumb(this@EdaForegroundService, "wake engine start after mic release: $reason")
+                startWakeEngine()
+            }
+        }
+    }
+
+    private fun startWakeEngine() {
+        if (mod != Mod.UYKU || !Settings.derinUyku) return
+
+        val useSherpa = Settings.sherpaWakeEnabled
+        val useVosk = Settings.voskWakeEnabled
+        if (!useSherpa && !useVosk) {
+            sherpaWake?.stop()
+            offlineWake?.stop()
+            bildirimGuncelle("Uyandırma motorları kapalı")
+            android.util.Log.i("EdaWake", "No wake engine enabled; microphone remains closed")
+            return
+        }
+
+        // Respect the user's independent switches: Sherpa is attempted first
+        // when enabled. Vosk is only used when explicitly enabled as fallback.
+        if (useSherpa) {
+            sherpaWake?.stop()
+            android.util.Log.i("EdaWake", "WAKE_ENGINE=SHERPA selected; VoskEnabled=$useVosk")
+            sherpaWake?.prepare(
+                onReady = {
+                    if (Settings.sherpaWakeEnabled && mod == Mod.UYKU && Settings.derinUyku) {
+                        val started = sherpaWake?.start() == true
+                        if (!started && Settings.voskWakeEnabled) {
+                            startVoskFallback("Sherpa start returned false")
+                        } else if (!started) {
+                            bildirimGuncelle("Sherpa başlatılamadı; Vosk yedek motoru kapalı")
+                        }
+                    }
+                }
+            )
+            return
+        }
+
+        if (useVosk) {
+            startVoskFallback("Vosk selected in settings")
+        }
+    }
+
     private fun onOfflineWakeWord() {
+        sherpaWake?.stop()
+        offlineWake?.stop()
         Settings.derinUyku = false
         mod = Mod.AKTIF
         sonMod = "AKTIF"; Settings.sonMod = "AKTIF"
@@ -226,50 +325,34 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // ═══ هندل کردن action های Widget ═══
         when (intent?.action) {
+            "ACTION_SHERPA_WAKE_ON" -> {
+                Settings.sherpaWakeEnabled = true
+                if (mod == Mod.UYKU && Settings.derinUyku) startWakeEngine()
+                return START_STICKY
+            }
+            "ACTION_SHERPA_WAKE_OFF" -> {
+                Settings.sherpaWakeEnabled = false
+                sherpaWake?.stop()
+                if (Settings.voskWakeEnabled && mod == Mod.UYKU && Settings.derinUyku) startVoskFallback("Sherpa disabled by user")
+                else if (!Settings.voskWakeEnabled) bildirimGuncelle("Uyandırma motorları kapalı")
+                return START_STICKY
+            }
             "ACTION_VOSK_WAKE_ON" -> {
                 Settings.voskWakeEnabled = true
-                if (mod == Mod.UYKU && Settings.derinUyku) {
-                    val detector = offlineWake
-                    if (detector != null) {
-                        detector.prepare(
-                            onReady = {
-                                if (Settings.voskWakeEnabled && mod == Mod.UYKU && Settings.derinUyku) {
-                                    val started = detector.start()
-                                    bildirimGuncelle(if (started) "Vosk hazır — “Eda” kelimesi bekleniyor" else "Vosk hazır; dinleme başlatılamadı")
-                                }
-                            },
-                            onError = { error ->
-                                android.util.Log.e("EdaOfflineWake", "Wake model unavailable: $error")
-                                bildirimGuncelle("Vosk model error: $error")
-                            }
-                        )
-                    }
-                }
+                if (mod == Mod.UYKU && Settings.derinUyku) startWakeEngine()
                 return START_STICKY
             }
             "ACTION_VOSK_WAKE_OFF" -> {
                 Settings.voskWakeEnabled = false
                 offlineWake?.stop()
-                bildirimGuncelle(if (Settings.derinUyku) "💤 Uyku — uyandırma kelimesi kapalı" else getString(com.deniz.eda.R.string.notif_active))
+                if (Settings.sherpaWakeEnabled && mod == Mod.UYKU && Settings.derinUyku) startWakeEngine()
+                else if (Settings.derinUyku) bildirimGuncelle("Vosk kapalı; Sherpa durumu: ${WakeEngineStatus.sherpaState}")
                 return START_STICKY
             }
             "ACTION_WAKE_WORD_CHANGED" -> {
+                sherpaWake?.stop()
                 offlineWake?.stop()
-                val detector = offlineWake
-                if (detector != null && Settings.voskWakeEnabled && mod == Mod.UYKU && Settings.derinUyku) {
-                    detector.prepare(
-                        onReady = {
-                            if (Settings.voskWakeEnabled && mod == Mod.UYKU && Settings.derinUyku) {
-                                val started = detector.start()
-                                bildirimGuncelle(if (started) "Vosk hazır — “${Settings.wakeWord}” kelimesi bekleniyor" else "Vosk hazır; dinleme başlatılamadı")
-                            }
-                        },
-                        onError = { error ->
-                            android.util.Log.e("EdaOfflineWake", "Wake model unavailable: $error")
-                            bildirimGuncelle("Vosk model error: $error")
-                        }
-                    )
-                }
+                if ((Settings.sherpaWakeEnabled || Settings.voskWakeEnabled) && mod == Mod.UYKU && Settings.derinUyku) startWakeEngine()
                 return START_STICKY
             }
             "com.deniz.eda.STT_RESULT" -> {
@@ -327,7 +410,9 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 bildirimGuncelle("💤 Uyku — “${Settings.wakeWord}” kelimesi bekleniyor")
                 android.util.Log.d("EdaService", "UYKU moda geçildi")
                 konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") {
-                    if (Settings.voskWakeEnabled) offlineWake?.start()
+                    if (Settings.sherpaWakeEnabled || Settings.voskWakeEnabled) {
+                        startWakeEngineAfterMicRelease("ACTION_UYKU TTS finished")
+                    }
                     bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                 }
             }
@@ -365,7 +450,9 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 try { speechRecognizer?.stopListening(); speechRecognizer?.cancel(); speechRecognizer?.destroy() } catch (_: Exception) {}
                 speechRecognizer = null
                 dinlemeAktif = false
-                if (Settings.voskWakeEnabled) offlineWake?.start()
+                if (Settings.sherpaWakeEnabled || Settings.voskWakeEnabled) {
+                    startWakeEngineAfterMicRelease("ACTION_DERIN_UYKU")
+                }
                 bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                 android.util.Log.d("EdaService", "Derin uyku: Vosk Eda kelimesini bekliyor")
             }
@@ -831,7 +918,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                         } catch (_: Exception) {}
                         speechRecognizer = null
                         releaseMicrophoneAudioFocus("teşekkür komutu — Vosk bekleme")
-                        if (Settings.voskWakeEnabled) offlineWake?.start()
+                        if (Settings.sherpaWakeEnabled || Settings.voskWakeEnabled) startWakeEngine()
                         bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                         android.util.Log.i("EdaService", "Teşekkür komutu: Google STT kapandı, Vosk beklemede")
                     } else {
@@ -849,7 +936,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                     speechRecognizer = null
                     bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                     konus("Uyku moduna geçiyorum, ${Settings.kullaniciAdi}.") {
-                        if (Settings.voskWakeEnabled) offlineWake?.start()
+                        if (Settings.sherpaWakeEnabled || Settings.voskWakeEnabled) startWakeEngine()
                         bildirimGuncelle("💤 Uyku — Eda kelimesi bekleniyor")
                     }
                 }
@@ -975,6 +1062,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         retryJob?.cancel()
         serviceScope.cancel()
         speechRecognizer?.destroy()
+        sherpaWake?.release()
+        sherpaWake = null
         offlineWake?.release()
         offlineWake = null
         if (ttsHazir) tts.shutdown()

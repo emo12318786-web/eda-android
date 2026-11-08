@@ -201,6 +201,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
     var jarvisBusy by remember { mutableStateOf(false) }
     val chatScope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
+    var wakeDiagnosticsRefresh by remember { mutableIntStateOf(0) }
     val voiceInput = androidx.activity.compose.rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -402,6 +403,32 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 StatusLine("🌸 Pollinations", state.pollinationsStatus,
                     state.pollinationsStatus.contains("açık", true) || state.pollinationsStatus.contains("acik", true) ||
                         state.pollinationsStatus.contains("çalışıyor", true) || state.pollinationsStatus.contains("calisiyor", true))
+                SectionHeader("ÇEVRİMDIŞI UYANDIRMA MOTORLARI", "Canlı çalışma durumu · Ayarlar’dan ayrı ayrı aç/kapat")
+                val wakeStatus = com.deniz.eda.service.WakeEngineStatus
+                val sherpaState = wakeStatus.sherpaState
+                val sherpaLabel = when (sherpaState) {
+                    "LISTENING" -> "Aktif · Dinliyor"
+                    "READY" -> "Hazır · Beklemede"
+                    "PREPARING" -> "Hazırlanıyor"
+                    "DOWNLOADING" -> "İndiriliyor"
+                    "TRIGGERED" -> "Uyandırdı"
+                    "ERROR" -> "Hata: ${wakeStatus.sherpaDetail}"
+                    else -> "Kapalı / başlatılmadı"
+                }
+                StatusLine("🎯 Sherpa · Ana motor", if (com.deniz.eda.core.Settings.sherpaWakeEnabled) sherpaLabel else "Kapalı (Ayarlar’dan aç)", com.deniz.eda.core.Settings.sherpaWakeEnabled && sherpaState in setOf("LISTENING", "READY", "TRIGGERED"))
+                val voskState = wakeStatus.voskState
+                val voskLabel = when (voskState) {
+                    "LISTENING" -> "Aktif · Dinliyor"
+                    "READY" -> "Hazır · Yedekte"
+                    "PREPARING" -> "Hazırlanıyor"
+                    "DOWNLOADING" -> "İndiriliyor"
+                    "TRIGGERED" -> "Uyandırdı"
+                    "ERROR" -> "Hata: ${wakeStatus.voskDetail}"
+                    else -> "Kapalı / başlatılmadı"
+                }
+                StatusLine("🎙 Vosk · Yedek motor", if (com.deniz.eda.core.Settings.voskWakeEnabled) voskLabel else "Kapalı (Ayarlar’dan aç)", com.deniz.eda.core.Settings.voskWakeEnabled && voskState in setOf("LISTENING", "READY", "TRIGGERED"))
+                StatusLine("🗣 Uyandırma ifadesi", "Beklenen: ${wakeStatus.sherpaExpected} · Son duyulan: ${wakeStatus.sherpaLastHeard.ifBlank { wakeStatus.voskLastHeard.ifBlank { "—" } }}", wakeStatus.sherpaLastMatch || wakeStatus.voskLastMatch)
+                StatusLine("📦 Sherpa modeli", "APK içinde paketli; kurulum sonrası indirme gerekmez", true)
                 SectionHeader("KAYITLARIN", "Bu telefonda saklanan bilgiler")
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıt", Violet, Modifier.weight(1f))
@@ -416,6 +443,23 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻   Durumu yeniden kontrol et") }
                 Button(onClick = onShareLog, modifier = Modifier.fillMaxWidth().height(52.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("⇧   Tanılama kayıtlarını paylaş") }
+                SectionHeader("UYANDIRMA TANILAMASI", "Son işlem adımları ve uygulama kapanma nedeni")
+                Button(onClick = { wakeDiagnosticsRefresh++ }, modifier = Modifier.fillMaxWidth().height(44.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻   Tanılama kayıtlarını yenile") }
+                Text("SON ÇALIŞMA ADIMLARI · $wakeDiagnosticsRefresh", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = com.deniz.eda.service.WakeDiagnostics.readSteps(context),
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 150.dp).verticalScroll(rememberScrollState())
+                        .background(PanelRaised, RoundedCornerShape(12.dp)).padding(10.dp),
+                    color = Muted, fontSize = 10.sp
+                )
+                Text("SON KAPANMA / ÇÖKME KAYDI", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = com.deniz.eda.service.WakeDiagnostics.readCrash(context),
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 180.dp).verticalScroll(rememberScrollState())
+                        .background(PanelRaised, RoundedCornerShape(12.dp)).padding(10.dp),
+                    color = Muted, fontSize = 10.sp
+                )
                 LogsPanel(state.sonLoglar)
             }
             Text("EDA • YARDIMA HAZIR", Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 14.dp),

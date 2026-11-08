@@ -125,6 +125,7 @@ class PanelServer(
                 })
                 put("ai", Settings.aiSaglayici.ifBlank { Settings.aiProvider })
                 put("gemmaRuntime", gemmaRuntimeStatus())
+                put("wakeEngines", com.deniz.eda.service.WakeEngineStatus.toJson())
                 put("gemma", Settings.gemmaModel ?: "gemma2:2b")
                 put("saat", DigitUtils.formatTime("HH:mm"))
                 put("tarih", SimpleDateFormat("dd MMM yyyy", Locale("tr", "TR")).format(Date()))

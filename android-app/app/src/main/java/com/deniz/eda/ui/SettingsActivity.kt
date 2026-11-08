@@ -87,6 +87,18 @@ class SettingsActivity : AppCompatActivity() {
             setOnCheckedChangeListener { _, checked -> Settings.incomingCallAnnouncementEnabled = checked }
         }
 
+        findViewById<Switch>(R.id.sherpaWakeSwitch).apply {
+            isChecked = Settings.sherpaWakeEnabled
+            setOnCheckedChangeListener { _, checked ->
+                Settings.sherpaWakeEnabled = checked
+                val action = if (checked) "ACTION_SHERPA_WAKE_ON" else "ACTION_SHERPA_WAKE_OFF"
+                startService(Intent(this@SettingsActivity, com.deniz.eda.service.EdaForegroundService::class.java).setAction(action))
+                Toast.makeText(this@SettingsActivity,
+                    if (checked) "Sherpa ana motoru etkinleştirildi" else "Sherpa ana motoru kapatıldı",
+                    Toast.LENGTH_SHORT).show()
+            }
+        }
+
         findViewById<Switch>(R.id.voskWakeSwitch).apply {
             isChecked = Settings.voskWakeEnabled
             setOnCheckedChangeListener { _, checked ->
@@ -120,9 +132,10 @@ class SettingsActivity : AppCompatActivity() {
             Settings.kullaniciAdi = kullaniciAdiInput.text.toString().trim()
             Settings.groqApiKey = groqInput.text.toString().trim()
             Settings.navasanApiKey = navasanInput.text.toString().trim()
-            val wakeWord = wakeWordInput.text.toString().trim().lowercase()
-            if (!wakeWord.matches(Regex("[a-zA-Z0-9]{2,20}"))) {
-                wakeWordInput.error = "2–20 harf veya rakamdan oluşan tek kelime gir"
+            val wakeWord = wakeWordInput.text.toString().trim().lowercase(java.util.Locale.ROOT)
+            if (!wakeWord.matches(Regex("[a-z0-9]+([ '-][a-z0-9]+)*")) ||
+                wakeWord.replace(Regex("[^a-z0-9]"), "").length !in 2..30) {
+                wakeWordInput.error = "İngilizce uyandırma kelimesi veya kısa ifade gir (ör. Eda / Hey Eda)"
                 return@setOnClickListener
             }
             val wakeWordChanged = wakeWord != Settings.wakeWord

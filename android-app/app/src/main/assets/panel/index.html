@@ -344,6 +344,18 @@ body {
             <span class="status-label">🧠 Gemma 3 1B (GGUF)</span>
             <span class="status-value" id="s-gemma3-file">Kontrol ediliyor...</span>
         </div>
+        <div class="status-row">
+            <span class="status-label">🎯 Sherpa-ONNX (ana motor)</span>
+            <span class="status-value" id="s-sherpa">Kontrol ediliyor...</span>
+        </div>
+        <div class="status-row">
+            <span class="status-label">🎙️ Vosk (yedek motor)</span>
+            <span class="status-value" id="s-vosk">Kontrol ediliyor...</span>
+        </div>
+        <div class="status-row">
+            <span class="status-label">🗣️ Wake word / Son duyulan</span>
+            <span class="status-value" id="s-wake-heard">Kontrol ediliyor...</span>
+        </div>
     </div>
 
     <div class="grid">
@@ -501,6 +513,32 @@ function updateUI(data) {
         el.title = present ? ('حجم: ' + Math.round((model.sizeBytes || 0) / 1048576) + ' MB؛ وجود فایل به معنی بارگذاری مدل نیست') : 'فایل مدل در پوشه خصوصی EDA نیست';
     }
     showModelFile('s-gemma3-file', runtime.gemma3_1b);
+
+    // Wake engines: render reported runtime state, never infer readiness from settings.
+    const wake = data.wakeEngines || {};
+    const sherpa = wake.sherpa || {};
+    const vosk = wake.vosk || {};
+    const stateLabel = (state) => ({
+        'LISTENING': '🟢 Dinliyor',
+        'READY': '🟡 Hazır (beklemede)',
+        'PREPARING': '🟡 Hazırlanıyor',
+        'DOWNLOADING': '🔵 İndiriliyor',
+        'TRIGGERED': '🟢 Tetiklendi',
+        'ERROR': '🔴 Hata',
+        'STOPPED': '⚪ Kapalı',
+        'NOT_INTEGRATED': '⚪ Henüz entegre değil'
+    }[state] || (state || 'Bilinmiyor'));
+    const sherpaEl = document.getElementById('s-sherpa');
+    sherpaEl.textContent = (wake.sherpaEnabled === false ? '⛔ Kapalı · ' : '') + stateLabel(sherpa.state);
+    sherpaEl.className = 'status-value ' + (['LISTENING','READY','TRIGGERED'].includes(sherpa.state) ? 'mode-active' : (sherpa.state === 'ERROR' ? 'mode-off' : 'mode-sleep'));
+    sherpaEl.title = sherpa.detail || '';
+    const voskEl = document.getElementById('s-vosk');
+    voskEl.textContent = (wake.voskEnabled === false ? '⛔ Kapalı · ' : '') + stateLabel(vosk.state);
+    voskEl.className = 'status-value ' + (['LISTENING','TRIGGERED'].includes(vosk.state) ? 'mode-active' : (vosk.state === 'ERROR' ? 'mode-off' : 'mode-sleep'));
+    voskEl.title = vosk.detail || '';
+    const heardEl = document.getElementById('s-wake-heard');
+    heardEl.textContent = 'Motor: ' + (wake.activeEngine || '—') + ' · Beklenen: ' + (wake.wakeWord || vosk.expected || 'eda') + ' · Duyulan: ' + (wake.lastHeard || '—') + ' · Eşleşme: ' + (wake.lastMatch ? 'EVET' : 'hayır');
+    heardEl.title = 'Son kullanılan motor: ' + (wake.activeEngine || '—');
 
     // ═══ Chip active state ═══
     document.querySelectorAll('.chip').forEach(c => {

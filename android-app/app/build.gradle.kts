@@ -76,6 +76,8 @@ android {
 dependencies {
     implementation("net.java.dev.jna:jna:5.13.0@aar")
     implementation("com.alphacephei:vosk-android:0.3.47")
+    // Sherpa-ONNX offline keyword spotting (arm64 APK only; model is bundled by CI).
+    implementation("com.github.k2-fsa:sherpa-onnx:v1.12.21")
     testImplementation("junit:junit:4.13.2")
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")

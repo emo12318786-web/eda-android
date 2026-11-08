@@ -217,6 +217,9 @@ object CommandProcessor {
     }
 
     suspend fun isle(context: Context, metinHam: String): KomutSonucu {
+        // Always initialize Health Connect before matching health-related voice commands.
+        // Otherwise the commands can report "not initialized" even when Android permissions are granted.
+        initHealth(context)
         val hitap = Settings.kullaniciAdi
         var metin = metinHam.lowercase(Locale.getDefault()).trim()
 
@@ -398,14 +401,75 @@ object CommandProcessor {
 
             // ═══ HEALTH COMMANDS (Health Connect) ═══
 
+            // Health connection diagnostics: distinguishes missing permission from missing sync data.
+            v(metin, "sağlık bağlantısı", "saglik baglantisi", "sağlık verilerini kontrol et",
+                "saglik verilerini kontrol et", "bileklik bağlantısı", "bileklik baglantisi",
+                "bileklik bağlı mı", "bileklik bagli mi", "sağlık bağlantısını kontrol et") -> {
+                val hm = healthManager
+                if (hm == null) {
+                    KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap. EDA'yı yeniden başlat.")
+                } else {
+                    KomutSonucu.Cevap(hm.getConnectionDiagnostic())
+                }
+            }
+
+            // Tek komutla bileklikten okunabilen sağlık özeti.
+            v(metin, "kontrol beden", "beden kontrolü", "beden kontrolu",
+                "vücudumu kontrol et", "vucudumu kontrol et", "vücut durumum", "vucut durumum",
+                "sağlığımı kontrol et", "sagligimi kontrol et", "genel sağlık raporu", "genel saglik raporu") -> {
+                val hm = healthManager
+                if (hm == null) {
+                    KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap. EDA'yı yeniden başlat.")
+                } else {
+                    val hr = hm.getLatestHeartRate(1440) ?: cachedHeartRate
+                    val sleep = hm.getLastNightSleepHours() ?: cachedSleepHours
+                    val steps = hm.getTodaySteps().takeIf { it > 0L } ?: cachedSteps
+                    val calories = hm.getTodayCaloriesKcal()
+                    val distance = hm.getTodayDistanceMeters()
+                    if (hr != null) cachedHeartRate = hr
+                    if (sleep != null) cachedSleepHours = sleep
+                    if (steps != null) cachedSteps = steps
+                    val lines = mutableListOf<String>()
+                    if (hr != null) {
+                        val pulseStatus = when {
+                            hr < 60 -> "düşük"
+                            hr <= 100 -> "genel dinlenme aralığında"
+                            else -> "yüksek"
+                        }
+                        lines.add("Nabız: $hr atım/dakika, $pulseStatus.")
+                    } else lines.add("Nabız verisi bulunamadı.")
+                    if (sleep != null) {
+                        val sleepStatus = when {
+                            sleep < 5 -> "çok az"
+                            sleep < 7 -> "yetersiz"
+                            sleep < 9 -> "iyi"
+                            else -> "uzun"
+                        }
+                        lines.add("Dün gece uyku: ${DigitUtils.formatFloat(sleep)} saat, $sleepStatus.")
+                    } else lines.add("Uyku verisi bulunamadı.")
+                    if (steps != null) lines.add("Bugünkü adım: $steps.")
+                    if (calories != null) lines.add("Bugün yakılan enerji: ${calories.toInt()} kilokalori.")
+                    if (distance != null) {
+                        val km = distance / 1000.0
+                        lines.add("Bugünkü mesafe: ${String.format(Locale.ROOT, "%.2f", km)} kilometre.")
+                    }
+                    lines.add("Stres tahmini yapmıyorum; yalnızca bileklikten veya bağlı sağlık kaynağından gerçek stres verisi erişilebilir olursa raporlanmalı.")
+                    lines.add("Kalori veya mesafe görünmüyorsa Health Connect izinlerini ve Zepp Life senkronizasyonunu kontrol et.")
+                    KomutSonucu.Cevap("Beden kontrolün $hitap. " + lines.joinToString(" "))
+                }
+            }
+
             // ─── ضربان قلب ───
-            v(metin, "nabız", "nabiz", "kalp", "kalbim", "kalp atışı") -> {
+            v(metin, "nabız", "nabiz", "kalp", "kalbim", "kalp atışı", "kalp atışım", "kalp atışım nasıl", "nabzım nasıl", "nabzim nasil", "nabzımı söyle", "nabzimi soyle", "sağlık durumum", "saglik durumum", "sağlığım nasıl", "sagligim nasil", "sağlık verilerim", "bileklik nabız", "bileklik nabiz") -> {
                 val hm = healthManager
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
-                    val hr = cachedHeartRate
+                    // Read Health Connect on demand so voice answers do not depend on
+                    // HealthMonitorService having refreshed the cache beforehand.
+                    val hr = hm.getLatestHeartRate(1440) ?: cachedHeartRate
                     if (hr != null) {
+                        cachedHeartRate = hr
                         val durum = when {
                             hr < 60 -> "biraz düşük"
                             hr in 60..100 -> "normal"
@@ -425,13 +489,14 @@ object CommandProcessor {
 
             // ─── خواب (فقط اطلاعات خواب) ───
             // نکته: کلمه "uyku" تنها، نمی‌تونه اینجا باشه چون تعارض با "uyku modu" داره
-            v(metin, "uykum", "uyudum", "uyku süresi", "kaç saat uyudum", "dün gece uyudum") -> {
+            v(metin, "uykum", "uykum nasıl", "uykum nasil", "uyku nasıldı", "uyku nasildi", "uyudum", "uyku süresi", "kaç saat uyudum", "kaç saat uyudum dün gece", "dün gece kaç saat uyudum", "dün gece ne kadar uyudum", "dün gece uyudum", "uyku durumum", "uyku seviyem", "nasıl uyudum", "nasil uyudum", "uyku kalitem", "uyku kalitesi", "bileklik uyku", "uyku raporum") -> {
                 val hm = healthManager
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
-                    val sleep = cachedSleepHours
+                    val sleep = hm.getLastNightSleepHours() ?: cachedSleepHours
                     if (sleep != null) {
+                        cachedSleepHours = sleep
                         val durum = when {
                             sleep < 5 -> "çok az, dinlenmen lazım"
                             sleep < 7 -> "yeterli değil"
@@ -451,7 +516,8 @@ object CommandProcessor {
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
-                    val steps = cachedSteps ?: 0L
+                    val steps = hm.getTodaySteps().takeIf { it > 0L } ?: cachedSteps ?: 0L
+                    cachedSteps = steps
                     val durum = when {
                         steps < 2000 -> "biraz az, biraz yürüyüş yap"
                         steps < 5000 -> "iyi gidiyorsun"
@@ -463,14 +529,16 @@ object CommandProcessor {
             }
 
             // ─── استرس (تخمینی از HR + خواب) ───
-            v(metin, "stres", "stresli", "gergin", "rahat mıyım") -> {
+            v(metin, "stres", "stresim", "stres seviyem", "stres seviyem nasıl", "stresim nasıl", "stresli", "gergin", "rahat mıyım", "bileklik stresi", "uyku ve stres") -> {
                 val hm = healthManager
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
                 } else {
-                    val hr = cachedHeartRate
-                    val sleep = cachedSleepHours
+                    val hr = hm.getLatestHeartRate(1440) ?: cachedHeartRate
+                    val sleep = hm.getLastNightSleepHours() ?: cachedSleepHours
                     if (hr != null && sleep != null) {
+                        cachedHeartRate = hr
+                        cachedSleepHours = sleep
                         val stres = when {
                             hr > 95 && sleep < 5 -> "yüksek"
                             hr > 85 || sleep < 6 -> "orta"
