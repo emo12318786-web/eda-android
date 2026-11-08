@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.HeartRateRecord
+import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
+import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.request.AggregateRequest
@@ -26,7 +28,9 @@ class HealthConnectManager(private val context: Context) {
     val requiredPermissions: Set<String> = setOf(
         HealthPermission.getReadPermission(HeartRateRecord::class),
         HealthPermission.getReadPermission(SleepSessionRecord::class),
-        HealthPermission.getReadPermission(StepsRecord::class)
+        HealthPermission.getReadPermission(StepsRecord::class),
+        HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class),
+        HealthPermission.getReadPermission(DistanceRecord::class)
     )
 
     suspend fun getGrantedPermissions(): Set<String> {
@@ -134,4 +138,44 @@ class HealthConnectManager(private val context: Context) {
             response[StepsRecord.COUNT_TOTAL] ?: 0L
         } catch (e: Exception) { 0L }
     }
+    /** Today's active energy reported by apps syncing to Health Connect. */
+    suspend fun getTodayCaloriesKcal(): Double? {
+        val startOfDay = java.time.LocalDate.now()
+            .atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()
+        val endTime = Instant.now()
+        return try {
+            if (!isAvailable() || HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class) !in getGrantedPermissions()) return null
+            val response = healthConnectClient.aggregate(
+                AggregateRequest(
+                    metrics = setOf(TotalCaloriesBurnedRecord.ENERGY_TOTAL),
+                    timeRangeFilter = TimeRangeFilter.between(startOfDay, endTime)
+                )
+            )
+            response[TotalCaloriesBurnedRecord.ENERGY_TOTAL]?.inKilocalories
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Calories query failed", e)
+            null
+        }
+    }
+
+    /** Today's distance reported by apps syncing to Health Connect. */
+    suspend fun getTodayDistanceMeters(): Double? {
+        val startOfDay = java.time.LocalDate.now()
+            .atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()
+        val endTime = Instant.now()
+        return try {
+            if (!isAvailable() || HealthPermission.getReadPermission(DistanceRecord::class) !in getGrantedPermissions()) return null
+            val response = healthConnectClient.aggregate(
+                AggregateRequest(
+                    metrics = setOf(DistanceRecord.DISTANCE_TOTAL),
+                    timeRangeFilter = TimeRangeFilter.between(startOfDay, endTime)
+                )
+            )
+            response[DistanceRecord.DISTANCE_TOTAL]?.inMeters
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Distance query failed", e)
+            null
+        }
+    }
+
 }
