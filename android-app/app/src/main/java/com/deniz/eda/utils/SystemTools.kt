@@ -307,15 +307,28 @@ Sen: Merhaba ${Settings.kullaniciAdi}, iyiyim. Sen nasılsın?
         return "Öğrendiklerim: " + items.take(10).joinToString("; ") { it.first + " → " + it.second }
     }
 
+    private fun permissionLine(context: Context, permission: String, label: String): String {
+        val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+            context, permission
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        return "$label: ${if (granted) "izin verildi" else "izin gerekli"}"
+    }
+
     suspend fun fullCheck(context: Context): String {
         val sb = StringBuilder()
-        sb.append("Sistem durumu:\n")
-        sb.append("• ${checkInternetText(context)}\n")
-        sb.append("• ${getBatteryText(context)}\n")
-        sb.append("• ${checkOllamaText(context)}\n")
-        sb.append("• ${checkGroqText()}\n")
-        sb.append("• ${getAIText()}\n")
-        sb.append("• ${getModeText()}\n")
+        sb.append("EDA sistem kontrol raporu:\\n")
+        sb.append("• ${getBatteryText(context)}\\n")
+        sb.append("• ${checkInternetText(context)}\\n")
+        sb.append("• ${checkOllamaText(context)}\\n")
+        sb.append("• ${checkPollinationsText()}\\n")
+        sb.append("• ${checkGroqText()}\\n")
+        sb.append("• ${getAIText()}\\n")
+        sb.append("• ${getModeText()}\\n")
+        sb.append("• ${permissionLine(context, android.Manifest.permission.RECORD_AUDIO, "Mikrofon")}\\n")
+        sb.append("• ${permissionLine(context, android.Manifest.permission.READ_CONTACTS, "Kişiler")}\\n")
+        sb.append("• ${permissionLine(context, android.Manifest.permission.SEND_SMS, "SMS gönderme")}\\n")
+        sb.append("• ${permissionLine(context, android.Manifest.permission.READ_PHONE_STATE, "Telefon durumu")}\\n")
+        sb.append("• ${if (com.deniz.eda.phone.PhoneControlService.isEnabled()) "Ekran kontrol hizmeti: aktif" else "Ekran kontrol hizmeti: erişilebilirlik izni kapalı"}\\n")
+        sb.append("Not: İzin verilmiş olması tek başına servisin çalıştığını kanıtlamaz; bağlantı ve servis durumları ayrı değerlendirilmelidir.")
         return sb.toString().trim()
-    }
-}
+    }}
