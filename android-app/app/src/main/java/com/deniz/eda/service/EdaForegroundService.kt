@@ -104,32 +104,17 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
         WakeEngineStatus.sherpaState = "PREPARING"
         WakeEngineStatus.sherpaDetail = "Sherpa engine is being initialized"
+        // Create Vosk lazily. Preparing it here downloaded its ~127 MB model
+        // even when the user had disabled Vosk and selected Sherpa only.
         offlineWake = OfflineWakeWordListener(
             context = this,
             wakeWord = { Settings.wakeWord },
             onWake = { onOfflineWakeWord() },
             onStatus = { status ->
                 android.util.Log.i("EdaOfflineWake", status)
-                if (Settings.voskWakeEnabled && !Settings.sherpaWakeEnabled && Settings.derinUyku &&
-                    WakeEngineStatus.sherpaState in listOf("ERROR", "NOT_INTEGRATED", "STOPPED")) {
-                    bildirimGuncelle(status)
-                }
+                if (Settings.voskWakeEnabled && Settings.derinUyku) bildirimGuncelle(status)
             }
-        ).also { detector ->
-            detector.prepare(
-                onReady = {
-                    if (mod == Mod.UYKU && Settings.derinUyku && Settings.voskWakeEnabled && !Settings.sherpaWakeEnabled &&
-                        WakeEngineStatus.sherpaState in listOf("ERROR", "NOT_INTEGRATED", "STOPPED")) {
-                        startVoskFallback("Sherpa unavailable")
-                    }
-                },
-                onError = { error ->
-                    WakeEngineStatus.voskState = "ERROR"
-                    WakeEngineStatus.voskDetail = error
-                    android.util.Log.e("EdaOfflineWake", "Vosk fallback unavailable: $error")
-                }
-            )
-        }
+        )
 
         sherpaWake = SherpaWakeWordListener(
             context = this,
@@ -146,13 +131,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 android.util.Log.e("EdaSherpaWake", "Sherpa failed; using Vosk: $error")
                 startVoskFallback("Sherpa error: $error")
             }
-        ).also { detector ->
-            detector.prepare {
-                if (mod == Mod.UYKU && Settings.derinUyku && Settings.sherpaWakeEnabled) {
-                    if (!detector.start()) startVoskFallback("Sherpa start failed")
-                }
-            }
-        }
+        )
 
         // GUVENLIK ONLEMI: eski bir surumde STREAM_MUSIC gecici olarak
         // susturuluyordu; bu susturma cihaz genelinde kalici olabildigi
@@ -220,13 +199,25 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         if ((!Settings.sherpaWakeEnabled && !Settings.voskWakeEnabled) || mod != Mod.UYKU || !Settings.derinUyku) return
         if (!Settings.sherpaWakeEnabled) { startVoskFallback("Sherpa disabled in settings"); return }
         val sherpa = sherpaWake
+        if (sherpa == null) {
+            startVoskFallback("Sherpa listener unavailable")
+            return
+        }
         when (WakeEngineStatus.sherpaState) {
             "READY", "LISTENING" -> {
                 offlineWake?.stop()
-                if (sherpa == null || !sherpa.start()) startVoskFallback("Sherpa could not start")
+                if (!sherpa.start()) startVoskFallback("Sherpa could not start")
             }
-            "ERROR", "NOT_INTEGRATED", "STOPPED" -> startVoskFallback("Sherpa state=${WakeEngineStatus.sherpaState}")
-            else -> android.util.Log.i("EdaWake", "Sherpa is still preparing; waiting before Vosk fallback")
+            "STOPPED" -> {
+                // Load the native Sherpa model only when Sherpa is enabled and actually requested.
+                sherpa.prepare {
+                    if (Settings.sherpaWakeEnabled && mod == Mod.UYKU && Settings.derinUyku) {
+                        if (!sherpa.start()) startVoskFallback("Sherpa start failed after prepare")
+                    }
+                }
+            }
+            "ERROR", "NOT_INTEGRATED" -> startVoskFallback("Sherpa state=${WakeEngineStatus.sherpaState}")
+            else -> android.util.Log.i("EdaWake", "Sherpa is still preparing; waiting for model initialization")
         }
     }
 
