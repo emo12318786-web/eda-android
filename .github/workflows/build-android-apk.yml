@@ -119,9 +119,10 @@ jobs:
           mkdir -p "$MODEL/test_wavs"
           # Sherpa's keywords file must contain model token pieces, not raw "eda".
           # Encode the default phrase using the same longest-piece strategy as the Android listener.
-          python3 - <<'PY'
+          MODEL_DIR="$MODEL" python3 - <<'PY'
+          import os
           from pathlib import Path
-          model = Path("$MODEL")
+          model = Path(os.environ["MODEL_DIR"])
           token_file = model / "tokens.txt"
           tokens = []
           for line in token_file.read_text(encoding="utf-8").splitlines():
