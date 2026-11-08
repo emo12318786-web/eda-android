@@ -130,11 +130,13 @@ jobs:
               if fields and not fields[0].startswith("#"):
                   tokens.append(fields[0])
           phrase = "▁eda"
+          # SentencePiece vocabularies can preserve casing (for example, ▁E...).
+          # Match case-insensitively, but emit the exact token spelling from tokens.txt.
           vocab = sorted(set(tokens), key=len, reverse=True)
           pieces = []
           offset = 0
           while offset < len(phrase):
-              piece = next((t for t in vocab if phrase.startswith(t, offset)), None)
+              piece = next((t for t in vocab if phrase[offset:offset + len(t)].lower() == t.lower()), None)
               if piece is None:
                   raise SystemExit(f"Cannot tokenize default wake phrase near {phrase[offset:]!r}; check Sherpa tokens.txt")
               pieces.append(piece)
