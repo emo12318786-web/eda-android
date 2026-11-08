@@ -114,6 +114,12 @@ jobs:
           test -s "$MODEL/joiner-epoch-12-avg-2-chunk-16-left-64.int8.onnx"
           test -s "$MODEL/tokens.txt"
           test -s "$MODEL/bpe.model"
+          # The listener points to this file, but the model mirror only contains
+          # neural/tokenizer files. Create the required keyword-list asset explicitly.
+          mkdir -p "$MODEL/test_wavs"
+          printf 'eda\n' > "$MODEL/test_wavs/test_keywords.txt"
+          test -s "$MODEL/test_wavs/test_keywords.txt"
+          echo "Sherpa keyword list ready: $MODEL/test_wavs/test_keywords.txt"
           echo "Sherpa KWS model ready: $(du -sh "$MODEL" | cut -f1)"
 
       - name: Build Debug APK
