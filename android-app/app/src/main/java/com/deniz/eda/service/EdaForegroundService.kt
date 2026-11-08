@@ -81,6 +81,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     override fun onCreate() {
         super.onCreate()
         Settings.init(this)
+        WakeDiagnostics.install(this)
+        WakeDiagnostics.breadcrumb(this, "EdaForegroundService onCreate")
 
         // ═══ Panel Server (kontrol paneli web sunucusu) ═══
         try {
@@ -199,6 +201,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     // opening AudioRecord for Sherpa/Vosk. Starting both at once can kill the
     // recognition service (and, on some devices, the whole process).
     private fun startWakeEngineAfterMicRelease(reason: String) {
+        WakeDiagnostics.breadcrumb(this, "sleep entered / microphone handoff requested: $reason")
         try {
             speechRecognizer?.stopListening()
             speechRecognizer?.cancel()
@@ -214,6 +217,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             if (mod == Mod.UYKU && Settings.derinUyku &&
                 (Settings.sherpaWakeEnabled || Settings.voskWakeEnabled)) {
                 android.util.Log.i("EdaWake", "Starting wake engine after microphone handoff: $reason")
+                WakeDiagnostics.breadcrumb(this, "wake engine start after mic release: $reason")
                 startWakeEngine()
             }
         }
