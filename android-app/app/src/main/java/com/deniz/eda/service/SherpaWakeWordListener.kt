@@ -124,7 +124,8 @@ class SherpaWakeWordListener(
                 var stream: com.k2fsa.sherpa.onnx.OnlineStream? = null
                 var detectedWake: String? = null
                 try {
-                    stream = kws.createStream(phrase)
+                    val activeStream = kws.createStream(phrase)
+                    stream = activeStream
                     val shortBuffer = ShortArray(1600)
                     while (running.get()) {
                         val count = audio.read(shortBuffer, 0, shortBuffer.size)
@@ -133,10 +134,10 @@ class SherpaWakeWordListener(
                             continue
                         }
                         val samples = FloatArray(count) { shortBuffer[it] / 32768.0f }
-                        stream.acceptWaveform(samples, sampleRate = RATE)
-                        while (running.get() && kws.isReady(stream)) {
-                            kws.decode(stream)
-                            val result = kws.getResult(stream).keyword
+                        activeStream.acceptWaveform(samples, sampleRate = RATE)
+                        while (running.get() && kws.isReady(activeStream)) {
+                            kws.decode(activeStream)
+                            val result = kws.getResult(activeStream).keyword
                             if (result.isNotBlank()) {
                                 val heard = normalize(result)
                                 WakeEngineStatus.sherpaExpected = phrase
