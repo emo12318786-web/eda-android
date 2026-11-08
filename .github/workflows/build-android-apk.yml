@@ -117,7 +117,31 @@ jobs:
           # The listener points to this file, but the model mirror only contains
           # neural/tokenizer files. Create the required keyword-list asset explicitly.
           mkdir -p "$MODEL/test_wavs"
-          printf 'eda\n' > "$MODEL/test_wavs/test_keywords.txt"
+          # Sherpa's keywords file must contain model token pieces, not raw "eda".
+          # Encode the default phrase using the same longest-piece strategy as the Android listener.
+          python3 - <<'PY'
+          from pathlib import Path
+          model = Path("$MODEL")
+          token_file = model / "tokens.txt"
+          tokens = []
+          for line in token_file.read_text(encoding="utf-8").splitlines():
+              fields = line.strip().split()
+              if fields and not fields[0].startswith("#"):
+                  tokens.append(fields[0])
+          phrase = "▁EDA"
+          vocab = sorted(set(tokens), key=len, reverse=True)
+          pieces = []
+          offset = 0
+          while offset < len(phrase):
+              piece = next((t for t in vocab if phrase.startswith(t, offset)), None)
+              if piece is None:
+                  raise SystemExit(f"Cannot tokenize default wake phrase near {phrase[offset:]!r}; check Sherpa tokens.txt")
+              pieces.append(piece)
+              offset += len(piece)
+          out = model / "test_wavs" / "test_keywords.txt"
+          out.write_text(" ".join(pieces) + "\\n", encoding="utf-8")
+          print(f"Sherpa default keyword tokenized: {' '.join(pieces)}")
+          PY
           test -s "$MODEL/test_wavs/test_keywords.txt"
           echo "Sherpa keyword list ready: $MODEL/test_wavs/test_keywords.txt"
           echo "Sherpa KWS model ready: $(du -sh "$MODEL" | cut -f1)"
