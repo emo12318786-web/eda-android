@@ -401,6 +401,18 @@ object CommandProcessor {
 
             // ═══ HEALTH COMMANDS (Health Connect) ═══
 
+            // Health connection diagnostics: distinguishes missing permission from missing sync data.
+            v(metin, "sağlık bağlantısı", "saglik baglantisi", "sağlık verilerini kontrol et",
+                "saglik verilerini kontrol et", "bileklik bağlantısı", "bileklik baglantisi",
+                "bileklik bağlı mı", "bileklik bagli mi", "sağlık bağlantısını kontrol et") -> {
+                val hm = healthManager
+                if (hm == null) {
+                    KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap. EDA'yı yeniden başlat.")
+                } else {
+                    KomutSonucu.Cevap(hm.getConnectionDiagnostic())
+                }
+            }
+
             // ─── ضربان قلب ───
             v(metin, "nabız", "nabiz", "kalp", "kalbim", "kalp atışı", "kalp atışım", "kalp atışım nasıl", "nabzım nasıl", "nabzim nasil", "nabzımı söyle", "nabzimi soyle", "sağlık durumum", "saglik durumum", "sağlığım nasıl", "sagligim nasil", "sağlık verilerim", "bileklik nabız", "bileklik nabiz") -> {
                 val hm = healthManager
