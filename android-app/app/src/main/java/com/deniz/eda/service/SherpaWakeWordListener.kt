@@ -239,6 +239,11 @@ class SherpaWakeWordListener(
     fun release() {
         released = true
         stop()
+        if (worker?.isAlive == true) {
+            Log.w(TAG, "Deferring KeywordSpotter release because worker is still alive")
+            WakeDiagnostics.breadcrumb(context, "KeywordSpotter release deferred; worker still alive")
+            return
+        }
         try { spotter?.release() } catch (_: Throwable) {}
         spotter = null
         WakeEngineStatus.sherpaState = "STOPPED"
