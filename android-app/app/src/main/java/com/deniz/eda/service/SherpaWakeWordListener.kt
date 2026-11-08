@@ -35,7 +35,6 @@ class SherpaWakeWordListener(
         private const val DECODER = "$MODEL_DIR/decoder-epoch-12-avg-2-chunk-16-left-64.onnx"
         private const val JOINER = "$MODEL_DIR/joiner-epoch-12-avg-2-chunk-16-left-64.int8.onnx"
         private const val TOKENS = "$MODEL_DIR/tokens.txt"
-        private const val BPE = "$MODEL_DIR/bpe.model"
         private const val KEYWORDS_FILE = "$MODEL_DIR/test_wavs/test_keywords.txt"
     }
 
@@ -52,7 +51,7 @@ class SherpaWakeWordListener(
         thread(name = "eda-sherpa-prepare") {
             WakeDiagnostics.breadcrumb(context, "Sherpa prepare started")
             try {
-                val requiredAssets = listOf(ENCODER, DECODER, JOINER, TOKENS, BPE, KEYWORDS_FILE)
+                val requiredAssets = listOf(ENCODER, DECODER, JOINER, TOKENS, KEYWORDS_FILE)
                 requiredAssets.forEach { asset -> context.assets.open(asset).use { } }
                 val keywordText = context.assets.open(KEYWORDS_FILE).bufferedReader().use { it.readText() }
                 require(keywordText.isNotBlank()) { "Sherpa keywords file is empty" }
@@ -68,10 +67,9 @@ class SherpaWakeWordListener(
                             joiner = JOINER
                         ),
                         tokens = TOKENS,
-                        numThreads = 2,
+                        numThreads = 1,
                         provider = "cpu",
-                        modelingUnit = "bpe",
-                        bpeVocab = BPE
+                        modelType = "zipformer2"
                     ),
                     keywordsFile = KEYWORDS_FILE,
                     keywordsScore = 1.0f,
@@ -128,15 +126,16 @@ class SherpaWakeWordListener(
                 createdAudio.startRecording()
                 WakeDiagnostics.breadcrumb(context, "Sherpa AudioRecord started")
                 val phrase = normalize(wakeWord()).ifBlank { "eda" }
+                val keywordTokens = encodeKeywordAsBpe(phrase)
                 WakeEngineStatus.activeEngine = "SHERPA"
                 WakeEngineStatus.sherpaState = "LISTENING"
                 WakeEngineStatus.sherpaDetail = "Listening for English phrase: $phrase"
                 main.post { onStatus("Sherpa dinliyor: $phrase") }
                 Log.i(TAG, "ENGINE=SHERPA LISTENING=true EXPECTED_WAKE=\"$phrase\"")
 
-                val activeStream = kws.createStream(phrase)
+                val activeStream = kws.createStream(keywordTokens)
                 stream = activeStream
-                WakeDiagnostics.breadcrumb(context, "Sherpa keyword stream created for: $phrase")
+                WakeDiagnostics.breadcrumb(context, "Sherpa keyword stream created for: $phrase (BPE=$keywordTokens)")
                 var firstDecodeRecorded = false
                 val shortBuffer = ShortArray(1600)
                 while (running.get()) {
@@ -241,6 +240,31 @@ class SherpaWakeWordListener(
         WakeEngineStatus.sherpaDetail = message
         Log.e(TAG, "ENGINE=SHERPA ERROR=\"$message\"")
         main.post { onError(message) }
+    }
+
+    /**
+     * KeywordSpotter.createStream expects BPE pieces separated by spaces,
+     * not the raw phrase. Segment the English wake phrase using model tokens.
+     */
+    private fun encodeKeywordAsBpe(value: String): String {
+        val vocab = context.assets.open(TOKENS).bufferedReader().useLines { lines ->
+            lines.mapNotNull { line ->
+                val token = line.trim().split(Regex("\\s+")).firstOrNull().orEmpty()
+                token.takeIf { it.isNotEmpty() && !it.startsWith("#") }
+            }.toList()
+        }
+        val text = "▁" + value.trim().uppercase(Locale.ROOT).replace(Regex("\\s+"), "▁")
+        val pieces = vocab.distinct().sortedByDescending { it.length }
+        val output = mutableListOf<String>()
+        var offset = 0
+        while (offset < text.length) {
+            val token = pieces.firstOrNull { text.startsWith(it, offset) }
+                ?: throw IllegalArgumentException("Wake phrase cannot be tokenized by Sherpa vocabulary near: ${text.substring(offset)}")
+            output += token
+            offset += token.length
+        }
+        require(output.isNotEmpty()) { "Wake phrase is empty after BPE tokenization" }
+        return output.joinToString(" ")
     }
 
     private fun normalize(value: String): String =
