@@ -201,6 +201,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
     var jarvisBusy by remember { mutableStateOf(false) }
     val chatScope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
+    var wakeDiagnosticsRefresh by remember { mutableIntStateOf(0) }
     val voiceInput = androidx.activity.compose.rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -442,6 +443,25 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻   Durumu yeniden kontrol et") }
                 Button(onClick = onShareLog, modifier = Modifier.fillMaxWidth().height(52.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("⇧   Tanılama kayıtlarını paylaş") }
+                SectionHeader("UYANDIRMA TANILAMASI", "Son işlem adımları ve uygulama kapanma nedeni")
+                Button(onClick = { wakeDiagnosticsRefresh++ }, modifier = Modifier.fillMaxWidth().height(44.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻   Tanılama kayıtlarını yenile") }
+                Text("SON ÇALIŞMA ADIMLARI", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    key = wakeDiagnosticsRefresh,
+                    text = com.deniz.eda.service.WakeDiagnostics.readSteps(context),
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 150.dp).verticalScroll(rememberScrollState())
+                        .background(PanelRaised, RoundedCornerShape(12.dp)).padding(10.dp),
+                    color = Muted, fontSize = 10.sp
+                )
+                Text("SON KAPANMA / ÇÖKME KAYDI", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    key = wakeDiagnosticsRefresh,
+                    text = com.deniz.eda.service.WakeDiagnostics.readCrash(context),
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 180.dp).verticalScroll(rememberScrollState())
+                        .background(PanelRaised, RoundedCornerShape(12.dp)).padding(10.dp),
+                    color = Muted, fontSize = 10.sp
+                )
                 LogsPanel(state.sonLoglar)
             }
             Text("EDA • YARDIMA HAZIR", Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 14.dp),
