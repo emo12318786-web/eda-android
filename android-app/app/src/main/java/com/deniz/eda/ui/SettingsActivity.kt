@@ -226,6 +226,7 @@ class SettingsActivity : AppCompatActivity() {
             "SMS alma" to Manifest.permission.RECEIVE_SMS,
             "SMS okuma" to Manifest.permission.READ_SMS,
             "Telefon durumu" to Manifest.permission.READ_PHONE_STATE,
+            "Arama yapma (CALL_PHONE)" to Manifest.permission.CALL_PHONE,
             "Arama kayıtları" to Manifest.permission.READ_CALL_LOG,
             "Kişiler" to Manifest.permission.READ_CONTACTS,
             "Bildirimler" to "android.permission.POST_NOTIFICATIONS",
@@ -270,7 +271,7 @@ class SettingsActivity : AppCompatActivity() {
             } catch (_: Exception) { Toast.makeText(this, "İlgili Android ayarları açılamadı", Toast.LENGTH_SHORT).show() }
         }
         val labels = permissions.map { (name, p) -> name + " — " + durum(p) }.toTypedArray()
-        AlertDialog.Builder(this).setTitle("İzin Merkezi (27)")
+        AlertDialog.Builder(this).setTitle("İzin Merkezi (28)")
             .setItems(labels) { _, which -> open(permissions[which].second) }
             .setPositiveButton("Uygulama ayarları") { _, _ -> startActivity(Intent(AndroidSettings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + packageName))) }
             .setNegativeButton("Kapat", null).show()

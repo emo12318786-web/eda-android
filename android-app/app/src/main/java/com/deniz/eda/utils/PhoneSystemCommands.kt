@@ -9,6 +9,7 @@ import android.media.AudioManager
 import android.net.Uri
 import android.os.BatteryManager
 import android.provider.CallLog
+import android.provider.ContactsContract
 import android.provider.Settings
 import androidx.core.content.ContextCompat
 import java.text.SimpleDateFormat
@@ -23,6 +24,7 @@ object PhoneSystemCommands {
     fun handle(context: Context, raw: String): String? {
         val text = raw.lowercase(Locale.ROOT).replace(Regex("\\s+"), " ").trim()
         if (text.isBlank()) return null
+
 
         if (containsAny(text, "son mesajı oku", "son mesaji oku", "son mesajımı oku",
                 "son mesajimi oku", "en son mesaj", "son gelen mesaj", "bana gelen son mesaj",
@@ -48,6 +50,50 @@ object PhoneSystemCommands {
                 "kaç saat şarj", "kac saat sarj", "pilim ne kadar dayanır", "pilim ne kadar dayanir",
                 "şarjım ne kadar gider", "sarjim ne kadar gider", "kalan pil süresi", "kalan pil suresi")) {
             return batteryTime(context)
+        }
+        return null
+    }
+
+    data class CallTarget(val name: String, val number: String)
+
+    fun isCallContactRequest(raw: String): Boolean {
+        val text = raw.lowercase(Locale.ROOT).replace('ı','i').replace('ş','s')
+            .replace('ğ','g').replace('ü','u').replace('ö','o').replace('ç','c')
+        val asks = containsAny(text, "ara", "aray", "telefon et", "telefon ac", "call")
+        val person = containsAny(text, "annemi", "anneme", "annem", "babami", "babam", "atami", "atam",
+            "esimi", "esim", "kardesimi", "kardesim", "ali'yi", "aliyi", "ata'ni", "atami")
+        return asks && person || Regex("\\b(.{2,40})\\s+(ara|telefon et|telefon ac)\\b").containsMatchIn(text)
+    }
+
+    fun findCallTarget(context: Context, raw: String): CallTarget? {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) return null
+        val text = raw.lowercase(Locale.ROOT).replace('ı','i').replace('ş','s')
+            .replace('ğ','g').replace('ü','u').replace('ö','o').replace('ç','c')
+            .replace(Regex("^(eda[ ,]*)"), "")
+            .replace(Regex("\\b(beni|ara|aray|telefon et|telefon ac|lutfen)\\b"), " ")
+            // Remove Turkish accusative/dative suffixes in spoken requests, e.g. "Ayşe'yi ara".
+            .replace(Regex("['’](yi|yı|yu|yü|i|ı|u|ü)\\b"), "")
+            .replace(Regex("\\b([\\p{L}]{2,40})(yi|yı|yu|yü)\\b"), "$1")
+            .replace(Regex("\\s+"), " ").trim()
+        val aliases = when {
+            containsAny(text, "annemi", "anneme", "annem") -> listOf("anne", "annem", "mom", "mother")
+            containsAny(text, "babami", "babam", "atami", "atam") -> listOf("baba", "babam", "ata", "atam", "dad", "father")
+            containsAny(text, "esimi", "esim") -> listOf("esim", "es")
+            containsAny(text, "kardesimi", "kardesim") -> listOf("kardesim")
+            else -> listOf(text)
+        }.filter { it.isNotBlank() }
+        context.contentResolver.query(
+            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+            arrayOf(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME, ContactsContract.CommonDataKinds.Phone.NUMBER),
+            null, null, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC"
+        )?.use { cursor ->
+            while (cursor.moveToNext()) {
+                val name = cursor.getStringOrEmpty(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                val number = cursor.getStringOrEmpty(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                if (number.isNotBlank() && name.isNotBlank() && aliases.any { it == name.lowercase(Locale.ROOT) || name.lowercase(Locale.ROOT).contains(it) }) {
+                    return CallTarget(name, number)
+                }
+            }
         }
         return null
     }

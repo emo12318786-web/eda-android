@@ -115,10 +115,28 @@ class MainActivity : AppCompatActivity() {
             gerekliIzinler.add(Manifest.permission.READ_SMS)
         }
         if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.READ_CONTACTS
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.READ_CONTACTS)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.CALL_PHONE
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.CALL_PHONE)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
                 this, Manifest.permission.READ_PHONE_STATE
             ) != android.content.pm.PackageManager.PERMISSION_GRANTED
         ) {
             gerekliIzinler.add(Manifest.permission.READ_PHONE_STATE)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.READ_CALL_LOG
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.READ_CALL_LOG)
         }
         if (androidx.core.content.ContextCompat.checkSelfPermission(
                 this, Manifest.permission.CAMERA
@@ -136,7 +154,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (gerekliIzinler.isNotEmpty()) {
-            android.util.Log.i("MainActivity", "İzinler isteniyor: ${gerekliIzinler.size} adet")
+            android.util.Log.i("MainActivity", "İlk açılış izin isteği: ${gerekliIzinler.joinToString()}")
             androidx.core.app.ActivityCompat.requestPermissions(
                 this, gerekliIzinler.toTypedArray(), 2001
             )
@@ -221,6 +239,8 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.RECEIVE_SMS,
             Manifest.permission.READ_SMS,
             Manifest.permission.READ_PHONE_STATE,
+            Manifest.permission.READ_CONTACTS,
+            Manifest.permission.CALL_PHONE,
             Manifest.permission.CAMERA
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
