@@ -6,7 +6,7 @@ on:
       - "android-app/**"
       - ".github/workflows/**"
   push:
-    branches: [ main, eda-v5-native-gemma-runtime, eda-fix-long-prompt-crash, eda-14-models-visual-fix, restore/build-441-clean-baseline, sherpa-primary-vosk-fallback ]
+    branches: [ main, feature/contact-calling-control-room, eda-v5-native-gemma-runtime, eda-fix-long-prompt-crash, eda-14-models-visual-fix, restore/build-441-clean-baseline, sherpa-primary-vosk-fallback ]
     paths:
       - "android-app/**"
       - ".github/workflows/**"
