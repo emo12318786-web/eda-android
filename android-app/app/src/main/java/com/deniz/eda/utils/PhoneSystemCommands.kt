@@ -60,7 +60,7 @@ object PhoneSystemCommands {
         val text = raw.lowercase(Locale.ROOT).replace('ı','i').replace('ş','s')
             .replace('ğ','g').replace('ü','u').replace('ö','o').replace('ç','c')
         val asks = containsAny(text, "ara", "aray", "telefon et", "telefon ac", "call")
-        val person = containsAny(text, "annemi", "anneme", "annem", "babami", "babam",
+        val person = containsAny(text, "annemi", "anneme", "annem", "babami", "babam", "atami", "atam",
             "esimi", "esim", "kardesimi", "kardesim", "ali'yi", "aliyi", "ata'ni", "atami")
         return asks && person || Regex("\\b(.{2,40})\\s+(ara|telefon et|telefon ac)\\b").containsMatchIn(text)
     }
@@ -74,7 +74,7 @@ object PhoneSystemCommands {
             .replace(Regex("\\s+"), " ").trim()
         val aliases = when {
             containsAny(text, "annemi", "anneme", "annem") -> listOf("anne", "annem", "mom", "mother")
-            containsAny(text, "babami", "babam") -> listOf("baba", "babam", "dad", "father")
+            containsAny(text, "babami", "babam", "atami", "atam") -> listOf("baba", "babam", "ata", "atam", "dad", "father")
             containsAny(text, "esimi", "esim") -> listOf("esim", "es")
             containsAny(text, "kardesimi", "kardesim") -> listOf("kardesim")
             else -> listOf(text)
