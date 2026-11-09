@@ -12,6 +12,13 @@ import android.speech.tts.UtteranceProgressListener
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.telephony.TelephonyManager
+import android.telephony.PhoneStateListener
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.content.Context
+import androidx.core.content.ContextCompat
+import com.deniz.eda.utils.PhoneSystemCommands
 import androidx.core.app.ServiceCompat
 import android.content.pm.ServiceInfo
 import com.deniz.eda.core.CommandProcessor
@@ -62,6 +69,10 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private var ardisikHataSayisi = 0
     private var mod = Mod.UYKU
     private var kapatOnayBekleniyor = false
+    private var pendingCallTarget: PhoneSystemCommands.CallTarget? = null
+    @Volatile private var waitingForCallToEnd = false
+    private var callWasOffhook = false
+    private var phoneStateListener: PhoneStateListener? = null
 
     private val serviceScope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
     private var pilJob: Job? = null
@@ -81,6 +92,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     override fun onCreate() {
         super.onCreate()
         Settings.init(this)
+        registerPhoneStateListener()
         WakeDiagnostics.install(this)
         WakeDiagnostics.breadcrumb(this, "EdaForegroundService onCreate")
 
@@ -819,6 +831,75 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         )
     }
 
+    private fun registerPhoneStateListener() {
+        try {
+            val tm = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            phoneStateListener = object : PhoneStateListener() {
+                override fun onCallStateChanged(state: Int, phoneNumber: String?) {
+                    if (state == TelephonyManager.CALL_STATE_OFFHOOK) {
+                        callWasOffhook = true
+                        pauseEdaForPhoneCall("Telefon görüşmesi başladı")
+                    } else if (state == TelephonyManager.CALL_STATE_IDLE && waitingForCallToEnd && callWasOffhook) {
+                        waitingForCallToEnd = false
+                        callWasOffhook = false
+                        WakeDiagnostics.breadcrumb(this@EdaForegroundService, "phone call ended; restoring EDA listening")
+                        serviceScope.launch {
+                            delay(900)
+                            if (Settings.derinUyku || mod == Mod.UYKU) {
+                                if (Settings.sherpaWakeEnabled || Settings.voskWakeEnabled) startWakeEngineAfterMicRelease("Telefon görüşmesi bitti")
+                            } else {
+                                if (speechRecognizer == null && SpeechRecognizer.isRecognitionAvailable(this@EdaForegroundService)) {
+                                    speechRecognizer = createBestRecognizer()?.apply { setRecognitionListener(recognitionListener) }
+                                }
+                                baslatDinleme()
+                            }
+                            bildirimGuncelle("Telefon görüşmesi bitti — EDA dinlemeye hazır")
+                        }
+                    }
+                }
+            }
+            tm.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE)
+        } catch (e: Exception) {
+            android.util.Log.e("EdaService", "Telefon durumu dinleyicisi başlatılamadı: ${e.message}")
+        }
+    }
+
+    private fun pauseEdaForPhoneCall(reason: String) {
+        WakeDiagnostics.breadcrumb(this, "phone call active; releasing EDA microphone and wake engines")
+        retryJob?.cancel()
+        retryJob = null
+        dinlemeAktif = false
+        try { speechRecognizer?.stopListening(); speechRecognizer?.cancel(); speechRecognizer?.destroy() } catch (_: Exception) {}
+        speechRecognizer = null
+        try { sherpaWake?.stop() } catch (_: Exception) {}
+        try { offlineWake?.stop() } catch (_: Exception) {}
+        releaseMicrophoneAudioFocus(reason)
+        bildirimGuncelle("Telefon görüşmesi — EDA mikrofonu kapalı")
+    }
+
+    private fun startConfirmedCall(target: PhoneSystemCommands.CallTarget) {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+            pendingCallTarget = null
+            konus("Doğrudan arama izni henüz verilmemiş. EDA ayarlarından Telefon iznini açıp tekrar dene.") { baslatDinleme() }
+            return
+        }
+        try {
+            waitingForCallToEnd = true
+            callWasOffhook = false
+            pauseEdaForPhoneCall("Arama başlatılıyor")
+            val intent = Intent(Intent.ACTION_CALL, Uri.fromParts("tel", target.number, null))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+            WakeDiagnostics.breadcrumb(this, "ACTION_CALL launched for confirmed contact")
+        } catch (e: SecurityException) {
+            waitingForCallToEnd = false
+            konus("Arama izni reddedildi. Telefon iznini açıp tekrar dene.") { baslatDinleme() }
+        } catch (e: Exception) {
+            waitingForCallToEnd = false
+            konus("Arama başlatılamadı. Telefon uygulamasını ve arama iznini kontrol et.") { baslatDinleme() }
+        }
+    }
+
     private fun metniIsle(metin: String?) {
         if (mod == Mod.UYKU) {
             if (WakeWordDetector.uyandiMi(metin)) {
@@ -828,6 +909,43 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 konus("Buradayım ${Settings.kullaniciAdi}! Dinliyorum.") { baslatDinleme() }
             } else {
                 baslatDinleme()
+            }
+            return
+        }
+
+        // Voice-confirmed contact calling is handled locally, never sent to an AI provider.
+        if (pendingCallTarget != null) {
+            val normalized = metin.orEmpty().lowercase(Locale.ROOT)
+                .replace('ı','i').replace('ş','s').replace('ğ','g').replace('ü','u').replace('ö','o').replace('ç','c')
+            val target = pendingCallTarget
+            pendingCallTarget = null
+            if (listOf("evet", "onayliyorum", "tamam", "ara").any { normalized == it || normalized.startsWith("$it ") }) {
+                if (target != null) {
+                    konus("${target.name} aranıyor.") { startConfirmedCall(target) }
+                } else {
+                    konus("Arama iptal edildi.") { baslatDinleme() }
+                }
+            } else {
+                konus("Tamam, aramayı iptal ettim.") { baslatDinleme() }
+            }
+            return
+        }
+
+        if (PhoneSystemCommands.isCallContactRequest(metin.orEmpty())) {
+            try {
+                val target = PhoneSystemCommands.findCallTarget(this, metin.orEmpty())
+                if (target == null) {
+                    konus("Bu kişiyi rehberde bulamadım ya da Kişiler izni yok. Rehberdeki kayıtlı adını kontrol et.") { baslatDinleme() }
+                } else if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                    konus("${target.name} kişisini buldum. Arama izni gerekli; EDA ayarlarından Telefon iznini verip tekrar söyle.") { baslatDinleme() }
+                } else {
+                    pendingCallTarget = target
+                    konus("${target.name} aranacak. Onaylıyor musun? Evet ya da hayır de.") { baslatDinleme() }
+                }
+            } catch (e: SecurityException) {
+                konus("Kişiler izni gerekli. EDA için Kişiler iznini açıp tekrar dene.") { baslatDinleme() }
+            } catch (e: Exception) {
+                konus("Kişi araması hazırlanamadı. Rehber ve izinleri kontrol et.") { baslatDinleme() }
             }
             return
         }
@@ -1050,6 +1168,10 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     }
 
     override fun onDestroy() {
+        try {
+            val tm = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            phoneStateListener?.let { tm.listen(it, PhoneStateListener.LISTEN_NONE) }
+        } catch (_: Exception) {}
         releaseMicrophoneAudioFocus("servis kapandı")
         try {
             panelServer?.stop()
