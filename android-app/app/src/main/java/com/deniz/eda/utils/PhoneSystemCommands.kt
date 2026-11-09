@@ -71,6 +71,9 @@ object PhoneSystemCommands {
             .replace('ğ','g').replace('ü','u').replace('ö','o').replace('ç','c')
             .replace(Regex("^(eda[ ,]*)"), "")
             .replace(Regex("\\b(beni|ara|aray|telefon et|telefon ac|lutfen)\\b"), " ")
+            // Remove Turkish accusative/dative suffixes in spoken requests, e.g. "Ayşe'yi ara".
+            .replace(Regex("['’](yi|yı|yu|yü|i|ı|u|ü)\\b"), "")
+            .replace(Regex("\\b([\\p{L}]{2,40})(yi|yı|yu|yü)\\b"), "$1")
             .replace(Regex("\\s+"), " ").trim()
         val aliases = when {
             containsAny(text, "annemi", "anneme", "annem") -> listOf("anne", "annem", "mom", "mother")
