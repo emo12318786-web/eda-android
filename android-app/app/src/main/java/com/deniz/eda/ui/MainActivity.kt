@@ -115,6 +115,18 @@ class MainActivity : AppCompatActivity() {
             gerekliIzinler.add(Manifest.permission.READ_SMS)
         }
         if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.READ_CONTACTS
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.READ_CONTACTS)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.CALL_PHONE
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.CALL_PHONE)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
                 this, Manifest.permission.READ_PHONE_STATE
             ) != android.content.pm.PackageManager.PERMISSION_GRANTED
         ) {
@@ -221,6 +233,8 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.RECEIVE_SMS,
             Manifest.permission.READ_SMS,
             Manifest.permission.READ_PHONE_STATE,
+            Manifest.permission.READ_CONTACTS,
+            Manifest.permission.CALL_PHONE,
             Manifest.permission.CAMERA
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
