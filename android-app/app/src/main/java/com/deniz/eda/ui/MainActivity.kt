@@ -133,6 +133,12 @@ class MainActivity : AppCompatActivity() {
             gerekliIzinler.add(Manifest.permission.READ_PHONE_STATE)
         }
         if (androidx.core.content.ContextCompat.checkSelfPermission(
+                this, Manifest.permission.READ_CALL_LOG
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            gerekliIzinler.add(Manifest.permission.READ_CALL_LOG)
+        }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
                 this, Manifest.permission.CAMERA
             ) != android.content.pm.PackageManager.PERMISSION_GRANTED
         ) {
@@ -148,7 +154,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (gerekliIzinler.isNotEmpty()) {
-            android.util.Log.i("MainActivity", "İzinler isteniyor: ${gerekliIzinler.size} adet")
+            android.util.Log.i("MainActivity", "İlk açılış izin isteği: ${gerekliIzinler.joinToString()}")
             androidx.core.app.ActivityCompat.requestPermissions(
                 this, gerekliIzinler.toTypedArray(), 2001
             )
