@@ -54,7 +54,7 @@
             android:paddingHorizontal="9dp"
             android:paddingVertical="5dp"
             android:background="#203A32"
-            android:text="● HAZIR"
+            android:text="KISAYOL"
             android:textColor="#8BE3B0"
             android:textSize="10sp"
             android:textStyle="bold" />
