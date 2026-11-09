@@ -3,85 +3,133 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="8dp"
-    android:background="#101010"
-    android:gravity="center"
-    android:showDividers="none">
+    android:padding="12dp"
+    android:background="#111318"
+    android:gravity="center_vertical">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="EDA"
-        android:textColor="#FFFFFF"
-        android:textSize="15sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:paddingBottom="6dp" />
-
+    <!-- Compact identity header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="10dp">
+
+        <TextView
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:gravity="center"
+            android:background="#263D50"
+            android:text="E"
+            android:textColor="#7CE7F4"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingStart="10dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="EDA"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Kişisel sesli asistan"
+                android:textColor="#AAB5C3"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="9dp"
+            android:paddingVertical="5dp"
+            android:background="#203A32"
+            android:text="● HAZIR"
+            android:textColor="#8BE3B0"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Primary controls -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:orientation="horizontal"
         android:weightSum="3">
 
         <LinearLayout
             android:id="@+id/btn_baslat"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
+            android:layout_marginEnd="5dp"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="5dp"
-            android:background="#242424">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="▶" android:textColor="#FFFFFF" android:textSize="20sp" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Başlat" android:textColor="#FFFFFF" android:textSize="10sp" />
+            android:padding="7dp"
+            android:background="#17483C">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="▶" android:textColor="#8BE3B0" android:textSize="23sp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Başlat" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/btn_durdur"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
+            android:layout_marginHorizontal="2dp"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="5dp"
-            android:background="#242424">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="■" android:textColor="#FFFFFF" android:textSize="20sp" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Durdur" android:textColor="#FFFFFF" android:textSize="10sp" />
+            android:padding="7dp"
+            android:background="#472B31">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="■" android:textColor="#FF9DA8" android:textSize="23sp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Durdur" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/btn_uyku"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
+            android:layout_marginStart="5dp"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="5dp"
-            android:background="#242424">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Zz" android:textColor="#FFFFFF" android:textSize="18sp" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Uyku" android:textColor="#FFFFFF" android:textSize="10sp" />
+            android:padding="7dp"
+            android:background="#29364D">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="☾" android:textColor="#B9CFFF" android:textSize="23sp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Uyku" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
 
+    <!-- Secondary shortcuts -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:weightSum="2"
-        android:paddingTop="4dp">
+        android:paddingTop="8dp"
+        android:weightSum="2">
 
         <LinearLayout
             android:id="@+id/btn_panel"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical"
+            android:layout_marginEnd="4dp"
+            android:orientation="horizontal"
             android:gravity="center"
-            android:padding="5dp"
-            android:background="#242424">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="☷" android:textColor="#FFFFFF" android:textSize="20sp" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Panel" android:textColor="#FFFFFF" android:textSize="10sp" />
+            android:padding="9dp"
+            android:background="#252A33">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="☷  Panel" android:textColor="#E4EAF2" android:textSize="12sp" android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout
@@ -89,12 +137,12 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical"
+            android:layout_marginStart="4dp"
+            android:orientation="horizontal"
             android:gravity="center"
-            android:padding="5dp"
-            android:background="#242424">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="●" android:textColor="#FFFFFF" android:textSize="20sp" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Durum" android:textColor="#FFFFFF" android:textSize="10sp" />
+            android:padding="9dp"
+            android:background="#252A33">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="◉  Sistem durumu" android:textColor="#E4EAF2" android:textSize="12sp" android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>
