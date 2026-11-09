@@ -25,9 +25,6 @@ object PhoneSystemCommands {
         val text = raw.lowercase(Locale.ROOT).replace(Regex("\\s+"), " ").trim()
         if (text.isBlank()) return null
 
-        // Voice-initiated contact calls are routed locally before any AI provider.
-        // Open the dialer with the matched number so the user can review and confirm.
-        if (isCallContactRequest(text)) return callContact(context, text)
 
         if (containsAny(text, "son mesajı oku", "son mesaji oku", "son mesajımı oku",
                 "son mesajimi oku", "en son mesaj", "son gelen mesaj", "bana gelen son mesaj",
@@ -57,63 +54,45 @@ object PhoneSystemCommands {
         return null
     }
 
-    private fun isCallContactRequest(text: String): Boolean {
-        val asksToCall = containsAny(text, "ara", "aray", "ara beni", "telefon et", "telefon aç", "telefon ac", "call")
-        val mentionsPerson = containsAny(text, "annemi", "anneme", "annem", "babami", "babamı", "babam", "esimi", "eşimi", "kardesimi", "kardeşimi", "ali'yi", "aliyi", "kişiyi", "kisiyi", "kişiyi ara")
-        return asksToCall && mentionsPerson || Regex("\\b(.{2,40})\\s+(ara|ara beni|telefon et|telefon aç|telefon ac)\\b").containsMatchIn(text)
+    data class CallTarget(val name: String, val number: String)
+
+    fun isCallContactRequest(raw: String): Boolean {
+        val text = raw.lowercase(Locale.ROOT).replace('ı','i').replace('ş','s')
+            .replace('ğ','g').replace('ü','u').replace('ö','o').replace('ç','c')
+        val asks = containsAny(text, "ara", "aray", "telefon et", "telefon ac", "call")
+        val person = containsAny(text, "annemi", "anneme", "annem", "babami", "babam",
+            "esimi", "esim", "kardesimi", "kardesim", "ali'yi", "aliyi", "ata'ni", "atami")
+        return asks && person || Regex("\\b(.{2,40})\\s+(ara|telefon et|telefon ac)\\b").containsMatchIn(text)
     }
 
-    private fun callContact(context: Context, text: String): String {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.parse("package:${context.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            return try {
-                context.startActivity(intent)
-                "Kişiyi bulup arayabilmem için Android uygulama ayarlarında EDA'ya Kişiler iznini ver, sonra komutu yeniden söyle."
-            } catch (_: Exception) {
-                "Kişi araması için EDA'nın Kişiler izni gerekli."
-            }
-        }
-
-        val contactQuery = text
+    fun findCallTarget(context: Context, raw: String): CallTarget? {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) return null
+        val text = raw.lowercase(Locale.ROOT).replace('ı','i').replace('ş','s')
+            .replace('ğ','g').replace('ü','u').replace('ö','o').replace('ç','c')
             .replace(Regex("^(eda[ ,]*)"), "")
-            .replace(Regex("\\b(beni|ara|aray|telefon et|telefon aç|telefon ac|lütfen|lutfen)\\b"), " ")
+            .replace(Regex("\\b(beni|ara|aray|telefon et|telefon ac|lutfen)\\b"), " ")
             .replace(Regex("\\s+"), " ").trim()
         val aliases = when {
-            containsAny(contactQuery, "annemi", "anneme", "annem") -> listOf("Anne", "Annem", "Mom", "Mother")
-            containsAny(contactQuery, "babami", "babamı", "babam") -> listOf("Baba", "Babam", "Dad", "Father")
-            containsAny(contactQuery, "esimi", "eşimi") -> listOf("Eşim", "Esim", "Eş")
-            containsAny(contactQuery, "kardesimi", "kardeşimi") -> listOf("Kardeşim", "Kardesim")
-            else -> listOf(contactQuery)
-        }.map { it.trim() }.filter { it.isNotBlank() }
-
-        return try {
-            var foundName = ""
-            var foundNumber = ""
-            context.contentResolver.query(
-                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                arrayOf(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME, ContactsContract.CommonDataKinds.Phone.NUMBER),
-                null, null, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC"
-            )?.use { cursor ->
-                while (cursor.moveToNext() && foundNumber.isBlank()) {
-                    val name = cursor.getStringOrEmpty(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
-                    val number = cursor.getStringOrEmpty(ContactsContract.CommonDataKinds.Phone.NUMBER)
-                    if (aliases.any { alias -> name.contains(alias, ignoreCase = true) || alias.contains(name, ignoreCase = true) && name.isNotBlank() }) {
-                        foundName = name
-                        foundNumber = number
-                    }
+            containsAny(text, "annemi", "anneme", "annem") -> listOf("anne", "annem", "mom", "mother")
+            containsAny(text, "babami", "babam") -> listOf("baba", "babam", "dad", "father")
+            containsAny(text, "esimi", "esim") -> listOf("esim", "es")
+            containsAny(text, "kardesimi", "kardesim") -> listOf("kardesim")
+            else -> listOf(text)
+        }.filter { it.isNotBlank() }
+        context.contentResolver.query(
+            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+            arrayOf(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME, ContactsContract.CommonDataKinds.Phone.NUMBER),
+            null, null, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC"
+        )?.use { cursor ->
+            while (cursor.moveToNext()) {
+                val name = cursor.getStringOrEmpty(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                val number = cursor.getStringOrEmpty(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                if (number.isNotBlank() && name.isNotBlank() && aliases.any { it == name.lowercase(Locale.ROOT) || name.lowercase(Locale.ROOT).contains(it) }) {
+                    return CallTarget(name, number)
                 }
             }
-            if (foundNumber.isBlank()) return "Bu komuttaki kişi adını rehberde bulamadım. Kişinin rehberde kayıtlı adını söyleyebilir misin?"
-            val dial = Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", foundNumber, null))
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(dial)
-            " ${foundName} için arama ekranını açtım. Numara ekranda görünüyor; aramayı başlatmak için onayla."
-        } catch (_: SecurityException) {
-            "Rehber izni verilmediği için kişiyi bulamadım. EDA için Kişiler iznini açıp tekrar dene."
-        } catch (e: Exception) {
-            "Kişi arama ekranı açılamadı: ${e.localizedMessage ?: "bilinmeyen hata"}"
         }
+        return null
     }
 
     private fun containsAny(text: String, vararg terms: String) = terms.any { text.contains(it) }
