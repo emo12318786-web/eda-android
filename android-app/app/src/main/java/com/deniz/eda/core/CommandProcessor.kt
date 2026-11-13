@@ -236,6 +236,19 @@ object CommandProcessor {
             return KomutSonucu.Cevap("Mesaj gönderilmeyi bekliyor. Göndermek için evet, iptal etmek için hayır de.")
         }
 
+        // If the SMS parser asked for the saved contact name, bind the next utterance to that request.
+        val waitingMessage = SmsUtils.takePendingRecipientMessage()
+        if (waitingMessage != null) {
+            val spokenName = metin.replace(Regex("[^a-zçğıöşü\\s]"), " ").replace(Regex("\\s+"), " ").trim()
+            val contact = SmsUtils.kisiBul(context, spokenName)
+            if (contact == null) {
+                SmsUtils.setPendingRecipientMessage(waitingMessage)
+                return KomutSonucu.Cevap("Rehberde '$spokenName' için tek bir numara bulamadım. Kayıtlı adı daha net söyle veya mesajı iptal et.")
+            }
+            SmsUtils.setPending(contact.first, contact.second, waitingMessage)
+            return KomutSonucu.Cevap("Rehberde ${contact.first} bulundu. Mesaj: '$waitingMessage'. Göndereyim mi? Evet veya hayır de.")
+        }
+
         // Kibar kapanış: "teşekkür" komutu kısa yanıt verir; servis TTS bitince uykuya geçer.
         val tesekkurMetni = metin
             .replace(Regex("[^a-zçğıöşü\\s]"), " ")
@@ -623,7 +636,10 @@ object CommandProcessor {
                         } else {
                             val contact = SmsUtils.kisiBul(context, recipient)
                             when {
-                                contact == null -> KomutSonucu.Cevap("Rehberde '$recipient' için tek bir eşleşme bulamadım. Kişinin rehberdeki kayıtlı adını söyle.")
+                                contact == null -> {
+                                    SmsUtils.setPendingRecipientMessage(message)
+                                    KomutSonucu.Cevap("Rehberde '$recipient' için tek bir eşleşme bulamadım. Kişinin rehberdeki kayıtlı adını söyle.")
+                                }
                                 message.isBlank() -> KomutSonucu.Cevap("Mesajın içeriğini de söyle.")
                                 else -> {
                                     SmsUtils.setPending(contact.first, contact.second, message)
