@@ -243,7 +243,8 @@ object CommandProcessor {
             if (spokenName in setOf("iptal", "hayır", "hayir", "vazgeç", "vazgec")) {
                 return KomutSonucu.Cevap("Tamam, mesajı iptal ettim; hiçbir SMS gönderilmedi.")
             }
-            val contact = SmsUtils.kisiBul(context, spokenName)
+            val callTarget = PhoneSystemCommands.findCallTarget(context, spokenName)
+            val contact = callTarget?.let { it.name to it.number } ?: SmsUtils.kisiBul(context, spokenName)
             if (contact == null) {
                 SmsUtils.setPendingRecipientMessage(waitingMessage)
                 return KomutSonucu.Cevap("Rehberde '$spokenName' için tek bir numara bulamadım. Kayıtlı adı daha net söyle veya mesajı iptal et.")
@@ -568,9 +569,30 @@ object CommandProcessor {
                 }
             }
 
-            // Never infer a stress measurement from heart rate or sleep.
-            v(metin, "stres", "stresim", "stres seviyem", "stres seviyem nasıl", "stresim nasıl", "stresli", "gergin", "rahat mıyım", "bileklik stresi", "uyku ve stres") ->
-                KomutSonucu.Cevap("Eda şu anda Health Connect üzerinden gerçek stres ölçümü okuyamıyor. Nabız ve uyku verisi stres ölçümü yerine geçmez. Zepp Life stres verisini Health Connect'e aktarıyorsa, o veri kaynağına özel entegrasyon gerekir.")
+            // Stress request gives the same combined body check as before, but never fabricates a stress value.
+            v(metin, "stres", "stresim", "stres seviyem", "stres seviyem nasıl", "stresim nasıl", "stresli", "gergin", "rahat mıyım", "bileklik stresi", "uyku ve stres") -> {
+                val hm = healthManager
+                if (hm == null) {
+                    KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap. EDA'yı yeniden başlat.")
+                } else {
+                    val sample = hm.getLatestHeartRateSample(1440)
+                    val hr = sample?.first ?: cachedHeartRate
+                    val sleep = hm.getLastNightSleepHours() ?: cachedSleepHours
+                    val lines = mutableListOf<String>()
+                    if (hr != null) {
+                        lines.add("Nabız: $hr atım/dakika.")
+                        val time = sample?.second?.let {
+                            java.time.format.DateTimeFormatter.ofPattern("dd.MM HH:mm", Locale.getDefault())
+                                .withZone(java.time.ZoneId.systemDefault()).format(it)
+                        }
+                        lines.add(if (time != null) "Son nabız kaydı: $time; bu canlı ölçüm garantisi değildir." else "Nabız kayıt zamanı doğrulanamadı.")
+                    } else lines.add("Nabız verisi bulunamadı.")
+                    if (sleep != null) lines.add("Son uyku kaydı: ${DigitUtils.formatFloat(sleep)} saat.")
+                    else lines.add("Uyku verisi bulunamadı.")
+                    lines.add("Gerçek stres ölçümü Health Connect üzerinden şu anda erişilemiyor. Stres için sayı tahmin etmiyorum; nabız ve uyku stres ölçümü yerine geçmez.")
+                    KomutSonucu.Cevap("Sağlık kontrolün $hitap. " + lines.joinToString(" "))
+                }
+            }
 
             v(metin, "hatırlatma", "hatirlatma", "hatırlatmaları") && v(metin, "temizle", "sil", "temis") -> {
                 ReminderStore.tumunuTemizle(context)
@@ -637,7 +659,9 @@ object CommandProcessor {
                         if (!SmsUtils.rehberIzniVarMi(context)) {
                             KomutSonucu.Cevap("Rehber izni kapalı. Android ayarlarından Eda'ya Kişiler izni ver.")
                         } else {
-                            val contact = SmsUtils.kisiBul(context, recipient)
+                            // Use the same relationship-alias lookup as the working "Annemi ara" call path.
+                            val callTarget = PhoneSystemCommands.findCallTarget(context, rawName)
+                            val contact = callTarget?.let { it.name to it.number } ?: SmsUtils.kisiBul(context, recipient)
                             when {
                                 contact == null -> {
                                     SmsUtils.setPendingRecipientMessage(message)
