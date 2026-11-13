@@ -240,6 +240,9 @@ object CommandProcessor {
         val waitingMessage = SmsUtils.takePendingRecipientMessage()
         if (waitingMessage != null) {
             val spokenName = metin.replace(Regex("[^a-zçğıöşü\\s]"), " ").replace(Regex("\\s+"), " ").trim()
+            if (spokenName in setOf("iptal", "hayır", "hayir", "vazgeç", "vazgec")) {
+                return KomutSonucu.Cevap("Tamam, mesajı iptal ettim; hiçbir SMS gönderilmedi.")
+            }
             val contact = SmsUtils.kisiBul(context, spokenName)
             if (contact == null) {
                 SmsUtils.setPendingRecipientMessage(waitingMessage)
