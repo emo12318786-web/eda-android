@@ -70,6 +70,9 @@ class HealthConnectManager(private val context: Context) {
                 if (HealthPermission.getReadPermission(HeartRateRecord::class) in missing) add("nabız")
                 if (HealthPermission.getReadPermission(SleepSessionRecord::class) in missing) add("uyku")
                 if (HealthPermission.getReadPermission(StepsRecord::class) in missing) add("adım")
+                if (HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class) in missing) add("kalori")
+                if (HealthPermission.getReadPermission(DistanceRecord::class) in missing) add("mesafe")
+                if (HealthPermission.getReadPermission(ExerciseSessionRecord::class) in missing) add("antrenman")
             }.joinToString(", ")
             return "Health Connect izinleri eksik: $labels. EDA'nın sağlık izinlerini Health Connect ayarlarından yeniden aç."
         }
