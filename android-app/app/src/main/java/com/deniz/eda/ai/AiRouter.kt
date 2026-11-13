@@ -124,7 +124,9 @@ KURALLAR:
                 )
                 // Keep a small private on-device context window for follow-up questions.
                 // Screen/OCR tasks remain local-only and are not persisted into conversation history.
-                if (!localOnly) ConversationHistoryStore.read(ctx).forEach { mesajlar.add(it) }
+                if (!localOnly && Settings.conversationHistoryEnabled) {
+                    ConversationHistoryStore.read(ctx).forEach { mesajlar.add(it) }
+                }
                 mesajlar.add(ChatMessage("user", kullaniciSorusu))
                 var sonCevap: String? = null
                 var aracAdimi = 0
@@ -237,7 +239,7 @@ KURALLAR:
                         .replace(Regex("(?i)daha fazla bilgiye ihtiyacım var"), "")
                         .replace(Regex("\\s{2,}"), " ")
                         .trim()
-                    if (!localOnly && temizSonCevap.isNotBlank()) {
+                    if (!localOnly && Settings.conversationHistoryEnabled && temizSonCevap.isNotBlank()) {
                         ConversationHistoryStore.addExchange(ctx, kullaniciSorusu, temizSonCevap)
                     }
                     return@withContext temizSonCevap
