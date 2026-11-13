@@ -434,7 +434,8 @@ object CommandProcessor {
                 if (hm == null) {
                     KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap. EDA'yı yeniden başlat.")
                 } else {
-                    val hr = hm.getLatestHeartRate(1440) ?: cachedHeartRate
+                    val heartSample = hm.getLatestHeartRateSample(1440)
+                    val hr = heartSample?.first ?: cachedHeartRate
                     val sleep = hm.getLastNightSleepHours() ?: cachedSleepHours
                     val steps = hm.getTodaySteps().takeIf { it > 0L } ?: cachedSteps
                     val calories = hm.getTodayCaloriesKcal()
@@ -450,6 +451,14 @@ object CommandProcessor {
                             else -> "yüksek"
                         }
                         lines.add("Nabız: $hr atım/dakika, $pulseStatus.")
+                        val sampleTime = heartSample?.second
+                        if (sampleTime != null) {
+                            val formattedTime = java.time.format.DateTimeFormatter.ofPattern("dd.MM HH:mm", Locale.getDefault())
+                                .withZone(java.time.ZoneId.systemDefault()).format(sampleTime)
+                            lines.add("Nabız kaydının zamanı: $formattedTime. Bu canlı ölçüm garantisi değildir.")
+                        } else {
+                            lines.add("Nabız kayıt zamanı alınamadı; veri canlı ölçüm olarak kabul edilmemeli.")
+                        }
                     } else lines.add("Nabız verisi bulunamadı.")
                     if (sleep != null) {
                         val sleepStatus = when {
