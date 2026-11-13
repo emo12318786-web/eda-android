@@ -582,7 +582,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private fun acquireMicrophoneAudioFocus() {
         if (microphoneAudioFocusHeld) return
         try {
-            val request = microphoneAudioFocusRequest ?: AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+            val request = microphoneAudioFocusRequest ?: AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
                 .setAudioAttributes(
                     AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
@@ -590,7 +590,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                         .build()
                 )
                 .setAcceptsDelayedFocusGain(false)
-                .setWillPauseWhenDucked(true)
+                .setWillPauseWhenDucked(false)
                 .setOnAudioFocusChangeListener { change ->
                     android.util.Log.d("EDA-AudioFocus", "Mikrofon ses odağı değişti: $change")
                 }

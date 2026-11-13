@@ -202,6 +202,9 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
     val chatScope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
     var wakeDiagnosticsRefresh by remember { mutableIntStateOf(0) }
+    var healthDiagnostic by remember { mutableStateOf("Health Connect kontrolü bekleniyor.") }
+    var healthChecking by remember { mutableStateOf(false) }
+    val healthManager = remember(context) { com.deniz.eda.health.HealthConnectManager(context) }
     val voiceInput = androidx.activity.compose.rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -220,6 +223,15 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
         while (true) {
             delay(3_000)
             viewModel.yenile()
+        }
+    }
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == 2) {
+            healthChecking = true
+            healthDiagnostic = runCatching {
+                withContext(Dispatchers.IO) { healthManager.getConnectionDiagnostic() }
+            }.getOrElse { "Health Connect kontrolü başarısız: ${it.message ?: "bilinmeyen hata"}" }
+            healthChecking = false
         }
     }
     val statusColor = when {
@@ -403,6 +415,31 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 StatusLine("🌸 Pollinations", state.pollinationsStatus,
                     state.pollinationsStatus.contains("açık", true) || state.pollinationsStatus.contains("acik", true) ||
                         state.pollinationsStatus.contains("çalışıyor", true) || state.pollinationsStatus.contains("calisiyor", true))
+                SectionHeader("SAĞLIK · MI BAND 5", "Yalnızca Health Connect'e gerçekten ulaşan veriler")
+                StatusLine(
+                    "🩺 Health Connect",
+                    healthDiagnostic,
+                    healthDiagnostic.contains("izinleri açık", true) &&
+                        !healthDiagnostic.contains("veri gelmiyor", true) &&
+                        !healthDiagnostic.contains("kullanılamıyor", true) &&
+                        !healthDiagnostic.contains("eksik", true)
+                )
+                Button(
+                    onClick = {
+                        chatScope.launch {
+                            healthChecking = true
+                            healthDiagnostic = runCatching {
+                                withContext(Dispatchers.IO) { healthManager.getConnectionDiagnostic() }
+                            }.getOrElse { "Health Connect kontrolü başarısız: ${it.message ?: "bilinmeyen hata"}" }
+                            healthChecking = false
+                        }
+                    },
+                    enabled = !healthChecking,
+                    modifier = Modifier.fillMaxWidth().height(44.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)
+                ) {
+                    Text(if (healthChecking) "Sağlık verileri kontrol ediliyor…" else "↻   Mi Band / Health Connect durumunu kontrol et")
+                }
                 SectionHeader("ÇEVRİMDIŞI UYANDIRMA MOTORLARI", "Canlı çalışma durumu · Ayarlar’dan ayrı ayrı aç/kapat")
                 val wakeStatus = com.deniz.eda.service.WakeEngineStatus
                 val sherpaState = wakeStatus.sherpaState

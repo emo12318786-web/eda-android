@@ -25,6 +25,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import com.deniz.eda.ai.GemmaSessionManager
+import com.deniz.eda.ai.ConversationHistoryStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -85,6 +86,19 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<Switch>(R.id.incomingCallSwitch).apply {
             isChecked = Settings.incomingCallAnnouncementEnabled
             setOnCheckedChangeListener { _, checked -> Settings.incomingCallAnnouncementEnabled = checked }
+        }
+
+        findViewById<Switch>(R.id.conversationHistorySwitch).apply {
+            isChecked = Settings.conversationHistoryEnabled
+            setOnCheckedChangeListener { _, checked ->
+                Settings.conversationHistoryEnabled = checked
+                if (!checked) ConversationHistoryStore.clear(this@SettingsActivity)
+                Toast.makeText(
+                    this@SettingsActivity,
+                    if (checked) "Son sohbet bağlamı etkin" else "Sohbet geçmişi kapatıldı ve kayıtlı geçmiş silindi",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
 
         findViewById<Switch>(R.id.sherpaWakeSwitch).apply {
