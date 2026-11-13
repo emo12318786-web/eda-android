@@ -308,6 +308,12 @@ object CommandProcessor {
             return KomutSonucu.Cevap("Hafızam temizlendi $hitap.")
         }
 
+        // Conversation history is separate from saved personal memory and has its own explicit clear command.
+        if (v(metin, "sohbet geçmişini sil", "sohbet gecmisini sil", "konuşma geçmişini sil", "konusma gecmisini sil")) {
+            com.deniz.eda.ai.ConversationHistoryStore.clear(context)
+            return KomutSonucu.Cevap("Son sohbet geçmişini bu cihazdan sildim $hitap.")
+        }
+
         // ═══ Bixby-benzeri doğrudan telefon komutları (AI/internet gerekmez) ═══
         val acmaIstegi = v(metin, "aç", "ac", "açsana", "acsana", "başlat", "baslat", "çalıştır", "calistir", "göster", "goster")
         if (acmaIstegi) {
