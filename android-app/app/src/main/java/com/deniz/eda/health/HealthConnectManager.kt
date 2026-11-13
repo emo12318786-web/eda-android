@@ -6,6 +6,7 @@ import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.records.DistanceRecord
+import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.request.AggregateRequest
@@ -30,7 +31,8 @@ class HealthConnectManager(private val context: Context) {
         HealthPermission.getReadPermission(SleepSessionRecord::class),
         HealthPermission.getReadPermission(StepsRecord::class),
         HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class),
-        HealthPermission.getReadPermission(DistanceRecord::class)
+        HealthPermission.getReadPermission(DistanceRecord::class),
+        HealthPermission.getReadPermission(ExerciseSessionRecord::class)
     )
 
     suspend fun getGrantedPermissions(): Set<String> {
@@ -122,6 +124,71 @@ class HealthConnectManager(private val context: Context) {
                 .maxByOrNull { it.endTime }
                 ?.let { ChronoUnit.MINUTES.between(it.startTime, it.endTime) / 60.0 }
         } catch (e: Exception) { null }
+    }
+
+
+    /** Sleep-stage breakdown for the most recent session, when the source exports stages. */
+    suspend fun getLastSleepStageSummary(): String? {
+        if (!isAvailable() || !canReadSleep()) return null
+        val endTime = Instant.now()
+        val startTime = endTime.minus(2, ChronoUnit.DAYS)
+        return try {
+            val response = healthConnectClient.readRecords(
+                ReadRecordsRequest(
+                    recordType = SleepSessionRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+                )
+            )
+            val session = response.records
+                .filter { !it.endTime.isAfter(endTime) }
+                .maxByOrNull { it.endTime } ?: return null
+            if (session.stages.isEmpty()) return "Uyku evreleri Health Connect kaydında bulunmuyor."
+            var deep = 0L
+            var light = 0L
+            var rem = 0L
+            var awake = 0L
+            session.stages.forEach { stage ->
+                val minutes = ChronoUnit.MINUTES.between(stage.startTime, stage.endTime).coerceAtLeast(0)
+                when (stage.stage) {
+                    SleepSessionRecord.STAGE_TYPE_DEEP -> deep += minutes
+                    SleepSessionRecord.STAGE_TYPE_LIGHT -> light += minutes
+                    SleepSessionRecord.STAGE_TYPE_REM -> rem += minutes
+                    SleepSessionRecord.STAGE_TYPE_AWAKE -> awake += minutes
+                }
+            }
+            "Uyku evreleri: derin ${deep} dakika, hafif ${light} dakika, REM ${rem} dakika, uyanık ${awake} dakika."
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Sleep-stage query failed", e)
+            null
+        }
+    }
+
+    /** Recent exercise sessions exported to Health Connect; not every Mi Band workout is synced. */
+    suspend fun getTodayExerciseSummary(): String? {
+        if (!isAvailable()) return null
+        if (HealthPermission.getReadPermission(ExerciseSessionRecord::class) !in getGrantedPermissions()) return null
+        val startOfDay = java.time.LocalDate.now()
+            .atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()
+        val endTime = Instant.now()
+        return try {
+            val response = healthConnectClient.readRecords(
+                ReadRecordsRequest(
+                    recordType = ExerciseSessionRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(startOfDay, endTime)
+                )
+            )
+            if (response.records.isEmpty()) {
+                "Bugün Health Connect üzerinden antrenman kaydı bulunamadı."
+            } else {
+                val totalMinutes = response.records.sumOf {
+                    ChronoUnit.MINUTES.between(it.startTime, it.endTime).coerceAtLeast(0)
+                }
+                "Bugünkü antrenman kaydı: ${response.records.size} seans, toplam ${totalMinutes} dakika."
+            }
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Exercise-session query failed", e)
+            null
+        }
     }
 
     suspend fun getTodaySteps(): Long {
