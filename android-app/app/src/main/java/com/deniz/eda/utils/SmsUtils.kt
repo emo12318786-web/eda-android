@@ -24,11 +24,26 @@ object SmsUtils {
             .replace(Regex("\\p{M}+"), "").replace('ı', 'i')
             .replace(Regex("[^a-z0-9\\s]"), " ").replace(Regex("\\s+"), " ").trim()
 
-    /** Returns a contact only when exactly one saved display-name match exists. */
+    private var pendingRecipientMessage: String? = null
+
+    /** Holds the message while the user clarifies an ambiguous contact name. */
+    fun setPendingRecipientMessage(message: String) { pendingRecipientMessage = message }
+    fun takePendingRecipientMessage(): String? {
+        val value = pendingRecipientMessage
+        pendingRecipientMessage = null
+        return value
+    }
+
+    /** Prefer exact saved-name/relationship-alias matches before considering partial matches. */
     fun kisiBul(context: Context, spokenName: String): Pair<String, String>? {
         if (!rehberIzniVarMi(context) || spokenName.isBlank()) return null
         val wanted = normalize(spokenName)
-        val matches = linkedSetOf<Pair<String, String>>()
+        val aliases = when (wanted) {
+            "anneme", "annemi", "annem", "anneye", "anne" -> setOf("anne", "annem", "mom", "mother")
+            "babami", "babama", "babam", "baba" -> setOf("baba", "babam", "dad", "father", "ata", "atam")
+            else -> setOf(wanted)
+        }
+        val all = linkedSetOf<Pair<String, String>>()
         try {
             context.contentResolver.query(
                 ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
@@ -40,13 +55,19 @@ object SmsUtils {
                 while (cursor.moveToNext()) {
                     val name = cursor.getString(nameCol)?.trim().orEmpty()
                     val number = cursor.getString(numberCol)?.trim().orEmpty()
-                    val normalized = normalize(name)
-                    if (name.isNotBlank() && number.isNotBlank() &&
-                        (normalized == wanted || normalized.contains(wanted))) matches.add(name to number)
+                    if (name.isNotBlank() && number.isNotBlank()) all.add(name to number)
                 }
             }
         } catch (_: Exception) { return null }
-        return matches.singleOrNull()
+
+        val exact = all.filter { (name, _) -> normalize(name) in aliases }
+        if (exact.isNotEmpty()) return exact.distinct().singleOrNull()
+
+        val partial = all.filter { (name, _) ->
+            val normalized = normalize(name)
+            aliases.any { alias -> normalized.contains(alias) || alias.contains(normalized) }
+        }
+        return partial.distinct().singleOrNull()
     }
 
     fun setPending(name: String, number: String, message: String) { pendingSms = PendingSms(name, number, message) }
