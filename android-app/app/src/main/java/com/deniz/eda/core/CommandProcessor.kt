@@ -223,6 +223,19 @@ object CommandProcessor {
         val hitap = Settings.kullaniciAdi
         var metin = metinHam.lowercase(Locale.getDefault()).trim()
 
+        // Keep a pending SMS until the user explicitly confirms or cancels.
+        if (SmsUtils.pending() != null) {
+            val answer = metin.replace(Regex("[^a-zçğıöşü\\s]"), " ").replace(Regex("\\s+"), " ").trim()
+            if (answer in setOf("evet", "evet gönder", "evet gonder", "onaylıyorum", "onayliyorum", "gönder", "gonder")) {
+                return KomutSonucu.Cevap(SmsUtils.confirmPending(context))
+            }
+            if (answer in setOf("hayır", "hayir", "iptal", "vazgeç", "vazgec", "gönderme", "gonderme")) {
+                SmsUtils.cancelPending()
+                return KomutSonucu.Cevap("Tamam, mesajı göndermedim.")
+            }
+            return KomutSonucu.Cevap("Mesaj gönderilmeyi bekliyor. Göndermek için evet, iptal etmek için hayır de.")
+        }
+
         // Kibar kapanış: "teşekkür" komutu kısa yanıt verir; servis TTS bitince uykuya geçer.
         val tesekkurMetni = metin
             .replace(Regex("[^a-zçğıöşü\\s]"), " ")
@@ -467,15 +480,17 @@ object CommandProcessor {
                 } else {
                     // Read Health Connect on demand so voice answers do not depend on
                     // HealthMonitorService having refreshed the cache beforehand.
-                    val hr = hm.getLatestHeartRate(1440) ?: cachedHeartRate
+                    val sample = hm.getLatestHeartRateSample(1440)
+                    val hr = sample?.first ?: hm.getLatestHeartRate(1440) ?: cachedHeartRate
                     if (hr != null) {
                         cachedHeartRate = hr
                         val durum = when {
                             hr < 60 -> "biraz düşük"
-                            hr in 60..100 -> "normal"
-                            else -> "biraz yüksek"
+                            hr in 60..100 -> "genel dinlenme aralığında"
+                            else -> "yüksek"
                         }
-                        KomutSonucu.Cevap("Nabzın $hr atış, $durum görünüyor $hitap.")
+                        val whenText = sample?.second?.let { " Son kayıt: " + java.time.format.DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault()).withZone(java.time.ZoneId.systemDefault()).format(it) + "." } ?: " Kayıt zamanı alınamadı; bu değer canlı ölçüm olmayabilir."
+                        KomutSonucu.Cevap("Nabzın $hr atım/dakika, $durum görünüyor $hitap.$whenText")
                     } else {
                         KomutSonucu.Cevap("Nabız verisi bulamadım $hitap. Bileklik bağlı mı?")
                     }
@@ -528,30 +543,9 @@ object CommandProcessor {
                 }
             }
 
-            // ─── استرس (تخمینی از HR + خواب) ───
-            v(metin, "stres", "stresim", "stres seviyem", "stres seviyem nasıl", "stresim nasıl", "stresli", "gergin", "rahat mıyım", "bileklik stresi", "uyku ve stres") -> {
-                val hm = healthManager
-                if (hm == null) {
-                    KomutSonucu.Cevap("Sağlık servisi hazır değil $hitap.")
-                } else {
-                    val hr = hm.getLatestHeartRate(1440) ?: cachedHeartRate
-                    val sleep = hm.getLastNightSleepHours() ?: cachedSleepHours
-                    if (hr != null && sleep != null) {
-                        cachedHeartRate = hr
-                        cachedSleepHours = sleep
-                        val stres = when {
-                            hr > 95 && sleep < 5 -> "yüksek"
-                            hr > 85 || sleep < 6 -> "orta"
-                            hr < 75 && sleep > 7 -> "düşük"
-                            else -> "normal"
-                        }
-                        KomutSonucu.Cevap("Nabzın $hr, uykun ${DigitUtils.formatFloat(sleep)} saat. " +
-                                "Stres seviyesi $stres görünüyor $hitap.")
-                    } else {
-                        KomutSonucu.Cevap("Stres hesabı için yeterli veri yok $hitap.")
-                    }
-                }
-            }
+            // Never infer a stress measurement from heart rate or sleep.
+            v(metin, "stres", "stresim", "stres seviyem", "stres seviyem nasıl", "stresim nasıl", "stresli", "gergin", "rahat mıyım", "bileklik stresi", "uyku ve stres") ->
+                KomutSonucu.Cevap("Eda şu anda Health Connect üzerinden gerçek stres ölçümü okuyamıyor. Nabız ve uyku verisi stres ölçümü yerine geçmez. Zepp Life stres verisini Health Connect'e aktarıyorsa, o veri kaynağına özel entegrasyon gerekir.")
 
             v(metin, "hatırlatma", "hatirlatma", "hatırlatmaları") && v(metin, "temizle", "sil", "temis") -> {
                 ReminderStore.tumunuTemizle(context)
@@ -598,14 +592,37 @@ object CommandProcessor {
             v(metin, "hafızamda", "hafizamda", "hafızayı", "hafizayi") && v(metin, "ne", "göster", "goster", "var") ->
                 KomutSonucu.Cevap(MemoryStore.goster(context))
 
-            v(metin, "mesaj", "mesage") && v(metin, "gönder", "gonder") -> {
+            v(metin, "mesaj", "mesage", "sms") && v(metin, "gönder", "gonder", "at", "yolla") -> {
                 val numara = SmsUtils.numarayiAyikla(metin)
-                if (numara == null) {
-                    KomutSonucu.Cevap("Numarayı anlayamadım $hitap, tekrar söyler misin?")
+                if (numara != null) {
+                    val icerik = metin.replace(numara, "").replace(Regex("\\b(mesaj|sms|gönder|gonder|at|yolla|eda)\\b"), "").trim()
+                    if (icerik.isBlank()) KomutSonucu.Cevap("Mesajın içeriğini de söyle.")
+                    else {
+                        SmsUtils.setPending(numara, numara, icerik)
+                        KomutSonucu.Cevap("Şu numaraya $numara şu mesajı göndereceğim: $icerik. Göndereyim mi? Evet veya hayır de.")
+                    }
                 } else {
-                    val icerik = metin.replace(numara, "").replace("mesaj", "").replace("gönder", "").replace("gonder", "").trim()
-                    val basarili = SmsUtils.gonder(context, numara, icerik.ifBlank { "Eda üzerinden gönderildi." })
-                    KomutSonucu.Cevap(if (basarili) "Mesajı gönderdim $hitap." else "Mesaj gönderilemedi, SMS izni verildi mi $hitap?")
+                    val match = Regex("^(?:eda[, ]+)?(.+?)\\s+(?:mesaj|sms)\\s+(?:gönder|gonder|at|yolla)\\s+(.+)$").find(metin)
+                    if (match == null) {
+                        KomutSonucu.Cevap("Kişinin rehberde kayıtlı adını ve mesajı söyle. Örnek: 'anneme mesaj gönder, geliyorum'.")
+                    } else {
+                        val rawName = match.groupValues[1].trim()
+                        val recipient = if (rawName in setOf("anneme", "annem", "anneye", "annemi", "mama", "mamaya")) "anne" else rawName
+                        val message = match.groupValues[2].trim().trim(',', '.', ' ')
+                        if (!SmsUtils.rehberIzniVarMi(context)) {
+                            KomutSonucu.Cevap("Rehber izni kapalı. Android ayarlarından Eda'ya Kişiler izni ver.")
+                        } else {
+                            val contact = SmsUtils.kisiBul(context, recipient)
+                            when {
+                                contact == null -> KomutSonucu.Cevap("Rehberde '$recipient' için tek bir eşleşme bulamadım. Kişinin rehberdeki kayıtlı adını söyle.")
+                                message.isBlank() -> KomutSonucu.Cevap("Mesajın içeriğini de söyle.")
+                                else -> {
+                                    SmsUtils.setPending(contact.first, contact.second, message)
+                                    KomutSonucu.Cevap("Rehberde ${contact.first} bulundu. Mesaj: '$message'. Göndereyim mi? Evet veya hayır de.")
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
