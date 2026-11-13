@@ -457,6 +457,8 @@ object CommandProcessor {
                     val steps = hm.getTodaySteps().takeIf { it > 0L } ?: cachedSteps
                     val calories = hm.getTodayCaloriesKcal()
                     val distance = hm.getTodayDistanceMeters()
+                    val sleepStages = hm.getLastSleepStageSummary()
+                    val exercise = hm.getTodayExerciseSummary()
                     if (hr != null) cachedHeartRate = hr
                     if (sleep != null) cachedSleepHours = sleep
                     if (steps != null) cachedSteps = steps
@@ -491,9 +493,13 @@ object CommandProcessor {
                     if (distance != null) {
                         val km = distance / 1000.0
                         lines.add("Bugünkü mesafe: ${String.format(Locale.ROOT, "%.2f", km)} kilometre.")
-                    }
-                    lines.add("Stres tahmini yapmıyorum; yalnızca bileklikten veya bağlı sağlık kaynağından gerçek stres verisi erişilebilir olursa raporlanmalı.")
-                    lines.add("Kalori veya mesafe görünmüyorsa Health Connect izinlerini ve Zepp Life senkronizasyonunu kontrol et.")
+                    } else lines.add("Bugünkü mesafe verisi Health Connect üzerinden alınamadı.")
+                    if (sleepStages != null) lines.add(sleepStages)
+                    else lines.add("Uyku evrelerinin ayrıntısı Health Connect üzerinden alınamadı.")
+                    if (exercise != null) lines.add(exercise)
+                    else lines.add("Antrenman kayıtları için Health Connect izni yok veya veri okunamadı.")
+                    lines.add("Mi Band 5'in ölçebildiği diğer bilgiler arasında stres ve PAI bulunur; ancak bunlar şu anda Health Connect üzerinden EDA'ya aktarılmıyor. Bu yüzden sayı uydurmuyorum.")
+                    lines.add("Mi Band 5'te SpO2/kan oksijeni sensörü yoktur. Kalori, mesafe, uyku evreleri ve antrenman kayıtlarının görünmesi Zepp Life senkronizasyonuna ve Health Connect izinlerine bağlıdır.")
                     KomutSonucu.Cevap("Beden kontrolün $hitap. " + lines.joinToString(" "))
                 }
             }
