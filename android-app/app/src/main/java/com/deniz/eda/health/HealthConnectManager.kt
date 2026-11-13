@@ -82,7 +82,7 @@ class HealthConnectManager(private val context: Context) {
         }
     }
 
-    suspend fun getLatestHeartRate(minutesAgo: Long = 1440): Int? {
+    suspend fun getLatestHeartRateSample(minutesAgo: Long = 1440): Pair<Int, Instant>? {
         val endTime = Instant.now()
         val startTime = endTime.minus(minutesAgo, ChronoUnit.MINUTES)
         return try {
@@ -93,17 +93,18 @@ class HealthConnectManager(private val context: Context) {
                     timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
                 )
             )
-            response.records
-                .flatMap { record -> record.samples.map { sample -> sample } }
+            response.records.flatMap { it.samples }
                 .filter { !it.time.isAfter(endTime) && !it.time.isBefore(startTime) }
                 .maxByOrNull { it.time }
-                ?.beatsPerMinute
-                ?.toInt()
+                ?.let { it.beatsPerMinute.toInt() to it.time }
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Heart-rate query failed", e)
             null
         }
     }
+
+    suspend fun getLatestHeartRate(minutesAgo: Long = 1440): Int? =
+        getLatestHeartRateSample(minutesAgo)?.first
 
     suspend fun getLastNightSleepHours(): Double? {
         if (!isAvailable() || !canReadSleep()) return null
