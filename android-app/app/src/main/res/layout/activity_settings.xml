@@ -166,6 +166,14 @@
                 android:paddingVertical="8dp" />
 
             <Switch
+                android:id="@+id/conversationHistorySwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Son sohbet bağlamını kullan (AI sağlayıcısına gönderilir)"
+                android:textColor="@color/text_primary"
+                android:paddingVertical="8dp" />
+
+            <Switch
                 android:id="@+id/sherpaWakeSwitch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
