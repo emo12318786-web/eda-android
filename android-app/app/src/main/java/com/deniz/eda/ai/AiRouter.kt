@@ -120,9 +120,12 @@ KURALLAR:
                 // EDA V5 Agent: en fazla $MAX_AGENT_TOOL_STEPS araç adımı; değişmeyen allowlist uygulanır.
                 // Ekran eylemleri açık kullanıcı isteği ve güvenlik kontrolleri gerektirir.
                 val mesajlar = mutableListOf(
-                    ChatMessage("system", sistemTam + "\n\nAGENT KURALLARI: En fazla $MAX_AGENT_TOOL_STEPS araç adımı kullan. Bilgi araçlarını <TOOL>ARAÇ_ADI</TOOL> biçiminde çağır. Kullanıcı açıkça bir bilgiyi hafızaya kaydet derse <TOOL>SAVE_MEMORY: metin</TOOL>; günlüğe yaz derse <TOOL>ADD_DIARY: metin</TOOL>; belirli saatli hatırlatma isterse <TOOL>ADD_REMINDER|SAAT|DAKİKA|metin</TOOL> biçimini kullan. Kayıt araçlarını ve telefon eylemlerini yalnızca kullanıcı açıkça istediğinde çalıştır. Ekran kontrolü için önce SCREEN_READ veya SCREEN_VISION ile ekranı oku; kullanıcı açıkça bir dokunma, yazma, kaydırma veya navigasyon eylemi istemişse yalnızca o eylemi yap; sonra SCREEN_READ ile sonucu doğrula. SCREEN_TAP veya SCREEN_TAP_VISUAL yalnızca hassas olmayan görünen etiketlere dokunabilir; SCREEN_TYPE sadece kullanıcının verdiği metni etkin, parola olmayan alana yazabilir. Parola, OTP, kilit ekranı, banka/ödeme/transfer, mesaj gönderme, satın alma, silme veya nihai onay işlemlerini yapma; hassas son adımı kullanıcıya bırak. Erişilebilirlik hizmeti kapalıysa kullanıcıya ayarlardan etkinleştirmesini söyle. Araç sonucunu görmeden işlem yapıldığını iddia etme. SMS gönderme veya konum paylaşma araçları bu Agent içinde yoktur; bunları yaptığını söyleme. Kamera aracı yalnızca kamera uygulamasını açar. Güvenlik/car modunu yalnızca bayrak değiştirerek etkinleştirdiğini iddia et."),
-                    ChatMessage("user", kullaniciSorusu)
+                    ChatMessage("system", sistemTam + "\n\nAGENT KURALLARI: En fazla $MAX_AGENT_TOOL_STEPS araç adımı kullan. Bilgi araçlarını <TOOL>ARAÇ_ADI</TOOL> biçiminde çağır. Kullanıcı açıkça bir bilgiyi hafızaya kaydet derse <TOOL>SAVE_MEMORY: metin</TOOL>; günlüğe yaz derse <TOOL>ADD_DIARY: metin</TOOL>; belirli saatli hatırlatma isterse <TOOL>ADD_REMINDER|SAAT|DAKİKA|metin</TOOL> biçimini kullan. Kayıt araçlarını ve telefon eylemlerini yalnızca kullanıcı açıkça istediğinde çalıştır. Ekran kontrolü için önce SCREEN_READ veya SCREEN_VISION ile ekranı oku; kullanıcı açıkça bir dokunma, yazma, kaydırma veya navigasyon eylemi istemişse yalnızca o eylemi yap; sonra SCREEN_READ ile sonucu doğrula. SCREEN_TAP veya SCREEN_TAP_VISUAL yalnızca hassas olmayan görünen etiketlere dokunabilir; SCREEN_TYPE sadece kullanıcının verdiği metni etkin, parola olmayan alana yazabilir. Parola, OTP, kilit ekranı, banka/ödeme/transfer, mesaj gönderme, satın alma, silme veya nihai onay işlemlerini yapma; hassas son adımı kullanıcıya bırak. Erişilebilirlik hizmeti kapalıysa kullanıcıya ayarlardan etkinleştirmesini söyle. Araç sonucunu görmeden işlem yapıldığını iddia etme. SMS gönderme veya konum paylaşma araçları bu Agent içinde yoktur; bunları yaptığını söyleme. Kamera aracı yalnızca kamera uygulamasını açar. Güvenlik/car modunu yalnızca bayrak değiştirerek etkinleştirdiğini iddia et.")
                 )
+                // Keep a small private on-device context window for follow-up questions.
+                // Screen/OCR tasks remain local-only and are not persisted into conversation history.
+                if (!localOnly) ConversationHistoryStore.read(ctx).forEach { mesajlar.add(it) }
+                mesajlar.add(ChatMessage("user", kullaniciSorusu))
                 var sonCevap: String? = null
                 var aracAdimi = 0
                 var kaliteTekrariYapildi = false
@@ -228,12 +231,16 @@ KURALLAR:
                     android.util.Log.i("AiRouter", "AI_RESPONSE_SUCCESS provider=${s.ad} model=${s.model} agentSteps=$aracAdimi chars=${sonCevap.length}")
                     lastProvider = s.ad
                     val kayitliAd = Settings.kullaniciAdi.trim()
-                    return@withContext sonCevap
+                    val temizSonCevap = sonCevap
                         .replace(Regex("(?i)denizcim"), kayitliAd.ifBlank { "" })
                         .replace(Regex("[*]{1,3}"), "")
                         .replace(Regex("(?i)daha fazla bilgiye ihtiyacım var"), "")
                         .replace(Regex("\\s{2,}"), " ")
                         .trim()
+                    if (!localOnly && temizSonCevap.isNotBlank()) {
+                        ConversationHistoryStore.addExchange(ctx, kullaniciSorusu, temizSonCevap)
+                    }
+                    return@withContext temizSonCevap
                 }
                 android.util.Log.w("AiRouter", "AI_PROVIDER_NO_FINAL_ANSWER provider=${s.ad} model=${s.model}; trying next provider")
                 // Sağlayıcı başarısızsa sıradaki yapılandırılmış sağlayıcıya geç.
