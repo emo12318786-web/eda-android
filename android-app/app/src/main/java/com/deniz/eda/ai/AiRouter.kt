@@ -110,6 +110,7 @@ KURALLAR:
                 continue
             }
             android.util.Log.i("AiRouter", "AI_PROVIDER_ATTEMPT provider=${s.ad} model=${s.model}")
+            val providerStartedAt = android.os.SystemClock.elapsedRealtime()
             try {
                 val api = OpenAiCompatibleApi.olustur(s.baseUrl)
                 // İzinli araç açıklamalarını sistem mesajına ekle
@@ -143,7 +144,7 @@ KURALLAR:
                         val hataGovdesi = try {
                             yanit.errorBody()?.string()?.take(500).orEmpty()
                         } catch (_: Exception) { "" }
-                        android.util.Log.w("AiRouter", "HTTP_FAIL provider=${s.ad} code=${yanit.code()} body=$hataGovdesi")
+                        android.util.Log.w("AiRouter", "HTTP_FAIL provider=${s.ad} code=${yanit.code()} elapsedMs=${android.os.SystemClock.elapsedRealtime() - providerStartedAt} body=$hataGovdesi")
                         break
                     }
                     val cevap = yanit.body()?.choices?.firstOrNull()?.message?.content?.trim()
@@ -230,7 +231,7 @@ KURALLAR:
                     aracAdimi++
                 }
                 if (!sonCevap.isNullOrBlank()) {
-                    android.util.Log.i("AiRouter", "AI_RESPONSE_SUCCESS provider=${s.ad} model=${s.model} agentSteps=$aracAdimi chars=${sonCevap.length}")
+                    android.util.Log.i("AiRouter", "AI_RESPONSE_SUCCESS provider=${s.ad} model=${s.model} agentSteps=$aracAdimi chars=${sonCevap.length} elapsedMs=${android.os.SystemClock.elapsedRealtime() - providerStartedAt}")
                     lastProvider = s.ad
                     val kayitliAd = Settings.kullaniciAdi.trim()
                     val temizSonCevap = sonCevap
@@ -251,7 +252,7 @@ KURALLAR:
             } catch (e: Exception) {
                 android.util.Log.e(
                     "AiRouter",
-                    "PROVIDER_EXCEPTION provider=${s.ad} type=${e.javaClass.simpleName} message=${e.message}",
+                    "PROVIDER_EXCEPTION provider=${s.ad} type=${e.javaClass.simpleName} elapsedMs=${android.os.SystemClock.elapsedRealtime() - providerStartedAt} message=${e.message}",
                     e
                 )
             }
