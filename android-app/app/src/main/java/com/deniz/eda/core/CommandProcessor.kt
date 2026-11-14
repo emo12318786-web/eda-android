@@ -358,7 +358,11 @@ object CommandProcessor {
                     !ad.endsWith("ne") && !ad.endsWith("mi") && !ad.endsWith("mı") &&
                     !ad.endsWith("musun") && !ad.endsWith("mısın")) {
                     Settings.kullaniciAdi = ad
-                    return KomutSonucu.Cevap("Memnun oldum $ad! Artık sana böyle hitap edeceğim.")
+                    val cevap = "Memnun oldum $ad! Artık sana böyle hitap edeceğim."
+                    if (Settings.conversationHistoryEnabled) {
+                        com.deniz.eda.ai.ConversationHistoryStore.addExchange(context, metinHam, cevap)
+                    }
+                    return KomutSonucu.Cevap(cevap)
                 }
             }
         }
@@ -375,7 +379,11 @@ object CommandProcessor {
                     !ad.endsWith("ne") && !ad.endsWith("mi") && !ad.endsWith("mı") &&
                     !ad.endsWith("musun") && !ad.endsWith("mısın")) {
                     Settings.kullaniciAdi = ad
-                    return KomutSonucu.Cevap("Memnun oldum $ad! Artık sana böyle hitap edeceğim.")
+                    val cevap = "Memnun oldum $ad! Artık sana böyle hitap edeceğim."
+                    if (Settings.conversationHistoryEnabled) {
+                        com.deniz.eda.ai.ConversationHistoryStore.addExchange(context, metinHam, cevap)
+                    }
+                    return KomutSonucu.Cevap(cevap)
                 }
             }
         }
