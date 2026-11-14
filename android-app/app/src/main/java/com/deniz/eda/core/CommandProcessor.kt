@@ -966,7 +966,13 @@ object CommandProcessor {
                     KomutSonucu.Cevap("Bu çok uzun bir isim $hitap, kısaltır mısın?")
                 } else {
                     Settings.kullaniciAdi = ad
-                    KomutSonucu.Cevap("Memnun oldum $ad! Artık sana böyle hitap edeceğim.")
+                    val cevap = "Memnun oldum $ad! Artık sana böyle hitap edeceğim."
+                    // This turn is handled locally rather than by AiRouter. Keep it in the
+                    // same bounded context window so the next conversational turn can refer to it.
+                    if (Settings.conversationHistoryEnabled) {
+                        com.deniz.eda.ai.ConversationHistoryStore.addExchange(context, metinHam, cevap)
+                    }
+                    KomutSonucu.Cevap(cevap)
                 }
             }
 
