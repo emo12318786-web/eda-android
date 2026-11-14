@@ -166,4 +166,8 @@ object Settings {
     var incomingCallAnnouncementEnabled: Boolean
         get() = getBool("incoming_call_announcement_enabled", true)
         set(v) = setBool("incoming_call_announcement_enabled", v)
+
+    var conversationHistoryEnabled: Boolean
+        get() = getBool("conversation_history_enabled", true)
+        set(v) = setBool("conversation_history_enabled", v)
 }
