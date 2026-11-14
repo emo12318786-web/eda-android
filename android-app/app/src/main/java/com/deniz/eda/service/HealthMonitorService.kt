@@ -41,6 +41,7 @@ class HealthMonitorService : Service() {
     }
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var monitorJob: Job? = null
     private lateinit var healthManager: HealthConnectManager
     
     // وضعیت ردیابی (برای اینکه هر چیز یک بار باشه)
@@ -64,15 +65,23 @@ class HealthMonitorService : Service() {
         val notification = buildNotification("🩺 Sağlık izleniyor...")
         startForeground(NOTIF_ID, notification)
 
-        serviceScope.launch {
-            while (isActive) {
-                try {
-                    monitorHealth()
-                } catch (e: Exception) {
-                    android.util.Log.e(TAG, "Monitor hata: ${e.message}")
+        // Android may call onStartCommand more than once. Keep exactly one
+        // polling loop so duplicate starts cannot multiply health reads/alerts.
+        if (monitorJob?.isActive != true) {
+            monitorJob = serviceScope.launch {
+                while (isActive) {
+                    try {
+                        monitorHealth()
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        android.util.Log.e(TAG, "Monitor hata: ${e.message}", e)
+                    }
+                    delay(CHECK_INTERVAL_MS)
                 }
-                delay(CHECK_INTERVAL_MS)
             }
+        } else {
+            android.util.Log.d(TAG, "Health monitor already running; duplicate start ignored")
         }
 
         return START_STICKY
