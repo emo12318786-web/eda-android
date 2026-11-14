@@ -123,6 +123,41 @@
                 android:backgroundTint="@color/purple_start" />
         </LinearLayout>
 
+        <!-- CARD: Sohbet hafızası; deliberately separated from phone permissions/toggles. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_settings"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🧠  SOHBET HAFIZASI"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/purple_end"
+                android:layout_marginBottom="8dp" />
+
+            <Switch
+                android:id="@+id/conversationHistorySwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Son konuşmaları hatırla"
+                android:textColor="@color/text_primary"
+                android:paddingVertical="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Açıkken EDA son konuşma mesajlarını bu cihazda sınırlı olarak saklar ve devam sorularında seçili AI sağlayıcısına gönderir. Kapalıyken kayıtlı konuşma bağlamı silinir."
+                android:textColor="@color/text_muted"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+
         <!-- CARD: Telefon duyuruları -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -162,14 +197,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Gelen aramayı sesli duyur"
-                android:textColor="@color/text_primary"
-                android:paddingVertical="8dp" />
-
-            <Switch
-                android:id="@+id/conversationHistorySwitch"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Son sohbet bağlamını kullan (AI sağlayıcısına gönderilir)"
                 android:textColor="@color/text_primary"
                 android:paddingVertical="8dp" />
 
