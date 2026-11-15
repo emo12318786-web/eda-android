@@ -526,19 +526,30 @@ object CommandProcessor {
                 } else {
                     // Read Health Connect on demand so voice answers do not depend on
                     // HealthMonitorService having refreshed the cache beforehand.
+                    // Only use a timestamped Health Connect sample; never present cached/stale data as current.
                     val sample = hm.getLatestHeartRateSample(1440)
-                    val hr = sample?.first ?: hm.getLatestHeartRate(1440) ?: cachedHeartRate
-                    if (hr != null) {
-                        cachedHeartRate = hr
+                    if (sample != null) {
+                        val hr = sample.first
+                        val kayitZamani = sample.second
+                        val yasDakika = kotlin.math.max(
+                            0L,
+                            java.time.Duration.between(kayitZamani, java.time.Instant.now()).toMinutes()
+                        )
+                        val saatMetni = java.time.format.DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
+                            .withZone(java.time.ZoneId.systemDefault()).format(kayitZamani)
                         val durum = when {
                             hr < 60 -> "biraz düşük"
                             hr in 60..100 -> "genel dinlenme aralığında"
                             else -> "yüksek"
                         }
-                        val whenText = sample?.second?.let { " Son kayıt: " + java.time.format.DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault()).withZone(java.time.ZoneId.systemDefault()).format(it) + "." } ?: " Kayıt zamanı alınamadı; bu değer canlı ölçüm olmayabilir."
-                        KomutSonucu.Cevap("Nabzın $hr atım/dakika, $durum görünüyor $hitap.$whenText")
+                        if (yasDakika <= 30) {
+                            cachedHeartRate = hr
+                            KomutSonucu.Cevap("Nabzın $hr atım/dakika, $durum görünüyor $hitap. Son kayıt: $saatMetni.")
+                        } else {
+                            KomutSonucu.Cevap("Health Connect'teki son nabız kaydı $hr atım/dakika. Saat $saatMetni, yaklaşık $yasDakika dakika önce kaydedilmiş; bu güncel veya canlı ölçüm değil $hitap. Yeni veri için bilekliğin Zepp Life üzerinden Health Connect ile eşitlendiğini kontrol et.")
+                        }
                     } else {
-                        KomutSonucu.Cevap("Nabız verisi bulamadım $hitap. Bileklik bağlı mı?")
+                        KomutSonucu.Cevap("Son 24 saat içinde Health Connect'te nabız kaydı bulamadım $hitap. Güncel nabız söyleyemem; bilekliğin Zepp Life ile Health Connect'e eşitlendiğini kontrol et.")
                     }
                 }
             }

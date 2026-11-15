@@ -42,7 +42,6 @@ object AffectionResponses {
                 "Selam $hitap, hoş geldin!",
                 "Merhaba, seni dinliyorum $hitap.",
                 "Günaydın $hitap!",
-                "İyi akşamlar $hitap!",
                 "İyi geceler $hitap!",
                 "Hoş geldin $hitap!",
                 "İyiyim $hitap, sen nasılsın?"
