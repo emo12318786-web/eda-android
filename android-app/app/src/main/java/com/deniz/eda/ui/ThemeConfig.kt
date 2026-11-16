@@ -28,29 +28,24 @@ object ThemeConfig {
         val layoutMode: Int
     )
 
-    // EDA uses one fixed monochrome neon theme. No alternate skins are offered.
+    // EDA visual rebirth: distinct, persistent skins. Palette changes never alter assistant behavior.
     val palettes = listOf(
-        Palette(
-            id = "neon_abyss",
-            name = "Neon Abyss · Monochrome",
-            background = 0xFF030303,
-            panel = 0xFF0A0A0A,
-            raised = 0xFF151515,
-            accent = 0xFFF5F5F5,
-            secondary = 0xFFBDBDBD,
-            muted = 0xFF8A8A8A,
-            fontFamily = "sans-serif",
-            fontStyle = Typeface.NORMAL,
-            iconStyle = "cyber",
-            shapeStyle = "cut",
-            layoutMode = 0
-        )
+        Palette("aurora", "Aurora Glass", 0xFF07131C, 0xFF102633, 0xFF183746, 0xFF5CF2C2, 0xFF80CFFF, 0xFF91A8B5, "sans-serif", Typeface.NORMAL, "eclipse", "soft", 0),
+        Palette("ember", "Ember Circuit", 0xFF160B12, 0xFF29121D, 0xFF3A1B28, 0xFFFF7A59, 0xFFFFC078, 0xFFB99AA5, "sans-serif-medium", Typeface.NORMAL, "dragon", "cut", 1),
+        Palette("arctic", "Arctic Pulse", 0xFF07111F, 0xFF101F35, 0xFF1B3150, 0xFF71D7FF, 0xFFA5B4FC, 0xFF9AAFC8, "sans-serif", Typeface.NORMAL, "geometric", "round", 2),
+        Palette("orchid", "Orchid Dream", 0xFF130C20, 0xFF211632, 0xFF322044, 0xFFE3A5FF, 0xFF9FBAFF, 0xFFB5A8C8, "sans-serif", Typeface.NORMAL, "arcane", "soft", 3),
+        Palette("solar", "Solar Flare", 0xFF171107, 0xFF2B2110, 0xFF403019, 0xFFFFD166, 0xFFFF9F68, 0xFFC7B99C, "sans-serif-medium", Typeface.NORMAL, "solar", "pill", 4),
+        Palette("stealth", "Stealth Titanium", 0xFF101214, 0xFF1A1F22, 0xFF272E32, 0xFFD0E2E8, 0xFF7DE2D1, 0xFF9BA9AE, "sans-serif-condensed", Typeface.NORMAL, "cyber", "sharp", 5)
     )
 
-    fun selectedId(context: Context): String = "neon_abyss"
+    fun selectedId(context: Context): String {
+        val saved = context.getSharedPreferences("eda_settings", Context.MODE_PRIVATE)
+            .getString("eda_theme_id", palettes.first().id)
+        return palettes.firstOrNull { it.id == saved }?.id ?: palettes.first().id
+    }
 
     fun selected(context: Context): Palette =
-        palettes.firstOrNull { it.id == selectedId(context) } ?: palettes[0]
+        palettes.firstOrNull { it.id == selectedId(context) } ?: palettes.first()
 
     val current: Palette
         get() = cachedPalette
@@ -62,7 +57,7 @@ object ThemeConfig {
     }
 
     fun save(context: Context, id: String) {
-        val safeId = palettes.first().id
+        val safeId = palettes.firstOrNull { it.id == id }?.id ?: palettes.first().id
         context.getSharedPreferences("eda_settings", Context.MODE_PRIVATE)
             .edit().putString("eda_theme_id", safeId).apply()
         refresh(context)
