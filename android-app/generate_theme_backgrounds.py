@@ -11,20 +11,12 @@ W, H = 420, 900
 
 # id, accent RGB, secondary RGB, motif
 THEMES = [
- ("dark_queen",(255,59,48),(255,151,122),"queen"),
- ("hellhound",(255,50,31),(255,139,72),"hellhound"),
- ("obsidian",(190,202,215),(255,65,65),"obsidian"),
- ("pentagram",(255,36,74),(255,130,151),"pentagram"),
- ("wolf",(190,202,214),(255,65,65),"wolf"),
- ("eclipse",(255,63,47),(255,160,120),"eclipse"),
- ("throne",(255,41,41),(255,144,144),"throne"),
- ("black_sun",(255,75,32),(255,184,107),"sun"),
- ("dark_angel",(255,45,54),(255,129,136),"angel"),
- ("dragon_core",(255,46,31),(255,154,81),"dragon"),
- ("fallen_angel",(224,214,214),(255,78,89),"fallen"),
- ("night_queen",(255,52,84),(255,160,176),"nightqueen"),
- ("space_gate",(193,199,208),(255,65,65),"gate"),
- ("neon_abyss",(255,57,57),(255,139,139),"abyss"),
+ ("aurora",(92,242,194),(128,207,255),"eclipse"),
+ ("ember",(255,122,89),(255,192,120),"hellhound"),
+ ("arctic",(113,215,255),(165,180,252),"obsidian"),
+ ("orchid",(227,165,255),(159,186,255),"angel"),
+ ("solar",(255,209,102),(255,159,104),"sun"),
+ ("stealth",(208,226,232),(125,226,209),"gate"),
 ]
 
 def polygon_star(draw,cx,cy,r1,r2,n,fill,width=2,rotation=-math.pi/2):
