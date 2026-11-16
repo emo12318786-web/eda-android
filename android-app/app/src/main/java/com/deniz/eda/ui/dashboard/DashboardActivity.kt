@@ -312,8 +312,8 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             }
         }
     ) { padding ->
-        Box(Modifier.fillMaxSize().background(VoidBlack)) {
-            // Fixed monochrome theme: pure black canvas, no character wallpaper.
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(VoidBlack, Panel.copy(alpha = 0.72f), VoidBlack)))) {
+            // Theme-driven aurora canvas: a subtle depth gradient follows the active skin.
             Column(
                 Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
                     .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -357,7 +357,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             }
 
             if (selectedTab == 0) {
-                // One fixed monochrome layout; no theme-specific layout variants.
+                // Keep navigation and assistant actions stable while the active skin changes the visual atmosphere.
                 when (0) {
                     1 -> {
                         DashboardProviderSection(state, onAction)
