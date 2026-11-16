@@ -334,203 +334,88 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             ))
             Column(
                 Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
-                    .padding(horizontal = 18.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(horizontal = 18.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                // The monogram silhouette is part of the selected skin, not a permanent circle.
-                val logoShape = themeShape(27)
-                Box(
-                    Modifier.size(54.dp).background(
-                        Brush.linearGradient(listOf(PanelRaised, Panel, Violet.copy(alpha = 0.55f))), logoShape
-                    ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Surface(
-                        modifier = Modifier.fillMaxSize().padding(2.dp),
-                        shape = themeShape(25),
-                        color = Color.Transparent,
-                        border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(Violet, Cyan)))
-                    ) {}
-                    Text("E", color = Color.White, fontSize = 29.sp, fontWeight = FontWeight.Black)
-                    Box(Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 8.dp)
-                        .size(6.dp).background(Cyan, CircleShape))
-                }
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("EDA", fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
-                    Text("KİŞİSEL ASİSTAN • V5", fontSize = 9.sp, color = Muted, letterSpacing = 1.4.sp)
-                }
-                Text(ThemeConfig.icon("crown"), modifier = Modifier.clickable { context.startActivity(Intent(context, ThemeActivity::class.java)) }.padding(8.dp), color = Cyan, fontSize = 22.sp)
-                Text(ThemeConfig.icon("settings"), modifier = Modifier.clickable { onAction("ACTION_SETTINGS") }.padding(8.dp), color = Violet, fontSize = 24.sp)
-                Surface(shape = RoundedCornerShape(50), color = statusColor.copy(alpha = 0.12f),
-                    border = BorderStroke(1.dp, statusColor.copy(alpha = 0.5f))) {
-                    Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(7.dp).background(statusColor, CircleShape))
-                        Spacer(Modifier.width(6.dp))
-                        Text(if (active) "AKTİF" else if (sleeping) "UYKU" else "KAPALI",
-                            color = statusColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-
-            if (selectedTab == 0) {
-                // Keep navigation and assistant actions stable while the active skin changes the visual atmosphere.
-                when (ThemeConfig.current.layoutMode) {
+                CommandCenterTopBar(
+                    active = active,
+                    sleeping = sleeping,
+                    statusColor = statusColor,
+                    onTheme = { context.startActivity(Intent(context, ThemeActivity::class.java)) },
+                    onSettings = { onAction("ACTION_SETTINGS") }
+                )
+                when (selectedTab) {
+                    0 -> CommandCenterHome(
+                        state = state,
+                        active = active,
+                        sleeping = sleeping,
+                        statusColor = statusColor,
+                        onAction = onAction,
+                        onDeepChat = { onAction("ACTION_AI_OLLAMA"); deepChatOpen = true },
+                        onJarvis = { jarvisOpen = true }
+                    )
                     1 -> {
-                        DashboardProviderSection(state, onAction)
-                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
-                        DashboardLiveMetrics(state)
-                        DashboardLogsSection(state)
-                    }
-                    2 -> {
-                        DashboardLiveMetrics(state)
-                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
-                        DashboardProviderSection(state, onAction)
-                        DashboardLogsSection(state)
-                    }
-                    3 -> {
-                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
-                        DashboardLogsSection(state)
-                        DashboardProviderSection(state, onAction)
-                        DashboardLiveMetrics(state)
-                    }
-                    4 -> {
-                        DashboardLiveMetrics(state)
-                        DashboardLogsSection(state)
-                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
-                        DashboardProviderSection(state, onAction)
-                    }
-                    5 -> {
-                        DashboardProviderSection(state, onAction)
-                        DashboardLogsSection(state)
-                        DashboardLiveMetrics(state)
-                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
+                        HeroMini("KONTROL MERKEZİ", "Eda'nın sesini, çalışma biçimini ve telefon araçlarını yönet.")
+                        SectionHeader("YEREL YAPAY ZEKÂ", "İnternet olmadan uzun sohbet için Termux / Ollama")
+                        ControlTile("✧", "Derin sohbet", "Gemma 2:2B ile yerel ve ayrıntılı konuşma", Violet) {
+                            onAction("ACTION_AI_OLLAMA"); deepChatOpen = true
+                        }
+                        ControlTile("⌘", "Jarvis görev ajanı", "Telefonunda izinli ve kontrollü işlemler", Cyan) { jarvisOpen = true }
+                        SectionHeader("EDA · ÇALIŞMA MODU", "Mikrofon ve arka plan servisini yönet")
+                        ControlTile("▶", "Eda'yı uyandır", "Uyandırma motorlarını etkinleştir", Good) { onAction("ACTION_AKTIF") }
+                        ControlTile("☾", "Bekleme / uyku", "Pil tasarrufu için uyku moduna geç", Cyan) { onAction("ACTION_UYKU") }
+                        ControlTile("■", "Eda'yı durdur", "Arka plan servisini kapat", Bad) { onAction("ACTION_STOP") }
+                        SectionHeader("TELEFON HARNESS", "Güvenli yerel erişilebilirlik")
+                        InfoNotice("Telefonu Eda ile yönet", "Eda aktifken söyle: “Eda, ekranı oku”, “geri git”, “bildirimleri aç” veya “YouTube'u aç”. Hassas işlemler son onayda sana bırakılır.")
+                        ControlTile("▣", "Telefon kontrol paneli", "Ekranı oku, gezin ve izinli işlemleri çalıştır", Violet) { phoneControlOpen = true }
+                        SectionHeader("ÖZEL MODLAR", "Bağlama duyarlı araçlar")
+                        InfoNotice("Araba modu", "Eda'ya “araba modunu aç” diyerek eller serbest kullanımını başlat.")
+                        InfoNotice("Güvenlik modu", "Eda'ya “güvenlik modunu aç” diyerek etkinleştirebilirsin.")
                     }
                     else -> {
-                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
-                        DashboardLiveMetrics(state)
-                        DashboardProviderSection(state, onAction)
-                        DashboardLogsSection(state)
+                        HeroMini("SİSTEM TEŞHİSİ", "Servisleri, modelleri ve bağlantıları canlı olarak izle.")
+                        SectionHeader("YAPAY ZEKÂ MOTORLARI", "Gerçek bağlantı kontrolü")
+                        StatusLine("İnternet", if (state.internetStatus) "Bağlı" else "Bağlı değil", state.internetStatus)
+                        StatusLine("Ollama · Termux", state.ollamaStatus, state.ollamaStatus.contains("açık", true) || state.ollamaStatus.contains("hazır", true))
+                        StatusLine("Groq", state.groqStatus, state.groqStatus.contains("bağlı", true) && !state.groqStatus.contains("hata", true))
+                        StatusLine("Pollinations", state.pollinationsStatus, state.pollinationsStatus.contains("çalışıyor", true) || state.pollinationsStatus.contains("açık", true))
+                        SectionHeader("ÇEVRİMDIŞI UYANDIRMA", "Sherpa ana motor · Vosk yedek motor")
+                        val wakeStatus = com.deniz.eda.service.WakeEngineStatus
+                        StatusLine("Sherpa · Ana motor", wakeStatus.sherpaState, com.deniz.eda.core.Settings.sherpaWakeEnabled && wakeStatus.sherpaState in setOf("LISTENING", "READY", "TRIGGERED"))
+                        StatusLine("Vosk · Yedek motor", wakeStatus.voskState, com.deniz.eda.core.Settings.voskWakeEnabled && wakeStatus.voskState in setOf("LISTENING", "READY", "TRIGGERED"))
+                        StatusLine("Uyandırma kelimesi", "Beklenen: ${wakeStatus.sherpaExpected} · Son duyulan: ${wakeStatus.sherpaLastHeard.ifBlank { wakeStatus.voskLastHeard.ifBlank { "—" } }}", wakeStatus.sherpaLastMatch || wakeStatus.voskLastMatch)
+                        SectionHeader("HEALTH CONNECT", "Veriler yalnızca bağlı kaynaktan gösterilir")
+                        StatusLine("Sağlık bağlantısı", healthDiagnostic, healthDiagnostic.contains("izinleri açık", true) && !healthDiagnostic.contains("veri gelmiyor", true))
+                        OutlinedButton(
+                            onClick = {
+                                chatScope.launch {
+                                    healthChecking = true
+                                    healthDiagnostic = runCatching { withContext(Dispatchers.IO) { healthManager.getConnectionDiagnostic() } }
+                                        .getOrElse { "Kontrol başarısız: ${it.message ?: "bilinmeyen hata"}" }
+                                    healthChecking = false
+                                }
+                            },
+                            enabled = !healthChecking,
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text(if (healthChecking) "Kontrol ediliyor…" else "Health Connect'i yeniden kontrol et") }
+                        SectionHeader("EDA VERİLERİ", "Yerel kayıtlar")
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıt", Violet, Modifier.weight(1f))
+                            MetricCard("GÜNLÜK", "▤", state.gunlukSayi.toString(), "kayıt", Cyan, Modifier.weight(1f))
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            MetricCard("HATIRLATMA", "◷", state.hatirlatmaSayi.toString(), "bekleyen", Warn, Modifier.weight(1f))
+                            MetricCard("LOG", "≋", state.logSayi.toString(), "kayıt", Good, Modifier.weight(1f))
+                        }
+                        OutlinedButton(onClick = { viewModel.yenile() }, modifier = Modifier.fillMaxWidth()) { Text("↻ Durumu yenile") }
+                        OutlinedButton(onClick = onShareLog, modifier = Modifier.fillMaxWidth()) { Text("Tanılama kayıtlarını paylaş") }
+                        Text(com.deniz.eda.service.WakeDiagnostics.readSteps(context), color = Muted, fontSize = 10.sp,
+                            modifier = Modifier.fillMaxWidth().background(PanelRaised, themeShape(14)).padding(12.dp))
+                        LogsPanel(state.sonLoglar)
                     }
                 }
-            } else if (selectedTab == 1) {
-                HeroMini("KONTROL", "Eda’nın çalışma durumunu buradan yönet.")
-                SectionHeader("DERİN SOHBET", "Yerel Gemma 2:2B · Termux / Ollama")
-                ControlTile("✧", "Derin sohbeti aç", "Uzun sorularını yerel Gemma modeliyle konuş", Violet) {
-                    onAction("ACTION_AI_OLLAMA")
-                    deepChatOpen = true
-                }
-                SectionHeader("EDA · SESLİ TELEFON KOMUTLARI", "Ayrı Jarvis veya kontrol ekranı açmadan")
-                InfoNotice("📱  Telefonu Eda ile yönet", "Eda aktifken doğrudan söyle: “Eda, aşağı kaydır ve ekrandakini oku”, “Eda, ekranı oku”, “Eda, bildirimleri aç”, “Eda, geri git” veya “Eda, ekrandaki metne dokun, Ayarlar”. Basit komutlar yerel erişilebilirlik üzerinden doğrudan çalışır; normal sohbet ve derin sohbet akışı değişmez.")
-                InfoNotice("🔐  İlk kurulum", "Yalnızca bir kez Android Erişilebilirlik ayarlarında EDA hizmetini aç. Kilidi aşma, parola/OTP okuma, mesaj gönderme, silme, ödeme veya son onay işlemleri otomatik yapılmaz.")
-                SectionHeader("ÇALIŞMA MODU", "İhtiyacına göre seç")
-                ControlTile("▶", "Eda’yı başlat", "Eda’yı dinlemeye hazır hâle getir", Good) { onAction("ACTION_AKTIF") }
-                ControlTile("☾", "Uyku moduna al", "Uyandırma kelimesiyle yeniden etkinleşir", Cyan) { onAction("ACTION_UYKU") }
-                ControlTile("■", "Eda'yı durdur", "Arka plan servisini kapat", Bad) { onAction("ACTION_STOP") }
-                SectionHeader("ÖZEL MODLAR", "Sesli komutla güvenli kontrol")
-                InfoNotice("🚘  Araba modu", "Eda'ya “araba modunu aç” diyebilirsin. Bu panel mevcut durumu gösterir.")
-                InfoNotice("🛡  Güvenlik modu", "Eda’ya “güvenlik modunu aç” diyerek etkinleştirebilirsin.")
-                InfoNotice("🎙  Sesli kullanım", "Eda aktifken “Eda” diye seslenip ardından isteğini söyle.")
-            } else {
-                HeroMini("SİSTEM DURUMU", "Bağlantıları ve kayıtlarını buradan kontrol et.")
-                SectionHeader("YAPAY ZEKÂ BAĞLANTILARI", "Son bağlantı kontrolünün sonucu")
-                StatusLine("🌐 İnternet", if (state.internetStatus) "Bağlı" else "Bağlı değil", state.internetStatus)
-                StatusLine("🦙 Ollama · Termux", state.ollamaStatus,
-                    state.ollamaStatus.contains("açık", true) || state.ollamaStatus.contains("acik", true) ||
-                        state.ollamaStatus.contains("hazır", true))
-                StatusLine("⚡ Groq", state.groqStatus,
-                    (state.groqStatus.contains("bağlı", true) || state.groqStatus.contains("bagli", true)) &&
-                        !state.groqStatus.contains("yok", true) && !state.groqStatus.contains("hata", true))
-                StatusLine("🌸 Pollinations", state.pollinationsStatus,
-                    state.pollinationsStatus.contains("açık", true) || state.pollinationsStatus.contains("acik", true) ||
-                        state.pollinationsStatus.contains("çalışıyor", true) || state.pollinationsStatus.contains("calisiyor", true))
-                SectionHeader("SAĞLIK · MI BAND 5", "Yalnızca Health Connect'e gerçekten ulaşan veriler")
-                StatusLine(
-                    "🩺 Health Connect",
-                    healthDiagnostic,
-                    healthDiagnostic.contains("izinleri açık", true) &&
-                        !healthDiagnostic.contains("veri gelmiyor", true) &&
-                        !healthDiagnostic.contains("kullanılamıyor", true) &&
-                        !healthDiagnostic.contains("eksik", true)
-                )
-                Button(
-                    onClick = {
-                        chatScope.launch {
-                            healthChecking = true
-                            healthDiagnostic = runCatching {
-                                withContext(Dispatchers.IO) { healthManager.getConnectionDiagnostic() }
-                            }.getOrElse { "Health Connect kontrolü başarısız: ${it.message ?: "bilinmeyen hata"}" }
-                            healthChecking = false
-                        }
-                    },
-                    enabled = !healthChecking,
-                    modifier = Modifier.fillMaxWidth().height(44.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)
-                ) {
-                    Text(if (healthChecking) "Sağlık verileri kontrol ediliyor…" else "↻   Mi Band / Health Connect durumunu kontrol et")
-                }
-                SectionHeader("ÇEVRİMDIŞI UYANDIRMA MOTORLARI", "Canlı çalışma durumu · Ayarlar’dan ayrı ayrı aç/kapat")
-                val wakeStatus = com.deniz.eda.service.WakeEngineStatus
-                val sherpaState = wakeStatus.sherpaState
-                val sherpaLabel = when (sherpaState) {
-                    "LISTENING" -> "Aktif · Dinliyor"
-                    "READY" -> "Hazır · Beklemede"
-                    "PREPARING" -> "Hazırlanıyor"
-                    "DOWNLOADING" -> "İndiriliyor"
-                    "TRIGGERED" -> "Uyandırdı"
-                    "ERROR" -> "Hata: ${wakeStatus.sherpaDetail}"
-                    else -> "Kapalı / başlatılmadı"
-                }
-                StatusLine("🎯 Sherpa · Ana motor", if (com.deniz.eda.core.Settings.sherpaWakeEnabled) sherpaLabel else "Kapalı (Ayarlar’dan aç)", com.deniz.eda.core.Settings.sherpaWakeEnabled && sherpaState in setOf("LISTENING", "READY", "TRIGGERED"))
-                val voskState = wakeStatus.voskState
-                val voskLabel = when (voskState) {
-                    "LISTENING" -> "Aktif · Dinliyor"
-                    "READY" -> "Hazır · Yedekte"
-                    "PREPARING" -> "Hazırlanıyor"
-                    "DOWNLOADING" -> "İndiriliyor"
-                    "TRIGGERED" -> "Uyandırdı"
-                    "ERROR" -> "Hata: ${wakeStatus.voskDetail}"
-                    else -> "Kapalı / başlatılmadı"
-                }
-                StatusLine("🎙 Vosk · Yedek motor", if (com.deniz.eda.core.Settings.voskWakeEnabled) voskLabel else "Kapalı (Ayarlar’dan aç)", com.deniz.eda.core.Settings.voskWakeEnabled && voskState in setOf("LISTENING", "READY", "TRIGGERED"))
-                StatusLine("🗣 Uyandırma ifadesi", "Beklenen: ${wakeStatus.sherpaExpected} · Son duyulan: ${wakeStatus.sherpaLastHeard.ifBlank { wakeStatus.voskLastHeard.ifBlank { "—" } }}", wakeStatus.sherpaLastMatch || wakeStatus.voskLastMatch)
-                StatusLine("📦 Sherpa modeli", "APK içinde paketli; kurulum sonrası indirme gerekmez", true)
-                SectionHeader("KAYITLARIN", "Bu telefonda saklanan bilgiler")
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıt", Violet, Modifier.weight(1f))
-                    MetricCard("GÜNLÜK", "▤", state.gunlukSayi.toString(), "kayıt", Cyan, Modifier.weight(1f))
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    MetricCard("HATIRLATMA", "◷", state.hatirlatmaSayi.toString(), "bekleyen", Warn, Modifier.weight(1f))
-                    MetricCard("LOG", "≋", state.logSayi.toString(), "kayıt", Good, Modifier.weight(1f))
-                }
-                SectionHeader("ARAÇLAR", "Sistem işlemleri")
-                Button(onClick = { viewModel.yenile() }, modifier = Modifier.fillMaxWidth().height(52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻   Durumu yeniden kontrol et") }
-                Button(onClick = onShareLog, modifier = Modifier.fillMaxWidth().height(52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("⇧   Tanılama kayıtlarını paylaş") }
-                SectionHeader("UYANDIRMA TANILAMASI", "Son işlem adımları ve uygulama kapanma nedeni")
-                Button(onClick = { wakeDiagnosticsRefresh++ }, modifier = Modifier.fillMaxWidth().height(44.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PanelRaised)) { Text("↻   Tanılama kayıtlarını yenile") }
-                Text("SON ÇALIŞMA ADIMLARI · $wakeDiagnosticsRefresh", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Text(
-                    text = com.deniz.eda.service.WakeDiagnostics.readSteps(context),
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 150.dp).verticalScroll(rememberScrollState())
-                        .background(PanelRaised, RoundedCornerShape(12.dp)).padding(10.dp),
-                    color = Muted, fontSize = 10.sp
-                )
-                Text("SON KAPANMA / ÇÖKME KAYDI", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Text(
-                    text = com.deniz.eda.service.WakeDiagnostics.readCrash(context),
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 180.dp).verticalScroll(rememberScrollState())
-                        .background(PanelRaised, RoundedCornerShape(12.dp)).padding(10.dp),
-                    color = Muted, fontSize = 10.sp
-                )
-                LogsPanel(state.sonLoglar)
-            }
-            Text("EDA • YARDIMA HAZIR", Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 14.dp),
-                color = Muted, fontSize = 9.sp, letterSpacing = 2.sp, textAlign = TextAlign.Center)
+                Text("EDA CORE  •  PRIVATE BY DESIGN", Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                    color = Muted, fontSize = 9.sp, letterSpacing = 2.sp, textAlign = TextAlign.Center)
             }
         }
     }
@@ -856,6 +741,180 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     }
                     if (deepChatBusy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = Cyan)
                 }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun CommandCenterTopBar(
+    active: Boolean,
+    sleeping: Boolean,
+    statusColor: Color,
+    onTheme: () -> Unit,
+    onSettings: () -> Unit
+) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier.size(48.dp).background(
+                Brush.linearGradient(listOf(Violet.copy(alpha = .95f), Cyan.copy(alpha = .72f))),
+                CircleShape
+            ).padding(1.5.dp).background(VoidBlack, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("E", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Black)
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("E D A", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+            Text("AI COMMAND CENTER  /  V5", color = Muted, fontSize = 8.sp, letterSpacing = 1.4.sp)
+        }
+        IconButton(onClick = onTheme) {
+            Text("◈", color = Cyan, fontSize = 22.sp)
+        }
+        IconButton(onClick = onSettings) {
+            Text("⚙", color = Violet, fontSize = 21.sp)
+        }
+        Surface(shape = RoundedCornerShape(50), color = statusColor.copy(alpha = .12f),
+            border = BorderStroke(1.dp, statusColor.copy(alpha = .55f))) {
+            Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(6.dp).background(statusColor, CircleShape))
+                Spacer(Modifier.width(6.dp))
+                Text(if (active) "LIVE" else if (sleeping) "SLEEP" else "OFF",
+                    color = statusColor, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = .8.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommandCenterHome(
+    state: DashboardViewModel.DashboardState,
+    active: Boolean,
+    sleeping: Boolean,
+    statusColor: Color,
+    onAction: (String) -> Unit,
+    onDeepChat: () -> Unit,
+    onJarvis: () -> Unit
+) {
+    val pulse = rememberInfiniteTransition(label = "eda-core-pulse")
+    val orbScale by pulse.animateFloat(
+        initialValue = .96f,
+        targetValue = 1.04f,
+        animationSpec = infiniteRepeatable(animation = tween(1900), repeatMode = RepeatMode.Reverse),
+        label = "orb-scale"
+    )
+    val modeLabel = if (active) "LISTENING READY" else if (sleeping) "LOW POWER STANDBY" else "CORE OFFLINE"
+    Column(verticalArrangement = Arrangement.spacedBy(17.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+            Column(Modifier.weight(1f)) {
+                Text("SYSTEM OVERVIEW", color = Cyan, fontSize = 9.sp, letterSpacing = 2.2.sp, fontWeight = FontWeight.Bold)
+                Text("Merhaba, ${state.kullaniciAdi.ifBlank { "Deniz" }}", color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.SemiBold)
+                Text("${state.saat}   ·   ${state.tarih}", color = Muted, fontSize = 10.sp)
+            }
+            Text("SECURE  •  LOCAL FIRST", color = Good, fontSize = 8.sp, letterSpacing = 1.sp)
+        }
+
+        // Command core: the visual anchor of the rebuilt dashboard.
+        Box(
+            Modifier.fillMaxWidth().height(300.dp)
+                .background(
+                    Brush.radialGradient(listOf(Violet.copy(alpha = .20f), Panel.copy(alpha = .72f), VoidBlack)),
+                    themeShape(28)
+                )
+                .border(1.dp, Brush.linearGradient(listOf(Violet.copy(alpha = .65f), Cyan.copy(alpha = .25f), Violet.copy(alpha = .12f))), themeShape(28)),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                Text("EDA NEURAL CORE", color = Muted, fontSize = 9.sp, letterSpacing = 2.5.sp)
+                Box(Modifier.size((174 * orbScale).dp), contentAlignment = Alignment.Center) {
+                    Box(Modifier.fillMaxSize().background(
+                        Brush.radialGradient(listOf(Cyan.copy(alpha = .20f), Violet.copy(alpha = .12f), Color.Transparent)),
+                        CircleShape
+                    ).border(1.dp, Cyan.copy(alpha = .28f), CircleShape))
+                    Box(Modifier.fillMaxSize(.82f).border(1.dp, Violet.copy(alpha = .55f), CircleShape)
+                        .background(Brush.radialGradient(listOf(PanelRaised, VoidBlack)), CircleShape),
+                        contentAlignment = Alignment.Center) {
+                        Box(Modifier.fillMaxSize(.72f).background(
+                            Brush.linearGradient(listOf(Violet.copy(alpha = .85f), Cyan.copy(alpha = .48f), Panel)),
+                            CircleShape
+                        ).border(2.dp, Color.White.copy(alpha = .55f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("E", color = Color.White, fontSize = 72.sp, fontWeight = FontWeight.Light)
+                        }
+                    }
+                    Box(Modifier.align(Alignment.TopEnd).padding(18.dp).size(10.dp).background(Good, CircleShape))
+                }
+                Text(modeLabel, color = statusColor, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
+                Text(if (active) "Eda uyandırma kelimesini bekliyor" else if (sleeping) "Düşük güçte bekleme modu" else "Konuşmaya başlamak için Eda'yı uyandır",
+                    color = Muted, fontSize = 10.sp, textAlign = TextAlign.Center)
+                Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(
+                        onClick = { onAction(if (active) "ACTION_UYKU" else "ACTION_AKTIF") },
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Violet, contentColor = VoidBlack)
+                    ) { Text(if (active) "Beklemeye al" else "Eda'yı uyandır", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
+                    OutlinedButton(
+                        onClick = { onAction("ACTION_STOP") },
+                        modifier = Modifier.weight(.72f).height(48.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, Muted.copy(alpha = .45f))
+                    ) { Text("Durdur", color = Color.White, fontSize = 12.sp) }
+                }
+            }
+        }
+
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            MetricCard("BATARYA", "ϟ", "${state.pilYuzde}%", state.pilDurum, Good, Modifier.weight(1f))
+            MetricCard("BAĞLANTI", "⌁", if (state.internetStatus) "ONLINE" else "OFFLINE", "Ağ durumu", Cyan, Modifier.weight(1f))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıtlı bilgi", Violet, Modifier.weight(1f))
+            MetricCard("HATIRLATMA", "◷", state.hatirlatmaSayi.toString(), "bekleyen görev", Warn, Modifier.weight(1f))
+        }
+
+        SectionHeader("QUICK LAUNCH", "Eda'nın akıllı araçlarına doğrudan eriş")
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            QuickLaunchCard("✧", "Derin sohbet", "Gemma · Ollama", Violet, Modifier.weight(1f), onDeepChat)
+            QuickLaunchCard("⌘", "Jarvis", "Telefon ajanı", Cyan, Modifier.weight(1f), onJarvis)
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            QuickLaunchCard("◈", "Kontrol", "Ses ve modlar", Good, Modifier.weight(1f)) { onAction("ACTION_SETTINGS") }
+            QuickLaunchCard("▦", "Sistem", "Motorlar ve tanılama", Warn, Modifier.weight(1f)) { onAction("ACTION_SETTINGS") }
+        }
+
+        SectionHeader("AI ROUTING", "Öncelik sırası ve sağlayıcı seçimi")
+        ProviderPanel(state.aiSaglayici, onAction)
+
+        SectionHeader("RECENT ACTIVITY", "Son olaylar ve kayıtlar")
+        LogsPanel(state.sonLoglar)
+    }
+}
+
+@Composable
+private fun QuickLaunchCard(
+    icon: String,
+    title: String,
+    subtitle: String,
+    tint: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.height(106.dp),
+        shape = themeShape(18),
+        colors = CardDefaults.cardColors(containerColor = Panel.copy(alpha = .88f)),
+        border = BorderStroke(1.dp, tint.copy(alpha = .42f))
+    ) {
+        Column(Modifier.fillMaxSize().padding(13.dp), verticalArrangement = Arrangement.SpaceBetween) {
+            Text(icon, color = tint, fontSize = 23.sp)
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(subtitle, color = Muted, fontSize = 9.sp)
             }
         }
     }
