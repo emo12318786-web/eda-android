@@ -67,7 +67,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Generate and verify fourteen theme wallpapers
+      - name: Generate and verify six matching theme wallpapers
         working-directory: android-app
         run: |
           python3 -m pip install --disable-pip-version-check Pillow==11.0.0
@@ -76,8 +76,8 @@ jobs:
           BG_COUNT=$(find app/src/main/res/drawable-nodpi -maxdepth 1 -name 'bg_theme_*.webp' | wc -l)
           ICON_COUNT=$(find app/src/main/res/drawable-nodpi -maxdepth 1 -name 'ic_theme_*.webp' | wc -l)
           echo "Theme backgrounds: $BG_COUNT; theme previews: $ICON_COUNT"
-          test "$BG_COUNT" -eq 14
-          test "$ICON_COUNT" -eq 14
+          test "$BG_COUNT" -eq 6
+          test "$ICON_COUNT" -eq 6
 
       - name: Prepare Sherpa-ONNX keyword spotting model
         working-directory: android-app/app/src/main/assets
