@@ -13,6 +13,8 @@ class ThemeConfigTest {
         assertEquals("EDA should expose six visual skins", 6, profiles.size)
         assertEquals(profiles.size, profiles.map { it.id }.distinct().size)
         assertEquals(profiles.size, profiles.map { it.name }.distinct().size)
+        assertEquals("Each skin must select a distinct dashboard composition", profiles.size, profiles.map { it.layoutMode }.distinct().size)
+        assertTrue(profiles.all { it.layoutMode in 0..5 })
         assertEquals("aurora", profiles.first().id)
         assertTrue(profiles.any { it.id == "ember" })
         assertTrue(profiles.any { it.id == "arctic" })
