@@ -34,7 +34,7 @@ class ThemeActivity : Activity() {
             setBackgroundColor(selected.background.toInt())
         }
         val title = TextView(this).apply {
-            text = "EDA • NEON ABYSS"
+            text = "EDA • VISUAL STUDIO"
             textSize = 22f
             typeface = ThemeConfig.androidTypeface(
                 selected, android.graphics.Typeface.BOLD or selected.fontStyle
@@ -44,7 +44,7 @@ class ThemeActivity : Activity() {
         }
         root.addView(title)
         val subtitle = TextView(this).apply {
-            text = "Tek tema: siyah zemin, beyaz neon çizgiler ve gri ayrıntılar."
+            text = "Karakterini seç: altı ayrı renk dünyası, kalıcı seçim ve aynı güvenilir EDA."
             textSize = 14f
             typeface = ThemeConfig.androidTypeface(selected)
             setTextColor(selected.muted.toInt())
@@ -69,7 +69,7 @@ class ThemeActivity : Activity() {
                 }
                 isClickable = true
                 isFocusable = true
-                contentDescription = "${item.name}, siyah-beyaz neon tema"
+                contentDescription = "${item.name} tema önizlemesi"
             }
 
             val artworkId = resources.getIdentifier("ic_theme_${item.id}", "drawable", packageName)
@@ -109,7 +109,7 @@ class ThemeActivity : Activity() {
                 setTextColor(AndroidColor.WHITE)
             })
             labels.addView(TextView(this).apply {
-                text = "✓ Tek tema · etkin"
+                text = if (isSelected) "✓ Şu an kullanılıyor" else "Dokun ve uygula"
                 textSize = 12f
                 typeface = ThemeConfig.androidTypeface(item)
                 setTextColor(item.muted.toInt())
@@ -122,7 +122,7 @@ class ThemeActivity : Activity() {
                 maxLines = 2
             })
             labels.addView(TextView(this).apply {
-                text = "${ThemeConfig.icon("home", item)}  ${ThemeConfig.icon("control", item)}  ${ThemeConfig.icon("system", item)}"
+                text = "●  ●  ●    ${ThemeConfig.icon("home", item)}  ${ThemeConfig.icon("control", item)}  ${ThemeConfig.icon("system", item)}"
                 textSize = 14f
                 typeface = ThemeConfig.androidTypeface(item)
                 setTextColor(item.accent.toInt())

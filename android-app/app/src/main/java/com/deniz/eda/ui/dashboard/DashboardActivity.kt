@@ -22,6 +22,10 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -312,8 +316,22 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             }
         }
     ) { padding ->
-        Box(Modifier.fillMaxSize().background(VoidBlack)) {
-            // Fixed monochrome theme: pure black canvas, no character wallpaper.
+        Box(Modifier.fillMaxSize()) {
+            // Each skin has its own locally generated wallpaper; no network image or runtime download.
+            val wallpaperId = remember(ThemeConfig.current.id) {
+                context.resources.getIdentifier("bg_theme_${ThemeConfig.current.id}", "drawable", context.packageName)
+            }
+            if (wallpaperId != 0) {
+                Image(
+                    painter = painterResource(id = wallpaperId),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize().alpha(0.30f),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            Box(Modifier.fillMaxSize().background(
+                Brush.verticalGradient(listOf(VoidBlack.copy(alpha = 0.78f), Panel.copy(alpha = 0.58f), VoidBlack.copy(alpha = 0.88f)))
+            ))
             Column(
                 Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
                     .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -357,8 +375,8 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             }
 
             if (selectedTab == 0) {
-                // One fixed monochrome layout; no theme-specific layout variants.
-                when (0) {
+                // Keep navigation and assistant actions stable while the active skin changes the visual atmosphere.
+                when (ThemeConfig.current.layoutMode) {
                     1 -> {
                         DashboardProviderSection(state, onAction)
                         HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
@@ -376,6 +394,18 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                         DashboardLogsSection(state)
                         DashboardProviderSection(state, onAction)
                         DashboardLiveMetrics(state)
+                    }
+                    4 -> {
+                        DashboardLiveMetrics(state)
+                        DashboardLogsSection(state)
+                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
+                        DashboardProviderSection(state, onAction)
+                    }
+                    5 -> {
+                        DashboardProviderSection(state, onAction)
+                        DashboardLogsSection(state)
+                        DashboardLiveMetrics(state)
+                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
                     }
                     else -> {
                         HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
