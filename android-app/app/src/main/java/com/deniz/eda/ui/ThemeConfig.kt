@@ -41,9 +41,9 @@ object ThemeConfig {
     fun selectedId(context: Context): String {
         val preferences = context.getSharedPreferences("eda_settings", Context.MODE_PRIVATE)
         val saved = preferences.getString("eda_theme_id", null)
-        // First launch and the previous Solar Flare default migrate to the new EDA neon identity.
-        // Explicitly chosen non-Solar skins remain untouched.
-        if (saved == null || saved == "solar") {
+        // Initialize new installs with the EDA neon identity. Keep every explicitly saved theme,
+        // including Solar, so the user's selection survives refreshes and app restarts.
+        if (saved == null) {
             preferences.edit().putString("eda_theme_id", "ember").apply()
             return "ember"
         }
