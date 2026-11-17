@@ -824,36 +824,57 @@ private fun CommandCenterHome(
 
         // Command core: the visual anchor of the rebuilt dashboard.
         Box(
-            Modifier.fillMaxWidth().height(300.dp)
+            Modifier.fillMaxWidth().height(380.dp)
                 .background(
-                    Brush.radialGradient(listOf(Violet.copy(alpha = .20f), Panel.copy(alpha = .72f), VoidBlack)),
+                    Brush.radialGradient(listOf(Violet.copy(alpha = .26f), Cyan.copy(alpha = .12f), Panel.copy(alpha = .78f), VoidBlack)),
                     themeShape(28)
                 )
-                .border(1.dp, Brush.linearGradient(listOf(Violet.copy(alpha = .65f), Cyan.copy(alpha = .25f), Violet.copy(alpha = .12f))), themeShape(28)),
+                .border(1.dp, Brush.linearGradient(listOf(Violet.copy(alpha = .95f), Cyan.copy(alpha = .72f), Violet.copy(alpha = .52f))), themeShape(28)),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                Text("EDA MERKEZİ", color = Muted, fontSize = 9.sp, letterSpacing = 2.5.sp)
+            // Neon orbital rings are native Compose shapes, not a static mockup image.
+            // They scale to the phone and remain visible in the live EDA dashboard.
+            Box(
+                Modifier.size(width = 286.dp, height = 132.dp)
+                    .graphicsLayer { rotationZ = -17f }
+                    .border(1.4.dp, Brush.linearGradient(listOf(Violet, Cyan, Violet.copy(alpha = .55f))), RoundedCornerShape(50))
+            )
+            Box(
+                Modifier.size(width = 248.dp, height = 104.dp)
+                    .graphicsLayer { rotationZ = 21f }
+                    .border(1.2.dp, Brush.linearGradient(listOf(Cyan.copy(alpha = .85f), Violet.copy(alpha = .95f))), RoundedCornerShape(50))
+            )
+            Box(
+                Modifier.size(width = 210.dp, height = 84.dp)
+                    .graphicsLayer { rotationZ = -5f }
+                    .border(1.dp, Violet.copy(alpha = .48f), RoundedCornerShape(50))
+            )
+            Box(
+                Modifier.align(Alignment.CenterEnd).padding(end = 48.dp, top = 42.dp)
+                    .size(10.dp).background(Cyan, CircleShape)
+            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                Text("EDA MERKEZİ", color = Color.White, fontSize = 10.sp, letterSpacing = 2.8.sp, fontWeight = FontWeight.Bold)
                 Box(Modifier.size((174 * orbScale).dp), contentAlignment = Alignment.Center) {
                     Box(Modifier.fillMaxSize().background(
-                        Brush.radialGradient(listOf(Cyan.copy(alpha = .20f), Violet.copy(alpha = .12f), Color.Transparent)),
+                        Brush.radialGradient(listOf(Violet.copy(alpha = .36f), Cyan.copy(alpha = .20f), Color.Transparent)),
                         CircleShape
                     ).border(1.dp, Cyan.copy(alpha = .28f), CircleShape))
-                    Box(Modifier.fillMaxSize(.82f).border(1.dp, Violet.copy(alpha = .55f), CircleShape)
+                    Box(Modifier.fillMaxSize(.82f).border(1.5.dp, Brush.linearGradient(listOf(Violet, Cyan, Violet)), CircleShape)
                         .background(Brush.radialGradient(listOf(PanelRaised, VoidBlack)), CircleShape),
                         contentAlignment = Alignment.Center) {
                         Box(Modifier.fillMaxSize(.72f).background(
-                            Brush.linearGradient(listOf(Violet.copy(alpha = .85f), Cyan.copy(alpha = .48f), Panel)),
+                            Brush.linearGradient(listOf(Violet, Cyan.copy(alpha = .88f), PanelRaised)),
                             CircleShape
                         ).border(2.dp, Color.White.copy(alpha = .55f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("E", color = Color.White, fontSize = 72.sp, fontWeight = FontWeight.Light)
+                            Text("E", color = Color.White, fontSize = 76.sp, fontWeight = FontWeight.Light, style = TextStyle(shadow = androidx.compose.ui.graphics.Shadow(color = Cyan.copy(alpha = .85f), blurRadius = 24f)))
                         }
                     }
                     Box(Modifier.align(Alignment.TopEnd).padding(18.dp).size(10.dp).background(Good, CircleShape))
                 }
-                Text(modeLabel, color = statusColor, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
+                Text(modeLabel, color = Violet, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.8.sp)
                 Text(if (active) "Eda uyandırma kelimesini bekliyor" else if (sleeping) "Düşük güçte bekleme modu" else "Konuşmaya başlamak için Eda'yı uyandır",
                     color = Muted, fontSize = 10.sp, textAlign = TextAlign.Center)
                 Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -861,7 +882,7 @@ private fun CommandCenterHome(
                         onClick = { onAction(if (active) "ACTION_UYKU" else "ACTION_AKTIF") },
                         modifier = Modifier.weight(1f).height(48.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Violet, contentColor = VoidBlack)
+                        colors = ButtonDefaults.buttonColors(containerColor = BrushlessNeonColor(), contentColor = VoidBlack)
                     ) { Text(if (active) "Beklemeye al" else "Eda'yı uyandır", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
                     OutlinedButton(
                         onClick = { onAction("ACTION_STOP") },
