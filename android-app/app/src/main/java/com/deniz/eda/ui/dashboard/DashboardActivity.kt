@@ -358,7 +358,8 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                         statusColor = statusColor,
                         onAction = onAction,
                         onDeepChat = { onAction("ACTION_AI_OLLAMA"); deepChatOpen = true },
-                        onJarvis = { jarvisOpen = true }
+                        onJarvis = { jarvisOpen = true },
+                        onTab = { selectedTab = it }
                     )
                     1 -> {
                         HeroMini("KONTROL MERKEZİ", "Eda'nın sesini, çalışma biçimini ve telefon araçlarını yönet.")
@@ -420,7 +421,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                         LogsPanel(state.sonLoglar)
                     }
                 }
-                Text("EDA CORE  •  PRIVATE BY DESIGN", Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                Text("EDA MERKEZİ  •  GİZLİLİK ÖNCELİKLİ", Modifier.fillMaxWidth().padding(vertical = 10.dp),
                     color = Muted, fontSize = 9.sp, letterSpacing = 2.sp, textAlign = TextAlign.Center)
             }
         }
@@ -433,8 +434,8 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                 Column(Modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("EDA · PHONE CONTROL", color = Cyan, fontWeight = FontWeight.Bold)
-                            Text("Phone Harness esinli · Yerel erişilebilirlik", color = Muted, fontSize = 11.sp)
+                            Text("EDA · TELEFON KONTROLÜ", color = Cyan, fontWeight = FontWeight.Bold)
+                            Text("Telefon araçları · Yerel erişilebilirlik", color = Muted, fontSize = 11.sp)
                         }
                         Text("✕", Modifier.clickable { phoneControlOpen = false }.padding(8.dp), color = Muted)
                     }
@@ -802,7 +803,8 @@ private fun CommandCenterHome(
     statusColor: Color,
     onAction: (String) -> Unit,
     onDeepChat: () -> Unit,
-    onJarvis: () -> Unit
+    onJarvis: () -> Unit,
+    onTab: (Int) -> Unit
 ) {
     val pulse = rememberInfiniteTransition(label = "eda-core-pulse")
     val orbScale by pulse.animateFloat(
@@ -909,8 +911,8 @@ private fun CommandCenterHome(
             QuickLaunchCard("⌘", "Jarvis", "Telefon ajanı", Cyan, Modifier.weight(1f), onJarvis)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            QuickLaunchCard("◈", "Kontrol", "Ses ve modlar", Good, Modifier.weight(1f)) { onAction("ACTION_SETTINGS") }
-            QuickLaunchCard("▦", "Sistem", "Motorlar ve tanılama", Warn, Modifier.weight(1f)) { onAction("ACTION_SETTINGS") }
+            QuickLaunchCard("◈", "Kontrol", "Ses ve modlar", Good, Modifier.weight(1f)) { onTab(1) }
+            QuickLaunchCard("▦", "Sistem", "Motorlar ve tanılama", Warn, Modifier.weight(1f)) { onTab(2) }
         }
 
         SectionHeader("YAPAY ZEKÂ YÖNLENDİRME", "Öncelik sırası ve sağlayıcı seçimi")
@@ -1001,7 +1003,7 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
             2 -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("EDA / SYSTEM ONLINE", color = Muted, fontSize = 9.sp, letterSpacing = 1.6.sp)
+                        Text("EDA SİSTEMİ ÇEVRİMİÇİ", color = Muted, fontSize = 9.sp, letterSpacing = 1.6.sp)
                         Text("Ben Eda.\nBuradayım.", fontSize = 26.sp, lineHeight = 30.sp,
                             fontWeight = FontWeight.Bold, color = Color.White)
                         HeroMeta(time, date)
