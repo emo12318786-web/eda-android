@@ -20,8 +20,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -312,8 +317,9 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             }
         }
     ) { padding ->
-        Box(Modifier.fillMaxSize().background(VoidBlack)) {
-            // Fixed monochrome theme: pure black canvas, no character wallpaper.
+        Box(Modifier.fillMaxSize()) {
+            NeonBackdrop(Modifier.matchParentSize())
+            // The selected neon palette colors the shared dashboard; keep layout and controls consistent across themes.
             Column(
                 Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
                     .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -321,18 +327,20 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 // The monogram silhouette is part of the selected skin, not a permanent circle.
-                val logoShape = themeShape(27)
+                val logoShape = CircleShape
                 Box(
-                    Modifier.size(54.dp).background(
-                        Brush.linearGradient(listOf(PanelRaised, Panel, Violet.copy(alpha = 0.55f))), logoShape
-                    ),
+                    Modifier.size(58.dp)
+                        .shadow(16.dp, CircleShape, ambientColor = Cyan.copy(alpha = 0.55f), spotColor = Violet.copy(alpha = 0.65f))
+                        .background(
+                            Brush.radialGradient(listOf(Color(0xFF162C67), Color(0xFF080D26), Color(0xFF020813))), logoShape
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Surface(
                         modifier = Modifier.fillMaxSize().padding(2.dp),
-                        shape = themeShape(25),
+                        shape = CircleShape,
                         color = Color.Transparent,
-                        border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(Violet, Cyan)))
+                        border = BorderStroke(2.dp, Brush.sweepGradient(listOf(Cyan, Violet, Color(0xFF167DFF), Cyan)))
                     ) {}
                     Text("E", color = Color.White, fontSize = 29.sp, fontWeight = FontWeight.Black)
                     Box(Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 8.dp)
@@ -357,33 +365,27 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             }
 
             if (selectedTab == 0) {
-                // One fixed monochrome layout; no theme-specific layout variants.
-                when (0) {
-                    1 -> {
-                        DashboardProviderSection(state, onAction)
-                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
-                        DashboardLiveMetrics(state)
-                        DashboardLogsSection(state)
-                    }
-                    2 -> {
-                        DashboardLiveMetrics(state)
-                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
-                        DashboardProviderSection(state, onAction)
-                        DashboardLogsSection(state)
-                    }
-                    3 -> {
-                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
-                        DashboardLogsSection(state)
-                        DashboardProviderSection(state, onAction)
-                        DashboardLiveMetrics(state)
-                    }
-                    else -> {
-                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
-                        DashboardLiveMetrics(state)
-                        DashboardProviderSection(state, onAction)
-                        DashboardLogsSection(state)
-                    }
+                // One consistent home order across all themes so the neon orbital core is always visible.
+                // Reference-matched home composition: greeting, orbital core, live cards, quick access.
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(state.saat, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Light)
+                    Text("•  ${state.tarih}", color = Color.White.copy(alpha = 0.78f), fontSize = 11.sp)
                 }
+                HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
+                DashboardLiveMetrics(state)
+                QuickAccessSection(
+                    onVoiceEngines = { selectedTab = 2 },
+                    onGemmaMode = {
+                        onAction("ACTION_AI_OLLAMA")
+                        deepChatOpen = true
+                    }
+                )
+                DashboardProviderSection(state, onAction)
+                DashboardLogsSection(state)
             } else if (selectedTab == 1) {
                 HeroMini("KONTROL", "Eda’nın çalışma durumunu buradan yönet.")
                 SectionHeader("DERİN SOHBET", "Yerel Gemma 2:2B · Termux / Ollama")
@@ -848,6 +850,94 @@ private fun DashboardLiveMetrics(state: DashboardViewModel.DashboardState) {
 }
 
 @Composable
+private fun NeonBackdrop(modifier: Modifier = Modifier) {
+    Box(modifier.background(Color(0xFF020813))) {
+        Canvas(Modifier.fillMaxSize()) {
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF0B132B), Color(0xFF061020), Color(0xFF020813)),
+                    center = androidx.compose.ui.geometry.Offset(size.width * 0.48f, size.height * 0.28f),
+                    radius = size.maxDimension * 0.9f
+                )
+            )
+            // Layered, restrained nebula clouds give the background the deep-space character of the reference.
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF122A80).copy(alpha = 0.32f), Color(0xFF10204D).copy(alpha = 0.12f), Color.Transparent),
+                    center = androidx.compose.ui.geometry.Offset(size.width * 0.12f, size.height * 0.30f),
+                    radius = size.width * 0.62f
+                )
+            )
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF5A168F).copy(alpha = 0.22f), Color(0xFF25104E).copy(alpha = 0.10f), Color.Transparent),
+                    center = androidx.compose.ui.geometry.Offset(size.width * 0.94f, size.height * 0.43f),
+                    radius = size.width * 0.52f
+                )
+            )
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF005B9A).copy(alpha = 0.16f), Color.Transparent),
+                    center = androidx.compose.ui.geometry.Offset(size.width * 0.45f, size.height * 0.82f),
+                    radius = size.width * 0.58f
+                )
+            )
+            // Fixed, low-contrast star field; deterministic so the backdrop stays calm and legible.
+            val stars = listOf(
+                0.08f to 0.09f, 0.19f to 0.16f, 0.82f to 0.11f, 0.91f to 0.22f,
+                0.12f to 0.31f, 0.73f to 0.27f, 0.36f to 0.39f, 0.88f to 0.42f,
+                0.06f to 0.52f, 0.57f to 0.49f, 0.24f to 0.61f, 0.94f to 0.64f,
+                0.15f to 0.75f, 0.44f to 0.70f, 0.79f to 0.77f, 0.31f to 0.86f,
+                0.67f to 0.91f, 0.91f to 0.84f, 0.52f to 0.12f, 0.27f to 0.24f,
+                0.63f to 0.34f, 0.04f to 0.91f, 0.86f to 0.96f, 0.48f to 0.56f
+            )
+            stars.forEachIndexed { index, point ->
+                val radius = if (index % 5 == 0) 1.35.dp.toPx() else 0.75.dp.toPx()
+                drawCircle(
+                    color = if (index % 4 == 0) Color(0xFF00E5FF).copy(alpha = 0.17f)
+                    else Color.White.copy(alpha = if (index % 3 == 0) 0.13f else 0.07f),
+                    radius = radius,
+                    center = androidx.compose.ui.geometry.Offset(size.width * point.first, size.height * point.second)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GreetingPanel(name: String, time: String, date: String) {
+    val accent = Violet
+    val secondary = Cyan
+    Column(
+        Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(Brush.linearGradient(listOf(Color(0xFF06152D), Color(0xFF0A1028), Color(0xFF170D2B))))
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(9.dp)
+    ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("MERHABA, ${name.uppercase()}", color = secondary, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+            Text("◆ GÜVENLİ • ÖNCE YEREL", color = Color(0xFF68F5B5), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        }
+        Text("Ben Eda.\nBuradayım.", color = Color.White, fontSize = 29.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold)
+        HeroMeta(time, date)
+    }
+}
+
+@Composable
+private fun QuickAccessSection(onVoiceEngines: () -> Unit, onGemmaMode: () -> Unit) {
+    SectionHeader("HIZLI ERİŞİM", "Sık kullanılan Eda araçları")
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(Modifier.weight(1f)) {
+            ControlTile("〰", "SES MOTORLARI", "Vosk • Sherpa • Ollama", Cyan, onVoiceEngines)
+        }
+        Box(Modifier.weight(1f)) {
+            ControlTile("✧", "GEMMA MODU", "Yerel yapay zekâ", Violet, onGemmaMode)
+        }
+    }
+}
+
+@Composable
 private fun DashboardProviderSection(state: DashboardViewModel.DashboardState, onAction: (String) -> Unit) {
     SectionHeader("YAPAY ZEKÂ", "Öncelikli sağlayıcı")
     ProviderPanel(state.aiSaglayici, onAction)
@@ -860,27 +950,103 @@ private fun DashboardLogsSection(state: DashboardViewModel.DashboardState) {
 }
 
 @Composable
-private fun HeroPanel(name: String, time: String, date: String, status: Color, active: Boolean, sleeping: Boolean, onAction: (String) -> Unit) {
-    val shape = themeShape(26)
-    Box(
-        Modifier.fillMaxWidth().clip(shape).background(
-            Brush.linearGradient(listOf(PanelRaised, Panel, Color(ThemeConfig.current.background).copy(alpha = 0.96f))),
-            shape
-        ).padding(20.dp)
+private fun NeonEnergyCore(status: Color, active: Boolean, sleeping: Boolean) {
+    val accent = Violet
+    val secondary = Cyan
+    Box(Modifier.fillMaxWidth().height(238.dp), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize()) {
+            val cx = size.width / 2f
+            val cy = size.height / 2f
+            drawCircle(accent.copy(alpha = 0.62f), size.minDimension * 0.43f, androidx.compose.ui.geometry.Offset(cx, cy), style = Stroke(1.4.dp.toPx()))
+            drawCircle(secondary.copy(alpha = 0.72f), size.minDimension * 0.34f, androidx.compose.ui.geometry.Offset(cx, cy), style = Stroke(2.dp.toPx()))
+            drawCircle(accent.copy(alpha = 0.25f), size.minDimension * 0.49f, androidx.compose.ui.geometry.Offset(cx, cy), style = Stroke(1.dp.toPx()))
+            rotate(18f, pivot = androidx.compose.ui.geometry.Offset(cx, cy)) {
+                drawOval(secondary.copy(alpha = 0.88f), androidx.compose.ui.geometry.Offset(cx - size.width * 0.43f, cy - size.height * 0.18f), androidx.compose.ui.geometry.Size(size.width * 0.86f, size.height * 0.36f), style = Stroke(2.2.dp.toPx()))
+            }
+            rotate(-24f, pivot = androidx.compose.ui.geometry.Offset(cx, cy)) {
+                drawOval(accent.copy(alpha = 0.72f), androidx.compose.ui.geometry.Offset(cx - size.width * 0.40f, cy - size.height * 0.14f), androidx.compose.ui.geometry.Size(size.width * 0.80f, size.height * 0.28f), style = Stroke(1.7.dp.toPx()))
+            }
+            drawCircle(secondary, 5.dp.toPx(), androidx.compose.ui.geometry.Offset(cx + size.width * 0.30f, cy - size.height * 0.25f))
+            drawCircle(accent, 4.dp.toPx(), androidx.compose.ui.geometry.Offset(cx - size.width * 0.34f, cy + size.height * 0.18f))
+        }
+        Box(Modifier.size(112.dp).background(Brush.radialGradient(listOf(secondary.copy(alpha = 0.52f), accent.copy(alpha = 0.34f), Panel)), CircleShape), contentAlignment = Alignment.Center) {
+            Surface(Modifier.fillMaxSize().padding(5.dp), shape = CircleShape, color = Color(ThemeConfig.current.background).copy(alpha = 0.94f), border = BorderStroke(2.dp, Brush.linearGradient(listOf(secondary, accent)))) {
+                Box(contentAlignment = Alignment.Center) { Text("E", fontSize = 58.sp, fontWeight = FontWeight.Light, color = Color.White) }
+            }
+        }
+    }
+    Surface(color = status.copy(alpha = 0.12f), shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Brush.horizontalGradient(listOf(secondary, accent)))) {
+        Row(Modifier.padding(horizontal = 18.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.size(7.dp).background(status, CircleShape))
+            Text(if (active) "EDA DİNLİYOR" else if (sleeping) "UYKU MODUNDA" else "MERKEZ BEKLEMEDE", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
+        }
+    }
+}
+
+@Composable
+private fun NeonActionButton(label: String, icon: String, primary: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(28.dp)
+    val tint = if (primary) Color(0xFF00E5FF) else Color(0xFF9D4EDD)
+    Surface(
+        modifier = Modifier.height(54.dp)
+            .shadow(18.dp, shape, ambientColor = tint.copy(alpha = 0.20f), spotColor = tint.copy(alpha = 0.26f))
+            .clickable(onClick = onClick),
+        shape = shape,
+        color = Color.Transparent,
+        border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(tint, if (primary) Color(0xFF45FFC8) else Color(0xFF00E5FF))))
     ) {
-        when (0) {
+        Box(
+            Modifier.fillMaxSize().background(
+                if (primary) Brush.horizontalGradient(listOf(Color(0xFF00BFD8).copy(alpha = 0.34f), Color(0xFF176B9A).copy(alpha = 0.28f)))
+                else Brush.horizontalGradient(listOf(Color(0xFF9D4EDD).copy(alpha = 0.07f), Color.Transparent))
+            ),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(Modifier.fillMaxSize().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                Text(icon, color = if (primary) Color(0xFF7AF7FF) else Color(0xFFD8A4FF), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(7.dp))
+                Text(label, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeroPanel(name: String, time: String, date: String, status: Color, active: Boolean, sleeping: Boolean, onAction: (String) -> Unit) {
+    val shape = CutCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomEnd = 18.dp, bottomStart = 18.dp)
+    Box(
+        Modifier.fillMaxWidth()
+            .shadow(22.dp, shape, ambientColor = Cyan.copy(alpha = 0.30f), spotColor = Violet.copy(alpha = 0.32f))
+            .clip(shape)
+            .background(
+                Brush.linearGradient(listOf(Color(0xFF071B3B), Color(0xFF03091B), Color(0xFF100B2A))),
+                shape
+            )
+            .then(Modifier.border(1.5.dp, Brush.horizontalGradient(listOf(Cyan, Color(0xFF167DFF), Violet, Cyan)), shape))
+            .padding(18.dp)
+    ) {
+        when (ThemeConfig.current.layoutMode) {
             1 -> Column(
                 Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(ThemeConfig.icon("brand"), color = Violet, fontSize = 35.sp)
-                Text("MERHABA, ${name.uppercase()}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
-                Text("Ben Eda.\nBuradayım.", fontSize = 29.sp, lineHeight = 34.sp,
-                    fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
-                HeroMeta(time, date)
-                HeroActions(active, sleeping, onAction)
-                Text("“Eda” de, konuşmaya başlayalım.", color = Color.White.copy(alpha = .72f), fontSize = 11.sp)
+                Text("EDA MERKEZİ", color = Cyan, fontSize = 11.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold)
+                NeonEnergyCore(status, active, sleeping)
+                Text("Konuşmaya başlamak için Eda'yı uyandır", color = Color.White.copy(alpha = 0.82f), fontSize = 12.sp, textAlign = TextAlign.Center)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(Modifier.weight(1.2f)) {
+                        NeonActionButton(if (active) "EDA AKTİF" else "Eda'yı uyandır", if (active) "●" else "🎙", true) {
+                            onAction("ACTION_AKTIF")
+                        }
+                    }
+                    Box(Modifier.weight(1f)) {
+                        NeonActionButton(if (sleeping) "Uykudan çık" else "Uyku", if (sleeping) "◉" else "☾", false) {
+                            onAction(if (sleeping) "ACTION_AKTIF" else "ACTION_UYKU")
+                        }
+                    }
+                }
+                Text("“Eda” de, konuşmaya başlayalım.", color = Muted, fontSize = 11.sp)
             }
             2 -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1162,7 +1328,7 @@ private fun SectionHeader(title: String, subtitle: String) {
 
 @Composable
 private fun MetricCard(label: String, icon: String, value: String, detail: String, tint: Color, modifier: Modifier = Modifier) {
-    Card(modifier, shape = themeShape(20), colors = CardDefaults.cardColors(containerColor = Panel), border = BorderStroke(1.dp, Violet.copy(alpha = 0.42f))) {
+    Card(modifier.shadow(18.dp, RoundedCornerShape(20.dp), ambientColor = Color(0xFF00E5FF).copy(alpha = 0.15f), spotColor = Color(0xFF9D4EDD).copy(alpha = 0.18f)), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color(0x66102141)), border = BorderStroke(1.dp, Color(0x8000E5FF))) {
         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(ThemeConfig.metricIcon(label, icon), color = tint, fontSize = 17.sp)
@@ -1179,7 +1345,7 @@ private fun MetricCard(label: String, icon: String, value: String, detail: Strin
 @Composable
 private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
     val main = selected.split(" → ").firstOrNull().orEmpty()
-    Column(Modifier.fillMaxWidth().background(Panel, themeShape(20)).padding(14.dp),
+    Column(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Color(0xFF07152D), Color(0xFF10133A))), RoundedCornerShape(22.dp)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Öncelik zinciri", color = Muted, fontSize = 10.sp)
         Text(selected, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
@@ -1206,7 +1372,7 @@ private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
 @Composable
 private fun ControlTile(icon: String, title: String, detail: String, tint: Color, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = themeShape(18),
-        colors = CardDefaults.cardColors(containerColor = Panel), border = BorderStroke(1.dp, Violet.copy(alpha = 0.42f))) {
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF07152D)), border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(tint, Violet, Cyan)))) {
         Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(44.dp).background(tint.copy(alpha = .12f), themeShape(14)),
                 contentAlignment = Alignment.Center) { Text(ThemeConfig.actionIcon(title, icon), color = tint, fontSize = 21.sp) }

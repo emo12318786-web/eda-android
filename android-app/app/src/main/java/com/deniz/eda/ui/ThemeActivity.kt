@@ -34,7 +34,7 @@ class ThemeActivity : Activity() {
             setBackgroundColor(selected.background.toInt())
         }
         val title = TextView(this).apply {
-            text = "EDA • NEON ABYSS"
+            text = "EDA • NEON TEMALAR"
             textSize = 22f
             typeface = ThemeConfig.androidTypeface(
                 selected, android.graphics.Typeface.BOLD or selected.fontStyle
@@ -44,7 +44,7 @@ class ThemeActivity : Activity() {
         }
         root.addView(title)
         val subtitle = TextView(this).apply {
-            text = "Tek tema: siyah zemin, beyaz neon çizgiler ve gri ayrıntılar."
+            text = "Altı farklı tema: renk, yazı tipi, simgeler ve kart biçimini seç."
             textSize = 14f
             typeface = ThemeConfig.androidTypeface(selected)
             setTextColor(selected.muted.toInt())
@@ -69,7 +69,7 @@ class ThemeActivity : Activity() {
                 }
                 isClickable = true
                 isFocusable = true
-                contentDescription = "${item.name}, siyah-beyaz neon tema"
+                contentDescription = "${item.name}, neon tema"
             }
 
             val artworkId = resources.getIdentifier("ic_theme_${item.id}", "drawable", packageName)
@@ -109,7 +109,7 @@ class ThemeActivity : Activity() {
                 setTextColor(AndroidColor.WHITE)
             })
             labels.addView(TextView(this).apply {
-                text = "✓ Tek tema · etkin"
+                text = if (isSelected) "✓ Seçili tema" else "Temayı seç"
                 textSize = 12f
                 typeface = ThemeConfig.androidTypeface(item)
                 setTextColor(item.muted.toInt())
