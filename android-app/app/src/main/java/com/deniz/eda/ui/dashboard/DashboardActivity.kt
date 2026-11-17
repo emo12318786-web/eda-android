@@ -361,32 +361,19 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
 
             if (selectedTab == 0) {
                 // One consistent home order across all themes so the neon orbital core is always visible.
-                when (ThemeConfig.current.layoutMode) {
-                    1 -> {
-                        DashboardProviderSection(state, onAction)
-                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
-                        DashboardLiveMetrics(state)
-                        DashboardLogsSection(state)
+                // Reference-matched home composition: greeting, orbital core, live cards, quick access.
+                GreetingPanel(state.kullaniciAdi, state.saat, state.tarih)
+                HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
+                DashboardLiveMetrics(state)
+                QuickAccessSection(
+                    onVoiceEngines = { selectedTab = 2 },
+                    onGemmaMode = {
+                        onAction("ACTION_AI_OLLAMA")
+                        deepChatOpen = true
                     }
-                    2 -> {
-                        DashboardLiveMetrics(state)
-                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
-                        DashboardProviderSection(state, onAction)
-                        DashboardLogsSection(state)
-                    }
-                    3 -> {
-                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
-                        DashboardLogsSection(state)
-                        DashboardProviderSection(state, onAction)
-                        DashboardLiveMetrics(state)
-                    }
-                    else -> {
-                        HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
-                        DashboardLiveMetrics(state)
-                        DashboardProviderSection(state, onAction)
-                        DashboardLogsSection(state)
-                    }
-                }
+                )
+                DashboardProviderSection(state, onAction)
+                DashboardLogsSection(state)
             } else if (selectedTab == 1) {
                 HeroMini("KONTROL", "Eda’nın çalışma durumunu buradan yönet.")
                 SectionHeader("DERİN SOHBET", "Yerel Gemma 2:2B · Termux / Ollama")
@@ -847,6 +834,39 @@ private fun DashboardLiveMetrics(state: DashboardViewModel.DashboardState) {
         MetricCard("HAFIZA", ThemeConfig.icon("memory"), state.hafizaSayi.toString(), "kayıtlı bilgi", Violet, Modifier.weight(1f))
         MetricCard("HATIRLATMA", ThemeConfig.icon("reminder"), state.hatirlatmaSayi.toString(),
             "bekleyen hatırlatma", Warn, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun GreetingPanel(name: String, time: String, date: String) {
+    val accent = Violet
+    val secondary = Cyan
+    Column(
+        Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(Brush.linearGradient(listOf(Color(0xFF06152D), Color(0xFF0A1028), Color(0xFF170D2B))))
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(9.dp)
+    ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("MERHABA, ${name.uppercase()}", color = secondary, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+            Text("◆ GÜVENLİ • ÖNCE YEREL", color = Color(0xFF68F5B5), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        }
+        Text("Ben Eda.\nBuradayım.", color = Color.White, fontSize = 29.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold)
+        HeroMeta(time, date)
+    }
+}
+
+@Composable
+private fun QuickAccessSection(onVoiceEngines: () -> Unit, onGemmaMode: () -> Unit) {
+    SectionHeader("HIZLI ERİŞİM", "Sık kullanılan Eda araçları")
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(Modifier.weight(1f)) {
+            ControlTile("〰", "SES MOTORLARI", "Vosk • Sherpa • Ollama", Cyan, onVoiceEngines)
+        }
+        Box(Modifier.weight(1f)) {
+            ControlTile("✧", "GEMMA MODU", "Yerel yapay zekâ", Violet, onGemmaMode)
+        }
     }
 }
 
