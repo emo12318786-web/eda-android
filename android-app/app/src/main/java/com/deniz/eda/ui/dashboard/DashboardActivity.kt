@@ -316,7 +316,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
         }
     ) { padding ->
         Box(Modifier.fillMaxSize().background(VoidBlack)) {
-            // Fixed monochrome theme: pure black canvas, no character wallpaper.
+            // The selected neon palette colors the shared dashboard; keep layout and controls consistent across themes.
             Column(
                 Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
                     .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -360,7 +360,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             }
 
             if (selectedTab == 0) {
-                // One fixed monochrome layout; no theme-specific layout variants.
+                // One consistent home order across all themes so the neon orbital core is always visible.
                 when (ThemeConfig.current.layoutMode) {
                     1 -> {
                         DashboardProviderSection(state, onAction)
