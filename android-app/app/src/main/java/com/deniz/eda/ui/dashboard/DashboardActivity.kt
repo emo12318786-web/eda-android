@@ -315,7 +315,8 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             }
         }
     ) { padding ->
-        Box(Modifier.fillMaxSize().background(VoidBlack)) {
+        Box(Modifier.fillMaxSize()) {
+            NeonBackdrop(Modifier.matchParentSize())
             // The selected neon palette colors the shared dashboard; keep layout and controls consistent across themes.
             Column(
                 Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
@@ -838,6 +839,40 @@ private fun DashboardLiveMetrics(state: DashboardViewModel.DashboardState) {
 }
 
 @Composable
+private fun NeonBackdrop(modifier: Modifier = Modifier) {
+    Box(
+        modifier.background(
+            Brush.radialGradient(
+                colors = listOf(Color(0xFF0B132B), Color(0xFF061020), Color(0xFF020813)),
+                center = androidx.compose.ui.geometry.Offset(0.48f * 420f, 0.28f * 900f),
+                radius = 900f
+            )
+        )
+    ) {
+        Canvas(Modifier.fillMaxSize()) {
+            // Fixed, low-contrast star field; deterministic so the backdrop stays calm and legible.
+            val stars = listOf(
+                0.08f to 0.09f, 0.19f to 0.16f, 0.82f to 0.11f, 0.91f to 0.22f,
+                0.12f to 0.31f, 0.73f to 0.27f, 0.36f to 0.39f, 0.88f to 0.42f,
+                0.06f to 0.52f, 0.57f to 0.49f, 0.24f to 0.61f, 0.94f to 0.64f,
+                0.15f to 0.75f, 0.44f to 0.70f, 0.79f to 0.77f, 0.31f to 0.86f,
+                0.67f to 0.91f, 0.91f to 0.84f, 0.52f to 0.12f, 0.27f to 0.24f,
+                0.63f to 0.34f, 0.04f to 0.91f, 0.86f to 0.96f, 0.48f to 0.56f
+            )
+            stars.forEachIndexed { index, point ->
+                val radius = if (index % 5 == 0) 1.35.dp.toPx() else 0.75.dp.toPx()
+                drawCircle(
+                    color = if (index % 4 == 0) Color(0xFF00E5FF).copy(alpha = 0.17f)
+                    else Color.White.copy(alpha = if (index % 3 == 0) 0.13f else 0.07f),
+                    radius = radius,
+                    center = androidx.compose.ui.geometry.Offset(size.width * point.first, size.height * point.second)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun GreetingPanel(name: String, time: String, date: String) {
     val accent = Violet
     val secondary = Cyan
@@ -918,12 +953,28 @@ private fun NeonEnergyCore(status: Color, active: Boolean, sleeping: Boolean) {
 
 @Composable
 private fun NeonActionButton(label: String, icon: String, primary: Boolean, onClick: () -> Unit) {
-    val tint = if (primary) Violet else Cyan
-    Surface(modifier = Modifier.height(54.dp).clickable(onClick = onClick), shape = RoundedCornerShape(28.dp), color = if (primary) tint.copy(alpha = 0.18f) else Color.Transparent, border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(tint, if (primary) Cyan else Violet)))) {
-        Row(Modifier.fillMaxSize().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            Text(icon, color = tint, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.width(7.dp))
-            Text(label, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+    val shape = RoundedCornerShape(28.dp)
+    val tint = if (primary) Color(0xFF00E5FF) else Color(0xFF9D4EDD)
+    Surface(
+        modifier = Modifier.height(54.dp)
+            .shadow(18.dp, shape, ambientColor = tint.copy(alpha = 0.20f), spotColor = tint.copy(alpha = 0.26f))
+            .clickable(onClick = onClick),
+        shape = shape,
+        color = Color.Transparent,
+        border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(tint, if (primary) Color(0xFF45FFC8) else Color(0xFF00E5FF))))
+    ) {
+        Box(
+            Modifier.fillMaxSize().background(
+                if (primary) Brush.horizontalGradient(listOf(Color(0xFF00BFD8).copy(alpha = 0.34f), Color(0xFF176B9A).copy(alpha = 0.28f)))
+                else Brush.horizontalGradient(listOf(Color(0xFF9D4EDD).copy(alpha = 0.07f), Color.Transparent))
+            ),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(Modifier.fillMaxSize().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                Text(icon, color = if (primary) Color(0xFF7AF7FF) else Color(0xFFD8A4FF), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(7.dp))
+                Text(label, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            }
         }
     }
 }
@@ -1240,7 +1291,7 @@ private fun SectionHeader(title: String, subtitle: String) {
 
 @Composable
 private fun MetricCard(label: String, icon: String, value: String, detail: String, tint: Color, modifier: Modifier = Modifier) {
-    Card(modifier, shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF06152D)), border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(Cyan, Violet, Cyan)))) {
+    Card(modifier.shadow(18.dp, RoundedCornerShape(20.dp), ambientColor = Color(0xFF00E5FF).copy(alpha = 0.15f), spotColor = Color(0xFF9D4EDD).copy(alpha = 0.18f)), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color(0x66102141)), border = BorderStroke(1.dp, Color(0x8000E5FF))) {
         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(ThemeConfig.metricIcon(label, icon), color = tint, fontSize = 17.sp)
