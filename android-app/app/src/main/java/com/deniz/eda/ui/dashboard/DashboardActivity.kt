@@ -882,7 +882,7 @@ private fun CommandCenterHome(
                         onClick = { onAction(if (active) "ACTION_UYKU" else "ACTION_AKTIF") },
                         modifier = Modifier.weight(1f).height(48.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = BrushlessNeonColor(), contentColor = VoidBlack)
+                        colors = ButtonDefaults.buttonColors(containerColor = Violet, contentColor = VoidBlack)
                     ) { Text(if (active) "Beklemeye al" else "Eda'yı uyandır", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
                     OutlinedButton(
                         onClick = { onAction("ACTION_STOP") },
