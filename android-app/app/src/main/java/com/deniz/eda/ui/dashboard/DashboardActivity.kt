@@ -859,6 +859,28 @@ private fun NeonBackdrop(modifier: Modifier = Modifier) {
                     radius = size.maxDimension * 0.9f
                 )
             )
+            // Layered, restrained nebula clouds give the background the deep-space character of the reference.
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF122A80).copy(alpha = 0.32f), Color(0xFF10204D).copy(alpha = 0.12f), Color.Transparent),
+                    center = androidx.compose.ui.geometry.Offset(size.width * 0.12f, size.height * 0.30f),
+                    radius = size.width * 0.62f
+                )
+            )
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF5A168F).copy(alpha = 0.22f), Color(0xFF25104E).copy(alpha = 0.10f), Color.Transparent),
+                    center = androidx.compose.ui.geometry.Offset(size.width * 0.94f, size.height * 0.43f),
+                    radius = size.width * 0.52f
+                )
+            )
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF005B9A).copy(alpha = 0.16f), Color.Transparent),
+                    center = androidx.compose.ui.geometry.Offset(size.width * 0.45f, size.height * 0.82f),
+                    radius = size.width * 0.58f
+                )
+            )
             // Fixed, low-contrast star field; deterministic so the backdrop stays calm and legible.
             val stars = listOf(
                 0.08f to 0.09f, 0.19f to 0.16f, 0.82f to 0.11f, 0.91f to 0.22f,
@@ -990,7 +1012,7 @@ private fun NeonActionButton(label: String, icon: String, primary: Boolean, onCl
 
 @Composable
 private fun HeroPanel(name: String, time: String, date: String, status: Color, active: Boolean, sleeping: Boolean, onAction: (String) -> Unit) {
-    val shape = themeShape(26)
+    val shape = CutCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomEnd = 18.dp, bottomStart = 18.dp)
     Box(
         Modifier.fillMaxWidth()
             .shadow(22.dp, shape, ambientColor = Cyan.copy(alpha = 0.30f), spotColor = Violet.copy(alpha = 0.32f))
