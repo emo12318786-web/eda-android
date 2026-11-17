@@ -17,6 +17,7 @@ class ThemeConfigTest {
         assertEquals("Theme IDs must be unique", profiles.size, profiles.map { it.id }.distinct().size)
         assertTrue("Every theme needs a distinct display name", profiles.all { it.name.isNotBlank() })
         assertTrue("Every theme needs a valid layout mode", profiles.all { it.layoutMode in 0..13 })
+        assertEquals("All themes must keep the same home order and neon orbital core", setOf(1), profiles.map { it.layoutMode }.toSet())
     }
 
     @Test
