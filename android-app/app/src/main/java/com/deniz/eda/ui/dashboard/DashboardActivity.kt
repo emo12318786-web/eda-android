@@ -774,7 +774,7 @@ private fun CommandCenterTopBar(
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text("E D A", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
-            Text("AI COMMAND CENTER  /  V5", color = Muted, fontSize = 8.sp, letterSpacing = 1.4.sp)
+            Text("YAPAY ZEKÂ KOMUTA MERKEZİ  /  V5", color = Muted, fontSize = 8.sp, letterSpacing = 1.4.sp)
         }
         IconButton(onClick = onTheme) {
             Text("◈", color = Cyan, fontSize = 22.sp)
@@ -787,7 +787,7 @@ private fun CommandCenterTopBar(
             Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(6.dp).background(statusColor, CircleShape))
                 Spacer(Modifier.width(6.dp))
-                Text(if (active) "LIVE" else if (sleeping) "SLEEP" else "OFF",
+                Text(if (active) "AKTİF" else if (sleeping) "BEKLEME" else "KAPALI",
                     color = statusColor, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = .8.sp)
             }
         }
@@ -811,15 +811,15 @@ private fun CommandCenterHome(
         animationSpec = infiniteRepeatable(animation = tween(1900), repeatMode = RepeatMode.Reverse),
         label = "orb-scale"
     )
-    val modeLabel = if (active) "LISTENING READY" else if (sleeping) "LOW POWER STANDBY" else "CORE OFFLINE"
+    val modeLabel = if (active) "DİNLEMEYE HAZIR" else if (sleeping) "DÜŞÜK GÜÇ BEKLEMESİ" else "MERKEZ ÇEVRİMDIŞI"
     Column(verticalArrangement = Arrangement.spacedBy(17.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
             Column(Modifier.weight(1f)) {
-                Text("SYSTEM OVERVIEW", color = Cyan, fontSize = 9.sp, letterSpacing = 2.2.sp, fontWeight = FontWeight.Bold)
+                Text("SİSTEM ÖZETİ", color = Cyan, fontSize = 9.sp, letterSpacing = 2.2.sp, fontWeight = FontWeight.Bold)
                 Text("Merhaba, ${state.kullaniciAdi.ifBlank { "Deniz" }}", color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.SemiBold)
                 Text("${state.saat}   ·   ${state.tarih}", color = Muted, fontSize = 10.sp)
             }
-            Text("SECURE  •  LOCAL FIRST", color = Good, fontSize = 8.sp, letterSpacing = 1.sp)
+            Text("GÜVENLİ  •  ÖNCE YEREL", color = Good, fontSize = 8.sp, letterSpacing = 1.sp)
         }
 
         // Command core: the visual anchor of the rebuilt dashboard.
@@ -833,7 +833,7 @@ private fun CommandCenterHome(
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                Text("EDA NEURAL CORE", color = Muted, fontSize = 9.sp, letterSpacing = 2.5.sp)
+                Text("EDA MERKEZİ", color = Muted, fontSize = 9.sp, letterSpacing = 2.5.sp)
                 Box(Modifier.size((174 * orbScale).dp), contentAlignment = Alignment.Center) {
                     Box(Modifier.fillMaxSize().background(
                         Brush.radialGradient(listOf(Cyan.copy(alpha = .20f), Violet.copy(alpha = .12f), Color.Transparent)),
@@ -875,14 +875,14 @@ private fun CommandCenterHome(
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             MetricCard("BATARYA", "ϟ", "${state.pilYuzde}%", state.pilDurum, Good, Modifier.weight(1f))
-            MetricCard("BAĞLANTI", "⌁", if (state.internetStatus) "ONLINE" else "OFFLINE", "Ağ durumu", Cyan, Modifier.weight(1f))
+            MetricCard("BAĞLANTI", "⌁", if (state.internetStatus) "ÇEVRİMİÇİ" else "ÇEVRİMDIŞI", "Ağ durumu", Cyan, Modifier.weight(1f))
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıtlı bilgi", Violet, Modifier.weight(1f))
             MetricCard("HATIRLATMA", "◷", state.hatirlatmaSayi.toString(), "bekleyen görev", Warn, Modifier.weight(1f))
         }
 
-        SectionHeader("QUICK LAUNCH", "Eda'nın akıllı araçlarına doğrudan eriş")
+        SectionHeader("HIZLI ERİŞİM", "Eda'nın akıllı araçlarına doğrudan eriş")
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             QuickLaunchCard("✧", "Derin sohbet", "Gemma · Ollama", Violet, Modifier.weight(1f), onDeepChat)
             QuickLaunchCard("⌘", "Jarvis", "Telefon ajanı", Cyan, Modifier.weight(1f), onJarvis)
@@ -892,10 +892,10 @@ private fun CommandCenterHome(
             QuickLaunchCard("▦", "Sistem", "Motorlar ve tanılama", Warn, Modifier.weight(1f)) { onAction("ACTION_SETTINGS") }
         }
 
-        SectionHeader("AI ROUTING", "Öncelik sırası ve sağlayıcı seçimi")
+        SectionHeader("YAPAY ZEKÂ YÖNLENDİRME", "Öncelik sırası ve sağlayıcı seçimi")
         ProviderPanel(state.aiSaglayici, onAction)
 
-        SectionHeader("RECENT ACTIVITY", "Son olaylar ve kayıtlar")
+        SectionHeader("SON HAREKETLER", "Son olaylar ve kayıtlar")
         LogsPanel(state.sonLoglar)
     }
 }
@@ -1129,7 +1129,7 @@ private fun ThemeHeroVariant(
             Column(Modifier.width(82.dp), horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(emblem, color = Violet, fontSize = 55.sp)
-                Text(if (active) "ONLINE" else "OFFLINE", color = status, fontSize = 8.sp)
+                Text(if (active) "ÇEVRİMİÇİ" else "ÇEVRİMDIŞI", color = status, fontSize = 8.sp)
             }
         }
         10 -> Row(verticalAlignment = Alignment.CenterVertically) {
