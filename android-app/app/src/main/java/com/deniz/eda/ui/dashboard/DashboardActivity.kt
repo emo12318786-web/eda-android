@@ -840,16 +840,15 @@ private fun DashboardLiveMetrics(state: DashboardViewModel.DashboardState) {
 
 @Composable
 private fun NeonBackdrop(modifier: Modifier = Modifier) {
-    Box(
-        modifier.background(
-            Brush.radialGradient(
-                colors = listOf(Color(0xFF0B132B), Color(0xFF061020), Color(0xFF020813)),
-                center = androidx.compose.ui.geometry.Offset(0.48f * 420f, 0.28f * 900f),
-                radius = 900f
-            )
-        )
-    ) {
+    Box(modifier.background(Color(0xFF020813))) {
         Canvas(Modifier.fillMaxSize()) {
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF0B132B), Color(0xFF061020), Color(0xFF020813)),
+                    center = androidx.compose.ui.geometry.Offset(size.width * 0.48f, size.height * 0.28f),
+                    radius = size.maxDimension * 0.9f
+                )
+            )
             // Fixed, low-contrast star field; deterministic so the backdrop stays calm and legible.
             val stars = listOf(
                 0.08f to 0.09f, 0.19f to 0.16f, 0.82f to 0.11f, 0.91f to 0.22f,
