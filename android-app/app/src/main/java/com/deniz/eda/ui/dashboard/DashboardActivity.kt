@@ -1240,7 +1240,7 @@ private fun SectionHeader(title: String, subtitle: String) {
 
 @Composable
 private fun MetricCard(label: String, icon: String, value: String, detail: String, tint: Color, modifier: Modifier = Modifier) {
-    Card(modifier, shape = themeShape(20), colors = CardDefaults.cardColors(containerColor = Panel), border = BorderStroke(1.dp, Violet.copy(alpha = 0.42f))) {
+    Card(modifier, shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF06152D)), border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(Cyan, Violet, Cyan)))) {
         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(ThemeConfig.metricIcon(label, icon), color = tint, fontSize = 17.sp)
@@ -1257,7 +1257,7 @@ private fun MetricCard(label: String, icon: String, value: String, detail: Strin
 @Composable
 private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
     val main = selected.split(" → ").firstOrNull().orEmpty()
-    Column(Modifier.fillMaxWidth().background(Panel, themeShape(20)).padding(14.dp),
+    Column(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Color(0xFF07152D), Color(0xFF10133A))), RoundedCornerShape(22.dp)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Öncelik zinciri", color = Muted, fontSize = 10.sp)
         Text(selected, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
@@ -1284,7 +1284,7 @@ private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
 @Composable
 private fun ControlTile(icon: String, title: String, detail: String, tint: Color, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = themeShape(18),
-        colors = CardDefaults.cardColors(containerColor = Panel), border = BorderStroke(1.dp, Violet.copy(alpha = 0.42f))) {
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF07152D)), border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(tint, Violet, Cyan)))) {
         Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(44.dp).background(tint.copy(alpha = .12f), themeShape(14)),
                 contentAlignment = Alignment.Center) { Text(ThemeConfig.actionIcon(title, icon), color = tint, fontSize = 21.sp) }
