@@ -30,12 +30,12 @@ object ThemeConfig {
 
     // EDA visual rebirth: distinct, persistent skins. Palette changes never alter assistant behavior.
     val palettes = listOf(
-        Palette("aurora", "Aurora Camı", 0xFF07131C, 0xFF102633, 0xFF183746, 0xFF5CF2C2, 0xFF80CFFF, 0xFF91A8B5, "sans-serif", Typeface.NORMAL, "eclipse", "soft", 0),
+        Palette("aurora", "Aurora Camı", 0xFF07131C, 0xFF102633, 0xFF183746, 0xFF5CF2C2, 0xFF80CFFF, 0xFF91A8B5, "sans-serif", Typeface.NORMAL, "eclipse", "soft", 1),
         Palette("ember", "Bulutsu Çekirdek", 0xFF030A19, 0xFF071A2B, 0xFF0D2940, 0xFF16D9FF, 0xFF9B78FF, 0xFF91B8D0, "sans-serif", Typeface.NORMAL, "geometric", "soft", 1),
-        Palette("arctic", "Kutup Nabzı", 0xFF07111F, 0xFF101F35, 0xFF1B3150, 0xFF71D7FF, 0xFFA5B4FC, 0xFF9AAFC8, "sans-serif", Typeface.NORMAL, "geometric", "round", 2),
-        Palette("orchid", "Orkide Rüyası", 0xFF130C20, 0xFF211632, 0xFF322044, 0xFFE3A5FF, 0xFF9FBAFF, 0xFFB5A8C8, "sans-serif", Typeface.NORMAL, "arcane", "soft", 3),
-        Palette("solar", "Güneş Patlaması", 0xFF171107, 0xFF2B2110, 0xFF403019, 0xFFFFD166, 0xFFFF9F68, 0xFFC7B99C, "sans-serif-medium", Typeface.NORMAL, "solar", "pill", 4),
-        Palette("stealth", "Gizli Titanyum", 0xFF101214, 0xFF1A1F22, 0xFF272E32, 0xFFD0E2E8, 0xFF7DE2D1, 0xFF9BA9AE, "sans-serif-condensed", Typeface.NORMAL, "cyber", "sharp", 5)
+        Palette("arctic", "Kutup Nabzı", 0xFF07111F, 0xFF101F35, 0xFF1B3150, 0xFF71D7FF, 0xFFA5B4FC, 0xFF9AAFC8, "sans-serif", Typeface.NORMAL, "geometric", "round", 1),
+        Palette("orchid", "Orkide Rüyası", 0xFF130C20, 0xFF211632, 0xFF322044, 0xFFE3A5FF, 0xFF9FBAFF, 0xFFB5A8C8, "sans-serif", Typeface.NORMAL, "arcane", "soft", 1),
+        Palette("solar", "Güneş Patlaması", 0xFF171107, 0xFF2B2110, 0xFF403019, 0xFFFFD166, 0xFFFF9F68, 0xFFC7B99C, "sans-serif-medium", Typeface.NORMAL, "solar", "pill", 1),
+        Palette("stealth", "Gizli Titanyum", 0xFF101214, 0xFF1A1F22, 0xFF272E32, 0xFFD0E2E8, 0xFF7DE2D1, 0xFF9BA9AE, "sans-serif-condensed", Typeface.NORMAL, "cyber", "sharp", 1)
     )
 
     fun selectedId(context: Context): String {
