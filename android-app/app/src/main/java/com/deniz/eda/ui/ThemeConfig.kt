@@ -31,7 +31,7 @@ object ThemeConfig {
     // EDA visual rebirth: distinct, persistent skins. Palette changes never alter assistant behavior.
     val palettes = listOf(
         Palette("aurora", "Aurora Glass", 0xFF07131C, 0xFF102633, 0xFF183746, 0xFF5CF2C2, 0xFF80CFFF, 0xFF91A8B5, "sans-serif", Typeface.NORMAL, "eclipse", "soft", 0),
-        Palette("ember", "Ember Circuit", 0xFF160B12, 0xFF29121D, 0xFF3A1B28, 0xFFFF7A59, 0xFFFFC078, 0xFFB99AA5, "sans-serif-medium", Typeface.NORMAL, "dragon", "cut", 1),
+        Palette("ember", "Nebula Core", 0xFF030A19, 0xFF071A2B, 0xFF0D2940, 0xFF16D9FF, 0xFF9B78FF, 0xFF91B8D0, "sans-serif", Typeface.NORMAL, "geometric", "soft", 1),
         Palette("arctic", "Arctic Pulse", 0xFF07111F, 0xFF101F35, 0xFF1B3150, 0xFF71D7FF, 0xFFA5B4FC, 0xFF9AAFC8, "sans-serif", Typeface.NORMAL, "geometric", "round", 2),
         Palette("orchid", "Orchid Dream", 0xFF130C20, 0xFF211632, 0xFF322044, 0xFFE3A5FF, 0xFF9FBAFF, 0xFFB5A8C8, "sans-serif", Typeface.NORMAL, "arcane", "soft", 3),
         Palette("solar", "Solar Flare", 0xFF171107, 0xFF2B2110, 0xFF403019, 0xFFFFD166, 0xFFFF9F68, 0xFFC7B99C, "sans-serif-medium", Typeface.NORMAL, "solar", "pill", 4),
