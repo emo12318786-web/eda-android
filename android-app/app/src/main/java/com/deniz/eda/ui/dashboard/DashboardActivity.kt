@@ -326,18 +326,20 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 // The monogram silhouette is part of the selected skin, not a permanent circle.
-                val logoShape = themeShape(27)
+                val logoShape = CircleShape
                 Box(
-                    Modifier.size(54.dp).background(
-                        Brush.linearGradient(listOf(PanelRaised, Panel, Violet.copy(alpha = 0.55f))), logoShape
-                    ),
+                    Modifier.size(58.dp)
+                        .shadow(16.dp, CircleShape, ambientColor = Cyan.copy(alpha = 0.55f), spotColor = Violet.copy(alpha = 0.65f))
+                        .background(
+                            Brush.radialGradient(listOf(Color(0xFF162C67), Color(0xFF080D26), Color(0xFF020813))), logoShape
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Surface(
                         modifier = Modifier.fillMaxSize().padding(2.dp),
-                        shape = themeShape(25),
+                        shape = CircleShape,
                         color = Color.Transparent,
-                        border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(Violet, Cyan)))
+                        border = BorderStroke(2.dp, Brush.sweepGradient(listOf(Cyan, Violet, Color(0xFF167DFF), Cyan)))
                     ) {}
                     Text("E", color = Color.White, fontSize = 29.sp, fontWeight = FontWeight.Black)
                     Box(Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 8.dp)
@@ -364,7 +366,14 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             if (selectedTab == 0) {
                 // One consistent home order across all themes so the neon orbital core is always visible.
                 // Reference-matched home composition: greeting, orbital core, live cards, quick access.
-                GreetingPanel(state.kullaniciAdi, state.saat, state.tarih)
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(state.saat, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Light)
+                    Text("•  ${state.tarih}", color = Color.White.copy(alpha = 0.78f), fontSize = 11.sp)
+                }
                 HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
                 DashboardLiveMetrics(state)
                 QuickAccessSection(
@@ -983,10 +992,15 @@ private fun NeonActionButton(label: String, icon: String, primary: Boolean, onCl
 private fun HeroPanel(name: String, time: String, date: String, status: Color, active: Boolean, sleeping: Boolean, onAction: (String) -> Unit) {
     val shape = themeShape(26)
     Box(
-        Modifier.fillMaxWidth().clip(shape).background(
-            Brush.linearGradient(listOf(PanelRaised, Panel, Color(ThemeConfig.current.background).copy(alpha = 0.96f))),
-            shape
-        ).padding(20.dp)
+        Modifier.fillMaxWidth()
+            .shadow(22.dp, shape, ambientColor = Cyan.copy(alpha = 0.30f), spotColor = Violet.copy(alpha = 0.32f))
+            .clip(shape)
+            .background(
+                Brush.linearGradient(listOf(Color(0xFF071B3B), Color(0xFF03091B), Color(0xFF100B2A))),
+                shape
+            )
+            .then(Modifier.border(1.5.dp, Brush.horizontalGradient(listOf(Cyan, Color(0xFF167DFF), Violet, Cyan)), shape))
+            .padding(18.dp)
     ) {
         when (ThemeConfig.current.layoutMode) {
             1 -> Column(
