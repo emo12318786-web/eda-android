@@ -358,7 +358,7 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
 
             if (selectedTab == 0) {
                 // One fixed monochrome layout; no theme-specific layout variants.
-                when (0) {
+                when (ThemeConfig.current.layoutMode) {
                     1 -> {
                         DashboardProviderSection(state, onAction)
                         HeroPanel(state.kullaniciAdi, state.saat, state.tarih, statusColor, active, sleeping, onAction)
@@ -868,7 +868,7 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
             shape
         ).padding(20.dp)
     ) {
-        when (0) {
+        when (ThemeConfig.current.layoutMode) {
             1 -> Column(
                 Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
