@@ -928,12 +928,12 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
                 Text("Konuşmaya başlamak için Eda'yı uyandır", color = Color.White.copy(alpha = 0.82f), fontSize = 12.sp, textAlign = TextAlign.Center)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Box(Modifier.weight(1.2f)) {
-                        NeonActionButton(if (active) "Dinlemeyi durdur" else "Eda'yı uyandır", if (active) "Ⅱ" else "🎙", true) {
-                            onAction(if (active) "ACTION_DURDUR" else "ACTION_AKTIF")
+                        NeonActionButton(if (active) "EDA AKTİF" else "Eda'yı uyandır", if (active) "●" else "🎙", true) {
+                            onAction("ACTION_AKTIF")
                         }
                     }
                     Box(Modifier.weight(1f)) {
-                        NeonActionButton(if (sleeping) "Uykudan çık" else "Bekle", if (sleeping) "◉" else "☾", false) {
+                        NeonActionButton(if (sleeping) "Uykudan çık" else "Uyku", if (sleeping) "◉" else "☾", false) {
                             onAction(if (sleeping) "ACTION_AKTIF" else "ACTION_UYKU")
                         }
                     }
