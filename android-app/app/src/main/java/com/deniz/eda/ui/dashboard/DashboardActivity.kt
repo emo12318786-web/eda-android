@@ -20,6 +20,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
@@ -860,6 +863,52 @@ private fun DashboardLogsSection(state: DashboardViewModel.DashboardState) {
 }
 
 @Composable
+private fun NeonEnergyCore(status: Color, active: Boolean, sleeping: Boolean) {
+    val accent = Violet
+    val secondary = Cyan
+    Box(Modifier.fillMaxWidth().height(238.dp), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize()) {
+            val cx = size.width / 2f
+            val cy = size.height / 2f
+            drawCircle(accent.copy(alpha = 0.62f), size.minDimension * 0.43f, androidx.compose.ui.geometry.Offset(cx, cy), style = Stroke(1.4.dp.toPx()))
+            drawCircle(secondary.copy(alpha = 0.72f), size.minDimension * 0.34f, androidx.compose.ui.geometry.Offset(cx, cy), style = Stroke(2.dp.toPx()))
+            drawCircle(accent.copy(alpha = 0.25f), size.minDimension * 0.49f, androidx.compose.ui.geometry.Offset(cx, cy), style = Stroke(1.dp.toPx()))
+            rotate(18f, pivot = androidx.compose.ui.geometry.Offset(cx, cy)) {
+                drawOval(secondary.copy(alpha = 0.88f), androidx.compose.ui.geometry.Offset(cx - size.width * 0.43f, cy - size.height * 0.18f), androidx.compose.ui.geometry.Size(size.width * 0.86f, size.height * 0.36f), style = Stroke(2.2.dp.toPx()))
+            }
+            rotate(-24f, pivot = androidx.compose.ui.geometry.Offset(cx, cy)) {
+                drawOval(accent.copy(alpha = 0.72f), androidx.compose.ui.geometry.Offset(cx - size.width * 0.40f, cy - size.height * 0.14f), androidx.compose.ui.geometry.Size(size.width * 0.80f, size.height * 0.28f), style = Stroke(1.7.dp.toPx()))
+            }
+            drawCircle(secondary, 5.dp.toPx(), androidx.compose.ui.geometry.Offset(cx + size.width * 0.30f, cy - size.height * 0.25f))
+            drawCircle(accent, 4.dp.toPx(), androidx.compose.ui.geometry.Offset(cx - size.width * 0.34f, cy + size.height * 0.18f))
+        }
+        Box(Modifier.size(112.dp).background(Brush.radialGradient(listOf(secondary.copy(alpha = 0.52f), accent.copy(alpha = 0.34f), Panel)), CircleShape), contentAlignment = Alignment.Center) {
+            Surface(Modifier.fillMaxSize().padding(5.dp), shape = CircleShape, color = Color(ThemeConfig.current.background).copy(alpha = 0.94f), border = BorderStroke(2.dp, Brush.linearGradient(listOf(secondary, accent)))) {
+                Box(contentAlignment = Alignment.Center) { Text("E", fontSize = 58.sp, fontWeight = FontWeight.Light, color = Color.White) }
+            }
+        }
+    }
+    Surface(color = status.copy(alpha = 0.12f), shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Brush.horizontalGradient(listOf(secondary, accent)))) {
+        Row(Modifier.padding(horizontal = 18.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.size(7.dp).background(status, CircleShape))
+            Text(if (active) "EDA DİNLİYOR" else if (sleeping) "UYKU MODUNDA" else "MERKEZ BEKLEMEDE", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
+        }
+    }
+}
+
+@Composable
+private fun NeonActionButton(label: String, icon: String, primary: Boolean, onClick: () -> Unit) {
+    val tint = if (primary) Violet else Cyan
+    Surface(modifier = Modifier.height(54.dp).clickable(onClick = onClick), shape = RoundedCornerShape(28.dp), color = if (primary) tint.copy(alpha = 0.18f) else Color.Transparent, border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(tint, if (primary) Cyan else Violet)))) {
+        Row(Modifier.fillMaxSize().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            Text(icon, color = tint, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.width(7.dp))
+            Text(label, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        }
+    }
+}
+
+@Composable
 private fun HeroPanel(name: String, time: String, date: String, status: Color, active: Boolean, sleeping: Boolean, onAction: (String) -> Unit) {
     val shape = themeShape(26)
     Box(
@@ -872,15 +921,24 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
             1 -> Column(
                 Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(ThemeConfig.icon("brand"), color = Violet, fontSize = 35.sp)
-                Text("MERHABA, ${name.uppercase()}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
-                Text("Ben Eda.\nBuradayım.", fontSize = 29.sp, lineHeight = 34.sp,
-                    fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
-                HeroMeta(time, date)
-                HeroActions(active, sleeping, onAction)
-                Text("“Eda” de, konuşmaya başlayalım.", color = Color.White.copy(alpha = .72f), fontSize = 11.sp)
+                Text("EDA MERKEZİ", color = Cyan, fontSize = 11.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold)
+                NeonEnergyCore(status, active, sleeping)
+                Text("Konuşmaya başlamak için Eda'yı uyandır", color = Color.White.copy(alpha = 0.82f), fontSize = 12.sp, textAlign = TextAlign.Center)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(Modifier.weight(1.2f)) {
+                        NeonActionButton(if (active) "Dinlemeyi durdur" else "Eda'yı uyandır", if (active) "Ⅱ" else "🎙", true) {
+                            onAction(if (active) "ACTION_DURDUR" else "ACTION_AKTIF")
+                        }
+                    }
+                    Box(Modifier.weight(1f)) {
+                        NeonActionButton(if (sleeping) "Uykudan çık" else "Bekle", if (sleeping) "◉" else "☾", false) {
+                            onAction(if (sleeping) "ACTION_AKTIF" else "ACTION_UYKU")
+                        }
+                    }
+                }
+                Text("“Eda” de, konuşmaya başlayalım.", color = Muted, fontSize = 11.sp)
             }
             2 -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
