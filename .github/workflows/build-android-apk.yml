@@ -169,13 +169,23 @@ jobs:
           APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
           test -s "$APK"
           test -s "$KEY"
+          # Force the final APK to use the exact repository-stable CI keystore.
+          # Gradle's default debug signer can differ from this key in some CI setups.
+          "$APKSIGNER" sign --ks "$KEY" --ks-key-alias androiddebugkey \
+            --ks-pass pass:android --key-pass pass:android "$APK"
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee ../eda-signature-report.txt
           keytool -list -v -keystore "$KEY" -storepass android -alias androiddebugkey > ../eda-keystore-report.txt
-          echo "=== CI keystore certificate ===" >> ../eda-signature-report.txt
-          grep -E 'SHA256:|SHA-256:' ../eda-keystore-report.txt | head -1 >> ../eda-signature-report.txt
-          echo "=== APK signing certificate ==="
-          grep -E 'Signer #1 certificate SHA-256 digest|Signer #1 certificate DN' ../eda-signature-report.txt
-          echo "Signature verification report generated."
+          APK_CERT="$(grep 'Signer #1 certificate SHA-256 digest' ../eda-signature-report.txt | awk '{print $NF}' | tr '[:upper:]' '[:lower:]')"
+          KEY_CERT="$(grep -E 'SHA256:|SHA-256:' ../eda-keystore-report.txt | head -1 | awk '{print $NF}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          echo "=== CI keystore certificate SHA-256 (normalized) ===" >> ../eda-signature-report.txt
+          echo "$KEY_CERT" >> ../eda-signature-report.txt
+          echo "APK certificate SHA-256: $APK_CERT"
+          echo "Keystore certificate SHA-256: $KEY_CERT"
+          if [ "$APK_CERT" != "$KEY_CERT" ]; then
+            echo "ERROR: APK signer does not match the CI keystore."
+            exit 1
+          fi
+          echo "Signature verification and signer-to-keystore match passed."
 
       - name: Upload signing diagnostic report
         if: always()
