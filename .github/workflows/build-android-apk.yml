@@ -158,6 +158,36 @@ jobs:
           echo "=== build ==="
           gradle testStandardDebugUnitTest assembleStandardDebug assemblePreviewDebug --stacktrace --no-daemon
 
+      - name: Verify APK signing certificate and write report
+        if: success()
+        working-directory: android-app
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/standard/debug/app-standard-debug.apk"
+          KEY="$HOME/.android/debug.keystore"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          test -s "$APK"
+          test -s "$KEY"
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee ../eda-signature-report.txt
+          keytool -list -v -keystore "$KEY" -storepass android -alias androiddebugkey > ../eda-keystore-report.txt
+          echo "=== CI keystore certificate ===" >> ../eda-signature-report.txt
+          grep -E 'SHA256:|SHA-256:' ../eda-keystore-report.txt | head -1 >> ../eda-signature-report.txt
+          echo "=== APK signing certificate ==="
+          grep -E 'Signer #1 certificate SHA-256 digest|Signer #1 certificate DN' ../eda-signature-report.txt
+          echo "Signature verification report generated."
+
+      - name: Upload signing diagnostic report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eda-signature-diagnostic
+          path: |
+            eda-signature-report.txt
+            eda-keystore-report.txt
+          if-no-files-found: ignore
+          retention-days: 30
+
       - name: Upload standard APK (updates matching-signature install)
         if: success()
         uses: actions/upload-artifact@v4
