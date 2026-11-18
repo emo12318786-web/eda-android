@@ -1513,3 +1513,94 @@ private fun themeShape(baseDp: Int): Shape {
         else -> RoundedCornerShape(radius)
     }
 }
+
+ 
+// Neon dashboard primitives: custom battery, network bars, starfield and glass quick cards.
+@Composable
+private fun BatteryGlyph(percent: Int, tint: Color, modifier: Modifier = Modifier.size(width = 34.dp, height = 56.dp)) {
+    Canvas(modifier) {
+        val w = size.width
+        val capH = 6.dp.toPx()
+        val bodyTop = capH
+        val bodyH = size.height - capH
+        drawRoundRect(tint.copy(alpha = 0.9f), Offset(w * 0.3f, 0f),
+            Size(w * 0.4f, capH - 1.dp.toPx()), CornerRadius(2.dp.toPx()))
+        drawRoundRect(tint.copy(alpha = 0.9f), Offset(0f, bodyTop), Size(w, bodyH),
+            CornerRadius(6.dp.toPx()), style = Stroke(2.dp.toPx()))
+        val pad = 4.dp.toPx()
+        val innerH = (bodyH - pad * 2).coerceAtLeast(0f)
+        val fillH = innerH * (percent.coerceIn(0, 100) / 100f)
+        if (fillH > 0f) {
+            drawRoundRect(Brush.verticalGradient(listOf(tint, tint.copy(alpha = 0.45f))),
+                Offset(pad, bodyTop + pad + (innerH - fillH)),
+                Size((w - pad * 2).coerceAtLeast(0f), fillH), CornerRadius(3.dp.toPx()))
+        }
+    }
+}
+
+@Composable
+private fun SignalBars(level: Int, tint: Color, modifier: Modifier = Modifier.size(width = 52.dp, height = 36.dp)) {
+    Canvas(modifier) {
+        val n = 5
+        val gap = 4.dp.toPx()
+        val bw = (size.width - gap * (n - 1)) / n
+        for (i in 0 until n) {
+            val h = size.height * (0.28f + 0.72f * (i + 1) / n)
+            drawRoundRect(if (i < level.coerceIn(0, 5)) tint else tint.copy(alpha = 0.22f),
+                Offset(i * (bw + gap), size.height - h), Size(bw, h), CornerRadius(3.dp.toPx()))
+        }
+    }
+}
+
+private fun Modifier.starfield(count: Int = 90, seed: Long = 7L): Modifier = drawBehind {
+    val rnd = java.util.Random(seed)
+    repeat(count) {
+        val alpha = 0.15f + rnd.nextFloat() * 0.5f
+        val radius = (0.6f + rnd.nextFloat() * 1.4f).dp.toPx()
+        drawCircle(Color.White.copy(alpha = alpha), radius,
+            Offset(rnd.nextFloat() * size.width, rnd.nextFloat() * size.height))
+    }
+}
+
+@Composable
+private fun SafeLocalBadge(modifier: Modifier = Modifier) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("🛡", fontSize = 14.sp)
+        Text("GÜVENLİ", color = Color(0xFF2BFF88), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Text("•", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp)
+        Text("ÖNCE YEREL", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+    }
+}
+
+@Composable
+private fun QuickAccessCard(
+    title: String,
+    subtitle: String,
+    icon: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier.shadow(18.dp, RoundedCornerShape(20.dp),
+            ambientColor = Cyan.copy(alpha = 0.18f), spotColor = Violet.copy(alpha = 0.20f))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0x99102141)),
+        border = BorderStroke(1.2.dp, Brush.horizontalGradient(
+            listOf(Cyan.copy(alpha = 0.55f), Violet.copy(alpha = 0.45f))))
+    ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+            Surface(shape = RoundedCornerShape(14.dp), color = Cyan.copy(alpha = 0.10f),
+                border = BorderStroke(1.dp, Cyan.copy(alpha = 0.35f))) {
+                Text(icon, fontSize = 20.sp, modifier = Modifier.padding(8.dp))
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(title, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.3.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(subtitle, color = Cyan.copy(alpha = 0.85f), fontSize = 9.sp,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
