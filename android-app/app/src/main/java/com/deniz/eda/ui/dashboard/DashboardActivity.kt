@@ -27,6 +27,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -837,15 +839,41 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
 private fun DashboardLiveMetrics(state: DashboardViewModel.DashboardState) {
     SectionHeader("CANLI DURUM", "Telefon ve Eda’nın durumu")
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        MetricCard("BATARYA", ThemeConfig.icon("battery"), "${state.pilYuzde}%", state.pilDurum,
-            if (state.pilYuzde <= 20) Bad else Good, Modifier.weight(1f))
-        MetricCard("BAĞLANTI", ThemeConfig.icon("network"), if (state.internetStatus) "Bağlı" else "Bağlı değil",
-            "Ağ bağlantısı", if (state.internetStatus) Cyan else Warn, Modifier.weight(1f))
+        MetricCard(
+            label = "BATARYA", icon = ThemeConfig.icon("battery"), value = "${state.pilYuzde}%",
+            detail = state.pilDurum.ifBlank { "pil durumu" },
+            tint = if (state.pilYuzde <= 20) Bad else Good, modifier = Modifier.weight(1f),
+            extra = {
+                Text(
+                    when {
+                        state.pilYuzde > 80 -> "█████"
+                        state.pilYuzde > 60 -> "████░"
+                        state.pilYuzde > 40 -> "███░░"
+                        state.pilYuzde > 20 -> "██░░░"
+                        else -> "█░░░░"
+                    },
+                    color = if (state.pilYuzde <= 20) Bad else Good, fontSize = 11.sp
+                )
+            }
+        )
+        MetricCard(
+            label = "BAĞLANTI", icon = ThemeConfig.icon("network"),
+            value = if (state.internetStatus) "ÇEVRİMİÇİ" else "ÇEVRİMDIŞI",
+            detail = "ağ durumu", tint = if (state.internetStatus) Cyan else Warn,
+            modifier = Modifier.weight(1f),
+            extra = {
+                Text(
+                    if (state.internetStatus) "▮▮▮▮▮" else "▮▯▯▯▯",
+                    color = if (state.internetStatus) Cyan else Warn, fontSize = 13.sp, letterSpacing = 1.sp
+                )
+            }
+        )
     }
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        MetricCard("HAFIZA", ThemeConfig.icon("memory"), state.hafizaSayi.toString(), "kayıtlı bilgi", Violet, Modifier.weight(1f))
+        MetricCard("HAFIZA", ThemeConfig.icon("memory"), state.hafizaSayi.toString(),
+            "kayıtlı bilgi", Violet, Modifier.weight(1f))
         MetricCard("HATIRLATMA", ThemeConfig.icon("reminder"), state.hatirlatmaSayi.toString(),
-            "bekleyen hatırlatma", Warn, Modifier.weight(1f))
+            "bekleyen görev", Warn, Modifier.weight(1f))
     }
 }
 
@@ -953,32 +981,56 @@ private fun DashboardLogsSection(state: DashboardViewModel.DashboardState) {
 private fun NeonEnergyCore(status: Color, active: Boolean, sleeping: Boolean) {
     val accent = Violet
     val secondary = Cyan
-    Box(Modifier.fillMaxWidth().height(238.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxWidth().height(260.dp), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
             val cx = size.width / 2f
             val cy = size.height / 2f
-            drawCircle(accent.copy(alpha = 0.62f), size.minDimension * 0.43f, androidx.compose.ui.geometry.Offset(cx, cy), style = Stroke(1.4.dp.toPx()))
-            drawCircle(secondary.copy(alpha = 0.72f), size.minDimension * 0.34f, androidx.compose.ui.geometry.Offset(cx, cy), style = Stroke(2.dp.toPx()))
-            drawCircle(accent.copy(alpha = 0.25f), size.minDimension * 0.49f, androidx.compose.ui.geometry.Offset(cx, cy), style = Stroke(1.dp.toPx()))
-            rotate(18f, pivot = androidx.compose.ui.geometry.Offset(cx, cy)) {
-                drawOval(secondary.copy(alpha = 0.88f), androidx.compose.ui.geometry.Offset(cx - size.width * 0.43f, cy - size.height * 0.18f), androidx.compose.ui.geometry.Size(size.width * 0.86f, size.height * 0.36f), style = Stroke(2.2.dp.toPx()))
+            val min = size.minDimension
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(secondary.copy(alpha = 0.35f), accent.copy(alpha = 0.18f), Color.Transparent),
+                    center = Offset(cx, cy), radius = min * 0.55f
+                ),
+                radius = min * 0.55f, center = Offset(cx, cy)
+            )
+            drawCircle(secondary.copy(alpha = 0.75f), min * 0.38f, Offset(cx, cy), style = Stroke(2.4.dp.toPx()))
+            drawCircle(accent.copy(alpha = 0.55f), min * 0.46f, Offset(cx, cy), style = Stroke(1.6.dp.toPx()))
+            drawCircle(secondary.copy(alpha = 0.30f), min * 0.52f, Offset(cx, cy), style = Stroke(1.2.dp.toPx()))
+            rotate(22f, pivot = Offset(cx, cy)) {
+                drawOval(secondary.copy(alpha = 0.90f),
+                    topLeft = Offset(cx - size.width * 0.42f, cy - size.height * 0.16f),
+                    size = Size(size.width * 0.84f, size.height * 0.32f), style = Stroke(2.3.dp.toPx()))
             }
-            rotate(-24f, pivot = androidx.compose.ui.geometry.Offset(cx, cy)) {
-                drawOval(accent.copy(alpha = 0.72f), androidx.compose.ui.geometry.Offset(cx - size.width * 0.40f, cy - size.height * 0.14f), androidx.compose.ui.geometry.Size(size.width * 0.80f, size.height * 0.28f), style = Stroke(1.7.dp.toPx()))
+            rotate(-28f, pivot = Offset(cx, cy)) {
+                drawOval(accent.copy(alpha = 0.70f),
+                    topLeft = Offset(cx - size.width * 0.38f, cy - size.height * 0.13f),
+                    size = Size(size.width * 0.76f, size.height * 0.26f), style = Stroke(1.8.dp.toPx()))
             }
-            drawCircle(secondary, 5.dp.toPx(), androidx.compose.ui.geometry.Offset(cx + size.width * 0.30f, cy - size.height * 0.25f))
-            drawCircle(accent, 4.dp.toPx(), androidx.compose.ui.geometry.Offset(cx - size.width * 0.34f, cy + size.height * 0.18f))
+            drawCircle(secondary, 5.5.dp.toPx(), Offset(cx + size.width * 0.28f, cy - size.height * 0.22f))
+            drawCircle(accent, 4.2.dp.toPx(), Offset(cx - size.width * 0.32f, cy + size.height * 0.18f))
         }
-        Box(Modifier.size(112.dp).background(Brush.radialGradient(listOf(secondary.copy(alpha = 0.52f), accent.copy(alpha = 0.34f), Panel)), CircleShape), contentAlignment = Alignment.Center) {
-            Surface(Modifier.fillMaxSize().padding(5.dp), shape = CircleShape, color = Color(ThemeConfig.current.background).copy(alpha = 0.94f), border = BorderStroke(2.dp, Brush.linearGradient(listOf(secondary, accent)))) {
-                Box(contentAlignment = Alignment.Center) { Text("E", fontSize = 58.sp, fontWeight = FontWeight.Light, color = Color.White) }
+        Box(Modifier.size(118.dp).background(
+            Brush.radialGradient(listOf(secondary.copy(alpha = 0.65f), accent.copy(alpha = 0.40f), Color(0xFF0A1630))),
+            CircleShape
+        ), contentAlignment = Alignment.Center) {
+            Surface(
+                Modifier.fillMaxSize().padding(6.dp), shape = CircleShape,
+                color = Color(0xFF050D1F).copy(alpha = 0.92f),
+                border = BorderStroke(2.5.dp, Brush.linearGradient(listOf(secondary, accent, secondary)))
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text("E", fontSize = 58.sp, fontWeight = FontWeight.Light, color = Color.White)
+                }
             }
         }
     }
-    Surface(color = status.copy(alpha = 0.12f), shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Brush.horizontalGradient(listOf(secondary, accent)))) {
-        Row(Modifier.padding(horizontal = 18.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Surface(color = status.copy(alpha = 0.14f), shape = RoundedCornerShape(50),
+        border = BorderStroke(1.dp, Brush.horizontalGradient(listOf(secondary, accent)))) {
+        Row(Modifier.padding(horizontal = 18.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(Modifier.size(7.dp).background(status, CircleShape))
-            Text(if (active) "EDA DİNLİYOR" else if (sleeping) "UYKU MODUNDA" else "MERKEZ BEKLEMEDE", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
+            Text(if (active) "EDA DİNLİYOR" else if (sleeping) "UYKU MODUNDA" else "MERKEZ BEKLEMEDE",
+                color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
         }
     }
 }
@@ -1327,17 +1379,31 @@ private fun SectionHeader(title: String, subtitle: String) {
 }
 
 @Composable
-private fun MetricCard(label: String, icon: String, value: String, detail: String, tint: Color, modifier: Modifier = Modifier) {
-    Card(modifier.shadow(18.dp, RoundedCornerShape(20.dp), ambientColor = Color(0xFF00E5FF).copy(alpha = 0.15f), spotColor = Color(0xFF9D4EDD).copy(alpha = 0.18f)), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color(0x66102141)), border = BorderStroke(1.dp, Color(0x8000E5FF))) {
-        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun MetricCard(
+    label: String, icon: String, value: String, detail: String, tint: Color,
+    modifier: Modifier = Modifier, extra: @Composable (() -> Unit)? = null
+) {
+    Card(
+        modifier = modifier.shadow(18.dp, RoundedCornerShape(20.dp),
+            ambientColor = Color(0xFF00E5FF).copy(alpha = 0.18f),
+            spotColor = Color(0xFF9D4EDD).copy(alpha = 0.20f)),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0x99102141)),
+        border = BorderStroke(1.2.dp, Brush.horizontalGradient(listOf(
+            Color(0xFF00E5FF).copy(alpha = 0.55f), Color(0xFF9D4EDD).copy(alpha = 0.45f)
+        )))
+    ) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(ThemeConfig.metricIcon(label, icon), color = tint, fontSize = 17.sp)
-                Spacer(Modifier.width(7.dp))
-                Text(label, color = Muted, fontSize = 9.sp, letterSpacing = .8.sp, fontWeight = FontWeight.Bold)
+                Text(icon, color = tint, fontSize = 16.sp)
+                Spacer(Modifier.width(6.dp))
+                Text(label, color = Muted, fontSize = 9.sp, letterSpacing = 0.8.sp, fontWeight = FontWeight.Bold)
             }
-            Text(value, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold,
+            Text(value, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold,
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(detail, color = tint, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (extra != null) extra()
+            Text(detail, color = tint.copy(alpha = 0.85f), fontSize = 10.sp,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
