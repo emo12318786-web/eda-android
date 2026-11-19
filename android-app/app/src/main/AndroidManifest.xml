@@ -32,7 +32,6 @@
     <!-- Keep the CPU awake only while the offline wake-word listener is actively processing audio. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <!-- Health Monitor (کنترل در خواب) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
