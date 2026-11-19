@@ -6,6 +6,7 @@ import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import android.util.Log
 import com.k2fsa.sherpa.onnx.FeatureConfig
 import com.k2fsa.sherpa.onnx.KeywordSpotter
@@ -105,7 +106,17 @@ class SherpaWakeWordListener(
             var audio: AudioRecord? = null
             var stream: com.k2fsa.sherpa.onnx.OnlineStream? = null
             var detectedWake: String? = null
+            var cpuWakeLock: PowerManager.WakeLock? = null
             try {
+                // Keep the CPU awake only while Sherpa is actively listening. Without a
+                // partial wake lock, Samsung/Android Doze can suspend native AudioRecord
+                // processing after the screen has been off for a while.
+                val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+                cpuWakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "$TAG:SherpaListening").apply {
+                    setReferenceCounted(false)
+                    acquire()
+                }
+                WakeDiagnostics.breadcrumb(context, "Sherpa partial CPU wake lock acquired")
                 WakeDiagnostics.breadcrumb(context, "Sherpa background microphone setup started")
                 val minBytes = AudioRecord.getMinBufferSize(
                     RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT
@@ -186,6 +197,12 @@ class SherpaWakeWordListener(
                 } catch (_: Throwable) {}
                 try { audio?.release() } catch (_: Throwable) {}
                 if (recorder === audio) recorder = null
+                try {
+                    if (cpuWakeLock?.isHeld == true) cpuWakeLock?.release()
+                    WakeDiagnostics.breadcrumb(context, "Sherpa partial CPU wake lock released")
+                } catch (e: Throwable) {
+                    Log.w(TAG, "Wake lock release failed: ${e.message}")
+                }
                 WakeDiagnostics.breadcrumb(context, "Sherpa AudioRecord released")
                 if (WakeEngineStatus.sherpaState == "LISTENING") {
                     WakeEngineStatus.sherpaState = "READY"
