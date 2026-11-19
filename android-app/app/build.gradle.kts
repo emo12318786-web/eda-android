@@ -12,8 +12,8 @@ android {
         applicationId = "com.deniz.eda"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
-        versionName = "1.4"
+        versionCode = 7
+        versionName = "1.5"
     }
 
     // Two install choices: normal update package and side-by-side preview package.
