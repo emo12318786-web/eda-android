@@ -284,13 +284,14 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private fun acquireWakeLock(reason: String) {
         try {
             val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-            var lock = wakeLock
-            if (lock == null) {
-                lock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "EDA:WakeWord")
-                lock.setReferenceCounted(false)
-                wakeLock = lock
+            val activeLock = wakeLock ?: pm.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "EDA:WakeWord"
+            ).also {
+                it.setReferenceCounted(false)
+                wakeLock = it
             }
-            if (!lock.isHeld) lock.acquire(10 * 60 * 60 * 1000L)
+            if (!activeLock.isHeld) activeLock.acquire(10 * 60 * 60 * 1000L)
             android.util.Log.i("EdaWake", "WAKE_LOCK=HELD reason=$reason")
             WakeDiagnostics.breadcrumb(this, "WakeLock acquired: $reason")
         } catch (e: Exception) {
