@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.Intent
 import android.os.Bundle
 import android.os.IBinder
+import android.os.PowerManager
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -81,6 +82,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private var ttsHazir = false
     private var retryJob: Job? = null
     private var retryAttempt = 0
+    @Volatile private var wakeLock: PowerManager.WakeLock? = null
+    private var wakeWatchdogJob: Job? = null
 
     // FAZ 2: guvenlik modu - hareket algilanirsa TTS ile yuksek uyari verir.
     private val securityMode by lazy {
@@ -181,6 +184,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
         pilBildirimBaslat()
         hatirlatmaKontrolBaslat()
+        baslatWakeWatchdog()
 
         // Servis yeniden baslatildiysa (orn. telefon acilinca) daha once
         // acik birakilmis guvenlik modunu geri yukle.
@@ -238,12 +242,14 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
     private fun startWakeEngine() {
         if (mod != Mod.UYKU || !Settings.derinUyku) return
+        acquireWakeLock("wake engine start")
 
         val useSherpa = Settings.sherpaWakeEnabled
         val useVosk = Settings.voskWakeEnabled
         if (!useSherpa && !useVosk) {
             sherpaWake?.stop()
             offlineWake?.stop()
+            releaseWakeLock("all wake engines disabled")
             bildirimGuncelle("Uyandırma motorları kapalı")
             android.util.Log.i("EdaWake", "No wake engine enabled; microphone remains closed")
             return
@@ -274,9 +280,66 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         }
     }
 
+    /** Keep CPU awake only while the offline wake-word engine should listen. */
+    private fun acquireWakeLock(reason: String) {
+        try {
+            val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+            var lock = wakeLock
+            if (lock == null) {
+                lock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "EDA:WakeWord")
+                lock.setReferenceCounted(false)
+                wakeLock = lock
+            }
+            if (!lock.isHeld) lock.acquire(10 * 60 * 60 * 1000L)
+            android.util.Log.i("EdaWake", "WAKE_LOCK=HELD reason=$reason")
+            WakeDiagnostics.breadcrumb(this, "WakeLock acquired: $reason")
+        } catch (e: Exception) {
+            android.util.Log.e("EdaWake", "WakeLock acquire failed: ${e.message}", e)
+        }
+    }
+
+    private fun releaseWakeLock(reason: String) {
+        try {
+            wakeLock?.let { if (it.isHeld) it.release() }
+            android.util.Log.i("EdaWake", "WAKE_LOCK=RELEASED reason=$reason")
+            WakeDiagnostics.breadcrumb(this, "WakeLock released: $reason")
+        } catch (e: Exception) {
+            android.util.Log.w("EdaWake", "WakeLock release failed: ${e.message}")
+        }
+    }
+
+    /** Restart the offline listener if its worker exits silently in deep sleep. */
+    private fun baslatWakeWatchdog() {
+        wakeWatchdogJob?.cancel()
+        wakeWatchdogJob = serviceScope.launch {
+            while (isActive) {
+                delay(30_000L)
+                if (mod != Mod.UYKU || !Settings.derinUyku) {
+                    releaseWakeLock("not in deep sleep")
+                    continue
+                }
+                if (!Settings.sherpaWakeEnabled && !Settings.voskWakeEnabled) {
+                    releaseWakeLock("wake engines disabled")
+                    continue
+                }
+                val sherpaState = WakeEngineStatus.sherpaState
+                val voskState = WakeEngineStatus.voskState
+                val listening = (Settings.sherpaWakeEnabled && sherpaState == "LISTENING") ||
+                    (Settings.voskWakeEnabled && voskState == "LISTENING")
+                if (listening) {
+                    acquireWakeLock("watchdog listening check")
+                } else if (sherpaState != "PREPARING" && voskState != "DOWNLOADING") {
+                    android.util.Log.w("EdaWake", "WATCHDOG restarting wake engine; Sherpa=$sherpaState Vosk=$voskState")
+                    WakeDiagnostics.breadcrumb(this@EdaForegroundService, "Watchdog restart; Sherpa=$sherpaState Vosk=$voskState")
+                    startWakeEngine()
+                }
+            }
+        }
+    }
     private fun onOfflineWakeWord() {
         sherpaWake?.stop()
         offlineWake?.stop()
+        releaseWakeLock("wake word detected")
         Settings.derinUyku = false
         mod = Mod.AKTIF
         sonMod = "AKTIF"; Settings.sonMod = "AKTIF"
@@ -1173,6 +1236,8 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             phoneStateListener?.let { tm.listen(it, PhoneStateListener.LISTEN_NONE) }
         } catch (_: Exception) {}
         releaseMicrophoneAudioFocus("servis kapandı")
+        wakeWatchdogJob?.cancel()
+        releaseWakeLock("service destroyed")
         try {
             panelServer?.stop()
             android.util.Log.i("EDA-Panel", "PanelServer durduruldu")
