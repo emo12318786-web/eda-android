@@ -156,7 +156,7 @@ jobs:
           gradle --version
           echo ""
           echo "=== build ==="
-          gradle testStandardDebugUnitTest assembleStandardDebug assemblePreviewDebug --stacktrace --no-daemon
+          gradle testStandardDebugUnitTest assembleStandardDebug assemblePreviewDebug assembleFreshinstallDebug --stacktrace --no-daemon
 
       - name: Verify APK signing certificate and write report
         if: success()
@@ -173,6 +173,11 @@ jobs:
           # Gradle's default debug signer can differ from this key in some CI setups.
           "$APKSIGNER" sign --ks "$KEY" --ks-key-alias androiddebugkey \
             --ks-pass pass:android --key-pass pass:android "$APK"
+          FRESH_APK="app/build/outputs/apk/freshinstall/debug/app-freshinstall-debug.apk"
+          test -s "$FRESH_APK"
+          "$APKSIGNER" sign --ks "$KEY" --ks-key-alias androiddebugkey \
+            --ks-pass pass:android --key-pass pass:android "$FRESH_APK"
+          "$APKSIGNER" verify --verbose --print-certs "$FRESH_APK" | tee ../eda-freshinstall-signature-report.txt
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee ../eda-signature-report.txt
           keytool -list -v -keystore "$KEY" -storepass android -alias androiddebugkey > ../eda-keystore-report.txt
           APK_CERT="$(grep 'Signer #1 certificate SHA-256 digest' ../eda-signature-report.txt | awk '{print $NF}' | tr '[:upper:]' '[:lower:]')"
@@ -212,6 +217,14 @@ jobs:
         with:
           name: eda-preview-apk
           path: android-app/app/build/outputs/apk/preview/debug/*.apk
+          retention-days: 30
+
+      - name: Upload isolated fresh-install APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eda-freshinstall-apk
+          path: android-app/app/build/outputs/apk/freshinstall/debug/*.apk
           retention-days: 30
 
 # Rebuild requested after the Gemma 3 1B-only changes.
