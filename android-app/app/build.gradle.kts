@@ -28,6 +28,13 @@ android {
             applicationIdSuffix = ".preview"
             versionNameSuffix = "-preview"
         }
+        // Unique package ID for a clean side-by-side install when old standard/preview
+        // packages conflict. Does not replace or uninstall the existing EDA app.
+        create("freshinstall") {
+            dimension = "installMode"
+            applicationIdSuffix = ".freshinstall"
+            versionNameSuffix = "-freshinstall"
+        }
     }
 
     defaultConfig {
