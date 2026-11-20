@@ -1,6 +1,13 @@
 package com.deniz.eda.ui
 
 import android.os.Bundle
+import android.media.AudioFormat
+import android.media.AudioManager
+import android.media.AudioRecord
+import android.media.MediaRecorder
+import android.os.Build
+import android.widget.ProgressBar
+import kotlinx.coroutines.isActive
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
@@ -74,6 +81,7 @@ class SettingsActivity : AppCompatActivity() {
         }
         refreshGemmaStatus()
         findViewById<Button>(R.id.izinMerkeziButon).setOnClickListener { showPermissionCenter() }
+        setupMicrophoneControls()
 
         findViewById<Switch>(R.id.smsAnnouncementSwitch).apply {
             isChecked = Settings.smsAnnouncementEnabled
@@ -289,6 +297,143 @@ class SettingsActivity : AppCompatActivity() {
             .setItems(labels) { _, which -> open(permissions[which].second) }
             .setPositiveButton("Uygulama ayarları") { _, _ -> startActivity(Intent(AndroidSettings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + packageName))) }
             .setNegativeButton("Kapat", null).show()
+    }
+
+
+    private data class MicOption(val id: Int, val key: String, val label: String, val device: android.media.AudioDeviceInfo?)
+
+    private fun microphoneOptions(): List<MicOption> {
+        val manager = getSystemService(AUDIO_SERVICE) as AudioManager
+        val inputs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            manager.getDevices(AudioManager.GET_DEVICES_INPUTS).toList()
+        } else emptyList()
+        val options = mutableListOf(MicOption(-1, "auto", "Otomatik seç (Android)", null))
+        inputs.forEach { device ->
+            val name = device.productName?.toString()?.takeIf { it.isNotBlank() } ?: "Ses cihazı"
+            val type = when (device.type) {
+                android.media.AudioDeviceInfo.TYPE_BUILTIN_MIC -> "Telefon mikrofonu"
+                android.media.AudioDeviceInfo.TYPE_WIRED_HEADSET -> "Kablolu kulaklık"
+                android.media.AudioDeviceInfo.TYPE_USB_DEVICE,
+                android.media.AudioDeviceInfo.TYPE_USB_HEADSET,
+                android.media.AudioDeviceInfo.TYPE_USB_ACCESSORY -> "USB mikrofon"
+                android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth mikrofon"
+                android.media.AudioDeviceInfo.TYPE_BLE_HEADSET -> "Bluetooth LE kulaklık"
+                android.media.AudioDeviceInfo.TYPE_TELEPHONY -> "Telefon sesi"
+                else -> "Harici ses girişi"
+            }
+            val key = "${device.type}|${name}"
+            options.add(MicOption(device.id, key, "$type — $name", device))
+        }
+        return options.distinctBy { it.key }
+    }
+
+    private fun setupMicrophoneControls() {
+        refreshMicrophoneList()
+        findViewById<Button>(R.id.mikrofonTaraButon).setOnClickListener { refreshMicrophoneList(showToast = true) }
+        findViewById<Button>(R.id.mikrofonSecButon).setOnClickListener {
+            val options = microphoneOptions()
+            val labels = options.map { it.label }.toTypedArray()
+            AlertDialog.Builder(this)
+                .setTitle("Mikrofon seç")
+                .setItems(labels) { _, which ->
+                    Settings.preferredMicKey = options[which].key
+                    refreshMicrophoneList()
+                    Toast.makeText(this, "Mikrofon tercihi kaydedildi", Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("Kapat", null)
+                .show()
+        }
+        findViewById<Button>(R.id.mikrofonTestButon).setOnClickListener {
+            testSelectedMicrophone()
+        }
+    }
+
+    private fun refreshMicrophoneList(showToast: Boolean = false) {
+        val options = microphoneOptions()
+        val selected = options.firstOrNull { it.key == Settings.preferredMicKey }
+            ?: options.first()
+        findViewById<TextView>(R.id.mikrofonDurum).text =
+            "Seçili tercih: ${selected.label}\nBulunan ses girişleri: ${options.size - 1}"
+        if (showToast) {
+            Toast.makeText(this, "Ses girişleri tarandı: ${options.size - 1}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun testSelectedMicrophone() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 271)
+            Toast.makeText(this, "Mikrofon iznini verip testi yeniden başlat", Toast.LENGTH_LONG).show()
+            return
+        }
+        val selected = microphoneOptions().firstOrNull { it.key == Settings.preferredMicKey }
+        val minBuffer = AudioRecord.getMinBufferSize(
+            16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT
+        )
+        if (minBuffer <= 0) {
+            Toast.makeText(this, "Bu cihazda ses kaydı başlatılamadı", Toast.LENGTH_LONG).show()
+            return
+        }
+        val level = findViewById<ProgressBar>(R.id.mikrofonSeviye)
+        val status = findViewById<TextView>(R.id.mikrofonTestDurum)
+        findViewById<Button>(R.id.mikrofonTestButon).isEnabled = false
+        status.text = "Mikrofon dinleniyor… 8 saniye konuş"
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                var recorder: AudioRecord? = null
+                try {
+                    recorder = AudioRecord(
+                        MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                        16000,
+                        AudioFormat.CHANNEL_IN_MONO,
+                        AudioFormat.ENCODING_PCM_16BIT,
+                        maxOf(minBuffer, 4096)
+                    )
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && selected?.device != null) {
+                        val routed = recorder.setPreferredDevice(selected.device)
+                        android.util.Log.i("EDA-MIC", "preferredDevice key=${selected.key} accepted=$routed")
+                    } else {
+                        android.util.Log.i("EDA-MIC", "preferredDevice=system-default")
+                    }
+                    recorder.startRecording()
+                    val samples = ShortArray(2048)
+                    val started = System.currentTimeMillis()
+                    var peak = 0
+                    while (isActive && System.currentTimeMillis() - started < 8000L) {
+                        val count = recorder.read(samples, 0, samples.size)
+                        if (count > 0) {
+                            var sum = 0.0
+                            var localPeak = 0
+                            for (i in 0 until count) {
+                                val value = kotlin.math.abs(samples[i].toInt())
+                                sum += value.toDouble() * value
+                                if (value > localPeak) localPeak = value
+                            }
+                            peak = maxOf(peak, localPeak)
+                            val rms = kotlin.math.sqrt(sum / count).toInt()
+                            val percent = (rms * 100 / 12000).coerceIn(0, 100)
+                            withContext(Dispatchers.Main) {
+                                level.progress = percent
+                                status.text = "Ses seviyesi: $percent%  •  Tepe: $peak"
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("EDA-MIC", "microphone test failed: ${e.message}", e)
+                    withContext(Dispatchers.Main) {
+                        status.text = "Test başarısız: ${e.message ?: "ses girişi açılamadı"}"
+                    }
+                } finally {
+                    try { recorder?.stop() } catch (_: Exception) {}
+                    try { recorder?.release() } catch (_: Exception) {}
+                    withContext(Dispatchers.Main) {
+                        findViewById<Button>(R.id.mikrofonTestButon).isEnabled = true
+                        if (status.text.toString().startsWith("Ses seviyesi:")) {
+                            status.text = "Test tamamlandı. Ses seviyesi sıfırsa cihaz bağlantısını ve Android ses yönlendirmesini kontrol et."
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
