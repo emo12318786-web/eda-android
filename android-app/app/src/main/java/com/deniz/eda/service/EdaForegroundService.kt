@@ -651,38 +651,69 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
      */
     private fun prepareSelectedMicrophoneRoute() {
         val key = Settings.preferredMicKey
-        if (key == "auto" || !key.startsWith("${android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO}|")) {
-            if (bluetoothMicRouteRequested) releaseSelectedMicrophoneRoute("Bluetooth mic no longer selected")
+        if (key == "auto") {
+            releaseSelectedMicrophoneRoute("automatic routing selected")
+            Settings.currentMicStatus = "Otomatik yönlendirme: Android seçiyor"
+            return
+        }
+        val parts = key.split("|", limit = 2)
+        val selectedType = parts.firstOrNull()?.toIntOrNull()
+        val selectedName = parts.getOrNull(1).orEmpty()
+        if (selectedType != android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+            Settings.currentMicStatus = "Seçim: $selectedName — STT girişini Android yönetiyor"
+            android.util.Log.w("EDA-MIC", "SpeechRecognizer cannot be pinned to selected non-Bluetooth device: $key")
+            if (bluetoothMicRouteRequested) releaseSelectedMicrophoneRoute("non-Bluetooth mic selected")
             return
         }
         try {
             audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
-            @Suppress("DEPRECATION")
-            audioManager.startBluetoothSco()
-            @Suppress("DEPRECATION")
-            audioManager.isBluetoothScoOn = true
+            var routed = false
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                val target = audioManager.availableCommunicationDevices.firstOrNull {
+                    it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO && it.productName.toString().equals(selectedName, ignoreCase = true)
+                } ?: audioManager.availableCommunicationDevices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
+                if (target != null) {
+                    routed = audioManager.setCommunicationDevice(target)
+                    android.util.Log.i("EDA-MIC", "setCommunicationDevice target=${target.productName} accepted=$routed")
+                } else android.util.Log.e("EDA-MIC", "No Bluetooth communication device available for $selectedName")
+            }
+            if (!routed) {
+                @Suppress("DEPRECATION")
+                audioManager.startBluetoothSco()
+                @Suppress("DEPRECATION")
+                audioManager.isBluetoothScoOn = true
+                Settings.currentMicStatus = "Bluetooth seçildi: $selectedName — SCO bağlantısı bekleniyor"
+            } else Settings.currentMicStatus = "Bluetooth yönlendirmesi istendi: $selectedName — doğrulanıyor"
             bluetoothMicRouteRequested = true
-            android.util.Log.i("EDA-MIC", "Bluetooth SCO microphone route requested: $key")
+            android.util.Log.i("EDA-MIC", "Selected Bluetooth microphone route requested: $key")
         } catch (e: Exception) {
             bluetoothMicRouteRequested = false
-            android.util.Log.e("EDA-MIC", "Bluetooth SCO route request failed: ${e.message}", e)
+            Settings.currentMicStatus = "Mikrofon yönlendirme hatası: ${e.message ?: "bilinmiyor"}"
+            android.util.Log.e("EDA-MIC", "Bluetooth route request failed: ${e.message}", e)
         }
+    }
+
+    private fun logActualMicrophoneRoute(stage: String) {
+        val actual = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) audioManager.communicationDevice else null
+        val actualName = actual?.productName?.toString()
+        val status = if (actualName.isNullOrBlank()) "Gerçek giriş doğrulanamadı ($stage); seçili=${Settings.preferredMicKey}" else "Aktif iletişim cihazı: $actualName ($stage)"
+        Settings.currentMicStatus = status
+        android.util.Log.i("EDA-MIC", "$status; type=${actual?.type}; id=${actual?.id}")
     }
 
     private fun releaseSelectedMicrophoneRoute(reason: String) {
         if (!bluetoothMicRouteRequested) return
         try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) audioManager.clearCommunicationDevice()
             @Suppress("DEPRECATION")
             audioManager.isBluetoothScoOn = false
             @Suppress("DEPRECATION")
             audioManager.stopBluetoothSco()
             audioManager.mode = AudioManager.MODE_NORMAL
-            android.util.Log.i("EDA-MIC", "Bluetooth SCO route released: $reason")
+            android.util.Log.i("EDA-MIC", "Bluetooth route released: $reason")
         } catch (e: Exception) {
             android.util.Log.w("EDA-MIC", "Bluetooth route release failed: ${e.message}")
-        } finally {
-            bluetoothMicRouteRequested = false
-        }
+        } finally { bluetoothMicRouteRequested = false }
     }
     private var microphoneAudioFocusRequest: AudioFocusRequest? = null
 
@@ -877,6 +908,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private val recognitionListener = object : RecognitionListener {
         override fun onResults(results: Bundle?) {
             dinlemeAktif = false
+            logActualMicrophoneRoute("onResults")
             releaseSelectedMicrophoneRoute("recognition results")
             ardisikHataSayisi = 0
             retryAttempt = 0
@@ -906,6 +938,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
         override fun onError(error: Int) {
             dinlemeAktif = false
+            logActualMicrophoneRoute("onError")
             releaseSelectedMicrophoneRoute("recognition error")
             releaseMicrophoneAudioFocus("SpeechRecognizer hata: ${hataAdi(error)}")
             ardisikHataSayisi++
@@ -935,7 +968,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             yenidenDenemeyiPlanla()
         }
 
-        override fun onReadyForSpeech(params: Bundle?) {}
+        override fun onReadyForSpeech(params: Bundle?) { logActualMicrophoneRoute("onReadyForSpeech") }
         override fun onBeginningOfSpeech() {}
         override fun onRmsChanged(rmsdB: Float) {}
         override fun onBufferReceived(buffer: ByteArray?) {}
