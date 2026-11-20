@@ -114,7 +114,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Seçili mikrofon Android 13+ üzerinde AudioRecord ile yakalanıp konuşma tanıyıcısına aktarılır. Seçili giriş açılamazsa Eda telefon mikrofonuna sessizce geçmez; hata gösterir."
+                android:text="Eda Bluetooth için Android iletişim ses yolunu ister. Android konuşma tanıyıcısı gerçek mikrofon girişini bildirmeyebilir; bu yüzden durum alanı yönlendirme isteğini gösterir, kesin donanım doğrulaması değildir. Seçili cihaz bağlı değilse Eda otomatik girişe geçmez."
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp"
                 android:layout_marginTop="8dp" />
