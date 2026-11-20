@@ -353,7 +353,7 @@ class SettingsActivity : AppCompatActivity() {
         val selected = options.firstOrNull { it.key == Settings.preferredMicKey }
             ?: options.first()
         findViewById<TextView>(R.id.mikrofonDurum).text =
-            "Seçili tercih: ${selected.label}\nBulunan ses girişleri: ${options.size - 1}"
+            "Seçili tercih: ${selected.label}\nBulunan ses girişleri: ${options.size - 1}\nSon yönlendirme durumu: ${Settings.currentMicStatus}"
         if (showToast) {
             Toast.makeText(this, "Ses girişleri tarandı: ${options.size - 1}", Toast.LENGTH_SHORT).show()
         }
