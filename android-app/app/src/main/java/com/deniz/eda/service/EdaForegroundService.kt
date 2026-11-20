@@ -657,6 +657,13 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         selectedMicRecorder = null
         try { selectedMicPipeWrite?.close() } catch (_: Exception) {}
         selectedMicPipeWrite = null
+        try {
+            val selectedType = Settings.preferredMicKey.substringBefore("|").toIntOrNull()
+            if (selectedType == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) audioManager.clearCommunicationDevice()
+                audioManager.mode = AudioManager.MODE_NORMAL
+            }
+        } catch (_: Exception) {}
         android.util.Log.i("EDA-MIC", "Selected mic capture stopped: " + reason)
     }
 
