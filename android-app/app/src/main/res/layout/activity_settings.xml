@@ -114,7 +114,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Not: Android'in sistem konuşma tanıyıcısı bazı cihazlarda giriş yönlendirmesini kendi yönetir. Bu test, seçilen girişe ses alınabildiğini kontrol eder."
+                android:text="Seçili mikrofon Android 13+ üzerinde AudioRecord ile yakalanıp konuşma tanıyıcısına aktarılır. Seçili giriş açılamazsa Eda telefon mikrofonuna sessizce geçmez; hata gösterir."
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp"
                 android:layout_marginTop="8dp" />
