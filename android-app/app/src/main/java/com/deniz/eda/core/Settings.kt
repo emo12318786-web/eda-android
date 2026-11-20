@@ -175,4 +175,8 @@ object Settings {
     var preferredMicKey: String
         get() = getString("preferred_mic_key", "auto")
         set(v) = setString("preferred_mic_key", v)
+
+    var currentMicStatus: String
+        get() = getString("current_mic_status", "Henüz ölçülmedi")
+        set(v) = setString("current_mic_status", v)
 }
