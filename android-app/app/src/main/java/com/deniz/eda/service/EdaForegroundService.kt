@@ -969,7 +969,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             releaseMicrophoneAudioFocus("SpeechRecognizer hata: ${hataAdi(error)}")
             ardisikHataSayisi++
             android.util.Log.e("EdaService", "SpeechRecognizer hata kodu: $error (${hataAdi(error)}) ardisik=$ardisikHataSayisi")
-            if (ardisikHataSayisi >= 5 && !sttFallbackAktif &&
+            if (Settings.preferredMicKey == "auto" && ardisikHataSayisi >= 5 && !sttFallbackAktif &&
                 (error == SpeechRecognizer.ERROR_CLIENT ||
                  error == SpeechRecognizer.ERROR_TOO_MANY_REQUESTS ||
                  error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY)) {
