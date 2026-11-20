@@ -641,6 +641,49 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     // Mikrofon dinlerken medya uygulamalarından geçici ve özel ses odağı ister.
     // Odak bırakılınca Android, odak kaybında duran müzik uygulamalarının devam etmesine izin verir.
     private var microphoneAudioFocusHeld = false
+    @Volatile private var bluetoothMicRouteRequested = false
+
+    /**
+     * SpeechRecognizer does not expose setPreferredDevice(). For an explicitly
+     * selected Bluetooth headset, request the classic Bluetooth SCO communication
+     * route before opening the recognizer. Android/firmware may still override it;
+     * logs make the requested route visible for device testing.
+     */
+    private fun prepareSelectedMicrophoneRoute() {
+        val key = Settings.preferredMicKey
+        if (key == "auto" || !key.startsWith("${android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO}|")) {
+            if (bluetoothMicRouteRequested) releaseSelectedMicrophoneRoute("Bluetooth mic no longer selected")
+            return
+        }
+        try {
+            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+            @Suppress("DEPRECATION")
+            audioManager.startBluetoothSco()
+            @Suppress("DEPRECATION")
+            audioManager.isBluetoothScoOn = true
+            bluetoothMicRouteRequested = true
+            android.util.Log.i("EDA-MIC", "Bluetooth SCO microphone route requested: $key")
+        } catch (e: Exception) {
+            bluetoothMicRouteRequested = false
+            android.util.Log.e("EDA-MIC", "Bluetooth SCO route request failed: ${e.message}", e)
+        }
+    }
+
+    private fun releaseSelectedMicrophoneRoute(reason: String) {
+        if (!bluetoothMicRouteRequested) return
+        try {
+            @Suppress("DEPRECATION")
+            audioManager.isBluetoothScoOn = false
+            @Suppress("DEPRECATION")
+            audioManager.stopBluetoothSco()
+            audioManager.mode = AudioManager.MODE_NORMAL
+            android.util.Log.i("EDA-MIC", "Bluetooth SCO route released: $reason")
+        } catch (e: Exception) {
+            android.util.Log.w("EDA-MIC", "Bluetooth route release failed: ${e.message}")
+        } finally {
+            bluetoothMicRouteRequested = false
+        }
+    }
     private var microphoneAudioFocusRequest: AudioFocusRequest? = null
 
     private fun acquireMicrophoneAudioFocus() {
@@ -765,7 +808,23 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 yenidenDenemeyiPlanla()
                 return
             }
-            speechRecognizer?.startListening(intent)
+            prepareSelectedMicrophoneRoute()
+            if (bluetoothMicRouteRequested) {
+                // SCO connection is asynchronous on Android; give the route a moment to settle.
+                serviceScope.launch {
+                    delay(700L)
+                    try {
+                        if (dinlemeAktif) speechRecognizer?.startListening(intent)
+                    } catch (e: Exception) {
+                        android.util.Log.e("EdaService", "Bluetooth STT start failed: ${e.message}", e)
+                        releaseSelectedMicrophoneRoute("STT start failed")
+                        dinlemeAktif = false
+                        yenidenDenemeyiPlanla()
+                    }
+                }
+            } else {
+                speechRecognizer?.startListening(intent)
+            }
         } catch (e: Exception) {
             android.util.Log.e("EdaService", "startListening hata: ${e.message}")
             dinlemeAktif = false
@@ -818,6 +877,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private val recognitionListener = object : RecognitionListener {
         override fun onResults(results: Bundle?) {
             dinlemeAktif = false
+            releaseSelectedMicrophoneRoute("recognition results")
             ardisikHataSayisi = 0
             retryAttempt = 0
             val list = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
@@ -846,6 +906,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
         override fun onError(error: Int) {
             dinlemeAktif = false
+            releaseSelectedMicrophoneRoute("recognition error")
             releaseMicrophoneAudioFocus("SpeechRecognizer hata: ${hataAdi(error)}")
             ardisikHataSayisi++
             android.util.Log.e("EdaService", "SpeechRecognizer hata kodu: $error (${hataAdi(error)}) ardisik=$ardisikHataSayisi")
