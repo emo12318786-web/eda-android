@@ -722,7 +722,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 ParcelFileDescriptor.AutoCloseOutputStream(writeEnd).use { output ->
                     val buffer = ByteArray(4096)
                     while (isActive) {
-                        val count = recorder.read(buffer, 0, buffer.size, AudioRecord.READ_BLOCKING)
+                        val count = selectedMicRecorder?.read(buffer, 0, buffer.size, AudioRecord.READ_BLOCKING) ?: -1
                         if (count < 0) throw IllegalStateException("AudioRecord read failed: " + count)
                         if (count > 0) output.write(buffer, 0, count)
                     }
@@ -1356,6 +1356,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             val tm = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
             phoneStateListener?.let { tm.listen(it, PhoneStateListener.LISTEN_NONE) }
         } catch (_: Exception) {}
+        stopSelectedMicCapture("servis kapandı")
         releaseMicrophoneAudioFocus("servis kapandı")
         wakeWatchdogJob?.cancel()
         releaseWakeLock("service destroyed")
