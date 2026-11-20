@@ -170,4 +170,9 @@ object Settings {
     var conversationHistoryEnabled: Boolean
         get() = getBool("conversation_history_enabled", true)
         set(v) = setBool("conversation_history_enabled", v)
+
+    /** Stable preference key: device type + product name; Android device IDs can change after reconnect. */
+    var preferredMicKey: String
+        get() = getString("preferred_mic_key", "auto")
+        set(v) = setString("preferred_mic_key", v)
 }
