@@ -384,7 +384,7 @@ class SettingsActivity : AppCompatActivity() {
         val level = findViewById<ProgressBar>(R.id.mikrofonSeviye)
         val status = findViewById<TextView>(R.id.mikrofonTestDurum)
         findViewById<Button>(R.id.mikrofonTestButon).isEnabled = false
-        status.text = "Seçili giriş açılıyor: \${selected.label}. 8 saniye konuş…"
+        status.text = "Seçili giriş açılıyor: ${selected.label}. 8 saniye konuş…"
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
                 var recorder: AudioRecord? = null
@@ -406,7 +406,7 @@ class SettingsActivity : AppCompatActivity() {
                                 throw IllegalStateException("Android seçilen Bluetooth iletişim yolunu kabul etmedi")
                             }
                             routeRequested = true
-                            android.util.Log.i("EDA-MIC", "TEST communication route requested=\${comm.productName}, id=\${comm.id}")
+                            android.util.Log.i("EDA-MIC", "TEST communication route requested=${comm.productName}, id=${comm.id}")
                         } else {
                             @Suppress("DEPRECATION")
                             manager.startBluetoothSco()
@@ -430,26 +430,27 @@ class SettingsActivity : AppCompatActivity() {
                     if (recorder.state != AudioRecord.STATE_INITIALIZED) {
                         throw IllegalStateException("AudioRecord başlatılamadı")
                     }
-                    if (!recorder.setPreferredDevice(device)) {
+                    val activeRecorder = recorder ?: throw IllegalStateException("AudioRecord yok")
+                    if (!activeRecorder.setPreferredDevice(device)) {
                         throw IllegalStateException("Android seçilen giriş için setPreferredDevice isteğini reddetti")
                     }
-                    recorder.startRecording()
-                    val routed = recorder.routedDevice
+                    activeRecorder.startRecording()
+                    val routed = activeRecorder.routedDevice
                     val routeMatches = routed != null && routed.id == device.id && routed.type == device.type
                     Settings.currentMicStatus = if (routeMatches) {
-                        "DOĞRULANDI: AudioRecord gerçek girişi \${routed?.productName} (id=\${routed?.id})"
+                        "DOĞRULANDI: AudioRecord gerçek girişi ${routed?.productName} (id=${routed?.id})"
                     } else {
-                        "HATA: Seçilen \${device.productName} (id=\${device.id}); gerçek giriş \${routed?.productName ?: "bilinmiyor"} (id=\${routed?.id}). Telefon mikrofonuna sessiz geçiş yok."
+                        "HATA: Seçilen ${device.productName} (id=${device.id}); gerçek giriş ${routed?.productName ?: "bilinmiyor"} (id=${routed?.id}). Telefon mikrofonuna sessiz geçiş yok."
                     }
-                    android.util.Log.i("EDA-MIC", "TEST selected=\${device.productName} id=\${device.id}; routed=\${routed?.productName} id=\${routed?.id}; matches=\$routeMatches; btRoute=\$routeRequested")
+                    android.util.Log.i("EDA-MIC", "TEST selected=${device.productName} id=${device.id}; routed=${routed?.productName} id=${routed?.id}; matches=$routeMatches; btRoute=$routeRequested")
                     withContext(Dispatchers.Main) { refreshMicrophoneList() }
                     if (!routeMatches) throw IllegalStateException(Settings.currentMicStatus)
                     val samples = ShortArray(2048)
                     val started = System.currentTimeMillis()
                     var peak = 0
                     while (isActive && System.currentTimeMillis() - started < 8000L) {
-                        val count = recorder.read(samples, 0, samples.size)
-                        if (count < 0) throw IllegalStateException("Ses okuma hatası: \$count")
+                        val count = activeRecorder.read(samples, 0, samples.size)
+                        if (count < 0) throw IllegalStateException("Ses okuma hatası: $count")
                         if (count > 0) {
                             var sum = 0.0
                             var localPeak = 0
@@ -463,16 +464,16 @@ class SettingsActivity : AppCompatActivity() {
                             val percent = (rms * 100 / 12000).coerceIn(0, 100)
                             withContext(Dispatchers.Main) {
                                 level.progress = percent
-                                status.text = "\${Settings.currentMicStatus}\nSes seviyesi: \$percent% • Tepe: \$peak"
+                                status.text = "${Settings.currentMicStatus}\nSes seviyesi: $percent% • Tepe: $peak"
                             }
                         }
                     }
                     if (routeMatches) {
-                        Settings.currentMicStatus = "DOĞRULANDI: \${routed?.productName}; AudioRecord gerçek girişi seçilen cihaz"
+                        Settings.currentMicStatus = "DOĞRULANDI: ${routed?.productName}; AudioRecord gerçek girişi seçilen cihaz"
                     }
                 } catch (e: Exception) {
-                    Settings.currentMicStatus = "HATA: \${e.message ?: "seçilen mikrofon açılamadı"}"
-                    android.util.Log.e("EDA-MIC", "microphone test failed: \${e.message}", e)
+                    Settings.currentMicStatus = "HATA: ${e.message ?: "seçilen mikrofon açılamadı"}"
+                    android.util.Log.e("EDA-MIC", "microphone test failed: ${e.message}", e)
                     withContext(Dispatchers.Main) {
                         status.text = Settings.currentMicStatus
                         refreshMicrophoneList()
@@ -490,7 +491,7 @@ class SettingsActivity : AppCompatActivity() {
                         }
                         manager.mode = oldMode
                     } catch (e: Exception) {
-                        android.util.Log.w("EDA-MIC", "route cleanup failed: \${e.message}")
+                        android.util.Log.w("EDA-MIC", "route cleanup failed: ${e.message}")
                     }
                     withContext(Dispatchers.Main) {
                         findViewById<Button>(R.id.mikrofonTestButon).isEnabled = true
