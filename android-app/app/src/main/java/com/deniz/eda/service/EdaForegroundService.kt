@@ -722,11 +722,12 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                 audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
             }
 
-            // SpeechRecognizer owns the recording session. We only request the
-            // Bluetooth communication route and never compete for the microphone.
+            // Keep the communication route active across SpeechRecognizer callbacks.
+            // Clearing it after every result/error makes Android fall back to the phone
+            // mic before the next listening cycle starts.
             Settings.currentMicStatus =
-                "Bluetooth iletişim yolu istendi: $wantedName. Android SpeechRecognizer girişini ayrıca doğrulamak gerekir."
-            android.util.Log.i("EDA-MIC", "Requested Bluetooth communication route for $wantedName; no competing AudioRecord")
+                "Bluetooth iletişim yolu etkinleştirildi: $wantedName. Android konuşma tanıyıcısının gerçek girişi sistem tarafından yönetilir."
+            android.util.Log.i("EDA-MIC", "Bluetooth communication route requested for $wantedName and will remain active between recognition cycles")
             true
         } catch (e: Exception) {
             stopSelectedMicCapture("Bluetooth route request failed")
@@ -930,7 +931,6 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     private val recognitionListener = object : RecognitionListener {
         override fun onResults(results: Bundle?) {
             dinlemeAktif = false
-            if (Settings.preferredMicKey != "auto") stopSelectedMicCapture("recognition results")
             ardisikHataSayisi = 0
             retryAttempt = 0
             val list = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
@@ -959,7 +959,6 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
         override fun onError(error: Int) {
             dinlemeAktif = false
-            if (Settings.preferredMicKey != "auto") stopSelectedMicCapture("recognition error")
             releaseMicrophoneAudioFocus("SpeechRecognizer hata: ${hataAdi(error)}")
             ardisikHataSayisi++
             android.util.Log.e("EdaService", "SpeechRecognizer hata kodu: $error (${hataAdi(error)}) ardisik=$ardisikHataSayisi")
