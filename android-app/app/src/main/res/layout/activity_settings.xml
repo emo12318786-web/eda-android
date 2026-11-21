@@ -49,6 +49,77 @@
             android:text="İZİN MERKEZİ — 27 İZİN"
             android:layout_marginBottom="16dp" />
 
+
+        <!-- CARD: Harici mikrofon -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_settings"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Harici Mikrofon"
+                android:textColor="@color/text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/mikrofonDurum"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Ses girişleri aranıyor…"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="10dp" />
+
+            <Button
+                android:id="@+id/mikrofonTaraButon"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Cihazları Tara" />
+
+            <Button
+                android:id="@+id/mikrofonSecButon"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Mikrofon Seç" />
+
+            <Button
+                android:id="@+id/mikrofonTestButon"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Mikrofonu Test Et" />
+
+            <ProgressBar
+                android:id="@+id/mikrofonSeviye"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="12dp"
+                android:max="100"
+                android:progress="0"
+                android:layout_marginTop="12dp" />
+
+            <TextView
+                android:id="@+id/mikrofonTestDurum"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Test için mikrofon seç ve konuş."
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Eda Bluetooth için Android iletişim ses yolunu ister. Android konuşma tanıyıcısı gerçek mikrofon girişini bildirmeyebilir; bu yüzden durum alanı yönlendirme isteğini gösterir, kesin donanım doğrulaması değildir. Seçili cihaz bağlı değilse Eda otomatik girişe geçmez."
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"
+                android:layout_marginTop="8dp" />
+        </LinearLayout>
+
         <!-- CARD: Kullanıcı -->
         <LinearLayout
             android:layout_width="match_parent"

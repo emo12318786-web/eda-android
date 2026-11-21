@@ -21,6 +21,8 @@
 
     <!-- Ses dinleme (uyanma kelimesi + komutlar) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
     <!-- AI saglayicilarina (Groq/DeepSeek/OpenRouter) ve hava/dolar/altin icin -->
     <uses-permission android:name="android.permission.INTERNET" />
