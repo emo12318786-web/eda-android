@@ -366,6 +366,14 @@ class SettingsActivity : AppCompatActivity() {
             return
         }
         val selected = microphoneOptions().firstOrNull { it.key == Settings.preferredMicKey }
+        if (selected == null || selected.key == "auto" || selected.device == null) {
+            Toast.makeText(this, "Önce kullanmak istediğin harici mikrofonu seç", Toast.LENGTH_LONG).show()
+            return
+        }
+        val manager = getSystemService(AUDIO_SERVICE) as AudioManager
+        val device = selected.device
+        val isBluetooth = device.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
+            device.type == android.media.AudioDeviceInfo.TYPE_BLE_HEADSET
         val minBuffer = AudioRecord.getMinBufferSize(
             16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT
         )
@@ -376,30 +384,72 @@ class SettingsActivity : AppCompatActivity() {
         val level = findViewById<ProgressBar>(R.id.mikrofonSeviye)
         val status = findViewById<TextView>(R.id.mikrofonTestDurum)
         findViewById<Button>(R.id.mikrofonTestButon).isEnabled = false
-        status.text = "Mikrofon dinleniyor… 8 saniye konuş"
+        status.text = "Seçili giriş açılıyor: \${selected.label}. 8 saniye konuş…"
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
                 var recorder: AudioRecord? = null
+                var oldMode = AudioManager.MODE_NORMAL
+                var routeRequested = false
                 try {
-                    recorder = AudioRecord(
-                        MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                        16000,
-                        AudioFormat.CHANNEL_IN_MONO,
-                        AudioFormat.ENCODING_PCM_16BIT,
-                        maxOf(minBuffer, 4096)
-                    )
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && selected?.device != null) {
-                        val routed = recorder.setPreferredDevice(selected.device)
-                        android.util.Log.i("EDA-MIC", "preferredDevice key=${selected.key} accepted=$routed")
-                    } else {
-                        android.util.Log.i("EDA-MIC", "preferredDevice=system-default")
+                    oldMode = manager.mode
+                    if (isBluetooth) {
+                        manager.mode = AudioManager.MODE_IN_COMMUNICATION
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            val comm = manager.availableCommunicationDevices.firstOrNull {
+                                it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO &&
+                                    it.productName.toString().equals(device.productName.toString(), ignoreCase = true)
+                            } ?: manager.availableCommunicationDevices.firstOrNull {
+                                it.type == device.type &&
+                                    it.productName.toString().equals(device.productName.toString(), ignoreCase = true)
+                            } ?: throw IllegalStateException("Seçilen Bluetooth kulaklık iletişim girişleri arasında yok")
+                            if (!manager.setCommunicationDevice(comm)) {
+                                throw IllegalStateException("Android seçilen Bluetooth iletişim yolunu kabul etmedi")
+                            }
+                            routeRequested = true
+                            android.util.Log.i("EDA-MIC", "TEST communication route requested=\${comm.productName}, id=\${comm.id}")
+                        } else {
+                            @Suppress("DEPRECATION")
+                            manager.startBluetoothSco()
+                            @Suppress("DEPRECATION")
+                            manager.isBluetoothScoOn = true
+                            routeRequested = true
+                            kotlinx.coroutines.delay(900L)
+                        }
+                    }
+                    recorder = AudioRecord.Builder()
+                        .setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+                        .setAudioFormat(
+                            AudioFormat.Builder()
+                                .setSampleRate(16000)
+                                .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
+                                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                                .build()
+                        )
+                        .setBufferSizeInBytes(maxOf(minBuffer * 2, 8192))
+                        .build()
+                    if (recorder.state != AudioRecord.STATE_INITIALIZED) {
+                        throw IllegalStateException("AudioRecord başlatılamadı")
+                    }
+                    if (!recorder.setPreferredDevice(device)) {
+                        throw IllegalStateException("Android seçilen giriş için setPreferredDevice isteğini reddetti")
                     }
                     recorder.startRecording()
+                    val routed = recorder.routedDevice
+                    val routeMatches = routed != null && routed.id == device.id && routed.type == device.type
+                    Settings.currentMicStatus = if (routeMatches) {
+                        "DOĞRULANDI: AudioRecord gerçek girişi \${routed?.productName} (id=\${routed?.id})"
+                    } else {
+                        "HATA: Seçilen \${device.productName} (id=\${device.id}); gerçek giriş \${routed?.productName ?: "bilinmiyor"} (id=\${routed?.id}). Telefon mikrofonuna sessiz geçiş yok."
+                    }
+                    android.util.Log.i("EDA-MIC", "TEST selected=\${device.productName} id=\${device.id}; routed=\${routed?.productName} id=\${routed?.id}; matches=\$routeMatches; btRoute=\$routeRequested")
+                    withContext(Dispatchers.Main) { refreshMicrophoneList() }
+                    if (!routeMatches) throw IllegalStateException(Settings.currentMicStatus)
                     val samples = ShortArray(2048)
                     val started = System.currentTimeMillis()
                     var peak = 0
                     while (isActive && System.currentTimeMillis() - started < 8000L) {
                         val count = recorder.read(samples, 0, samples.size)
+                        if (count < 0) throw IllegalStateException("Ses okuma hatası: \$count")
                         if (count > 0) {
                             var sum = 0.0
                             var localPeak = 0
@@ -413,23 +463,38 @@ class SettingsActivity : AppCompatActivity() {
                             val percent = (rms * 100 / 12000).coerceIn(0, 100)
                             withContext(Dispatchers.Main) {
                                 level.progress = percent
-                                status.text = "Ses seviyesi: $percent%  •  Tepe: $peak"
+                                status.text = "\${Settings.currentMicStatus}\nSes seviyesi: \$percent% • Tepe: \$peak"
                             }
                         }
                     }
+                    if (routeMatches) {
+                        Settings.currentMicStatus = "DOĞRULANDI: \${routed?.productName}; AudioRecord gerçek girişi seçilen cihaz"
+                    }
                 } catch (e: Exception) {
-                    android.util.Log.e("EDA-MIC", "microphone test failed: ${e.message}", e)
+                    Settings.currentMicStatus = "HATA: \${e.message ?: "seçilen mikrofon açılamadı"}"
+                    android.util.Log.e("EDA-MIC", "microphone test failed: \${e.message}", e)
                     withContext(Dispatchers.Main) {
-                        status.text = "Test başarısız: ${e.message ?: "ses girişi açılamadı"}"
+                        status.text = Settings.currentMicStatus
+                        refreshMicrophoneList()
                     }
                 } finally {
                     try { recorder?.stop() } catch (_: Exception) {}
                     try { recorder?.release() } catch (_: Exception) {}
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) manager.clearCommunicationDevice()
+                        else {
+                            @Suppress("DEPRECATION")
+                            manager.isBluetoothScoOn = false
+                            @Suppress("DEPRECATION")
+                            manager.stopBluetoothSco()
+                        }
+                        manager.mode = oldMode
+                    } catch (e: Exception) {
+                        android.util.Log.w("EDA-MIC", "route cleanup failed: \${e.message}")
+                    }
                     withContext(Dispatchers.Main) {
                         findViewById<Button>(R.id.mikrofonTestButon).isEnabled = true
-                        if (status.text.toString().startsWith("Ses seviyesi:")) {
-                            status.text = "Test tamamlandı. Ses seviyesi sıfırsa cihaz bağlantısını ve Android ses yönlendirmesini kontrol et."
-                        }
+                        refreshMicrophoneList()
                     }
                 }
             }
