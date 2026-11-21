@@ -435,7 +435,15 @@ class SettingsActivity : AppCompatActivity() {
                         throw IllegalStateException("Android seçilen giriş için setPreferredDevice isteğini reddetti")
                     }
                     activeRecorder.startRecording()
-                    val routed = activeRecorder.routedDevice
+                    // Bluetooth route changes are asynchronous on many Android builds.
+                    // Do not read routedDevice only once immediately after startRecording.
+                    var routed = activeRecorder.routedDevice
+                    val routeDeadline = System.currentTimeMillis() + 1800L
+                    while (isActive && System.currentTimeMillis() < routeDeadline &&
+                        (routed == null || routed.id != device.id || routed.type != device.type)) {
+                        kotlinx.coroutines.delay(100L)
+                        routed = activeRecorder.routedDevice
+                    }
                     val routeMatches = routed != null && routed.id == device.id && routed.type == device.type
                     Settings.currentMicStatus = if (routeMatches) {
                         "DOĞRULANDI: AudioRecord gerçek girişi ${routed?.productName} (id=${routed?.id})"
