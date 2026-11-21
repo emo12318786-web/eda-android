@@ -39,6 +39,7 @@ import com.deniz.eda.data.db.LogEntity
 import com.deniz.eda.utils.BatteryUtils
 import kotlinx.coroutines.*
 import java.util.Locale
+import java.io.FileOutputStream
 
 /**
  * Orijinal Python surumundeki başlat() (uyku dongusu) + komut_dongusu() (aktif mod)
@@ -646,6 +647,11 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     // Odak bırakılınca Android, odak kaybında duran müzik uygulamalarının devam etmesine izin verir.
     private var microphoneAudioFocusHeld = false
     @Volatile private var selectedMicCommunicationDevice: android.media.AudioDeviceInfo? = null
+    @Volatile private var selectedMicRecorder: AudioRecord? = null
+    @Volatile private var selectedMicPipeRead: ParcelFileDescriptor? = null
+    @Volatile private var selectedMicPipeWrite: ParcelFileDescriptor? = null
+    @Volatile private var selectedMicPumpJob: Job? = null
+
 
     /**
      * Request Android's communication route for the selected Bluetooth headset.
@@ -653,85 +659,91 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
      * open a competing AudioRecord while the system recognizer is active.
      */
     private fun stopSelectedMicCapture(reason: String) {
+        selectedMicPumpJob?.cancel()
+        selectedMicPumpJob = null
+        try { selectedMicRecorder?.stop() } catch (_: Exception) {}
+        try { selectedMicRecorder?.release() } catch (_: Exception) {}
+        selectedMicRecorder = null
+        try { selectedMicPipeWrite?.close() } catch (_: Exception) {}
+        try { selectedMicPipeRead?.close() } catch (_: Exception) {}
+        selectedMicPipeWrite = null
+        selectedMicPipeRead = null
         try {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                audioManager.clearCommunicationDevice()
-            } else {
-                @Suppress("DEPRECATION")
-                audioManager.isBluetoothScoOn = false
-                @Suppress("DEPRECATION")
-                audioManager.stopBluetoothSco()
-            }
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) audioManager.clearCommunicationDevice()
+            else { @Suppress("DEPRECATION") audioManager.isBluetoothScoOn = false; @Suppress("DEPRECATION") audioManager.stopBluetoothSco() }
             audioManager.mode = AudioManager.MODE_NORMAL
-        } catch (e: Exception) {
-            android.util.Log.w("EDA-MIC", "Route release issue: " + e.message)
-        }
+        } catch (e: Exception) { android.util.Log.w("EDA-MIC", "Route release issue: " + e.message) }
         android.util.Log.i("EDA-MIC", "Selected microphone route released: " + reason)
         selectedMicCommunicationDevice = null
     }
 
     private suspend fun startSelectedMicCapture(intent: Intent): Boolean {
         val key = Settings.preferredMicKey
-        if (key == "auto") {
-            Settings.currentMicStatus = "Otomatik giriş: Android ses yönlendirmesi"
-            return true
-        }
+        if (key == "auto") { Settings.currentMicStatus = "Otomatik giriş: Android ses yönlendirmesi"; return true }
         val parts = key.split("|", limit = 2)
         val wantedType = parts.firstOrNull()?.toIntOrNull()
         val wantedName = parts.getOrNull(1).orEmpty()
         val input = audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS).firstOrNull {
             it.type == wantedType && it.productName.toString().equals(wantedName, ignoreCase = true)
-        }
-        if (input == null) {
-            Settings.currentMicStatus = "HATA: " + wantedName + " bağlı değil; telefon mikrofonuna geçilmedi"
-            android.util.Log.e("EDA-MIC", Settings.currentMicStatus)
+        } ?: run { Settings.currentMicStatus = "HATA: $wantedName bağlı değil; telefon mikrofonuna geçilmedi"; return false }
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU) {
+            Settings.currentMicStatus = "Bu Android sürümünde seçili mikrofonu doğrudan tanıyıcıya bağlama desteklenmiyor; otomatik girişe geçilmedi"
             return false
         }
         try {
-            if (input.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
-                input.type == android.media.AudioDeviceInfo.TYPE_BLE_HEADSET) {
+            val bluetooth = input.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO || input.type == android.media.AudioDeviceInfo.TYPE_BLE_HEADSET
+            if (bluetooth) {
                 audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                    val communicationDevice = audioManager.availableCommunicationDevices.firstOrNull {
-                        (it.type == input.type || it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO) &&
-                            it.productName.toString().equals(wantedName, ignoreCase = true)
+                val comm = audioManager.availableCommunicationDevices.firstOrNull {
+                    it.productName.toString().equals(wantedName, ignoreCase = true) &&
+                        (it.type == input.type || it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO)
+                } ?: throw IllegalStateException("Seçilen Bluetooth cihaz iletişim girişlerinde yok")
+                if (!audioManager.setCommunicationDevice(comm)) throw IllegalStateException("Bluetooth iletişim yolu reddedildi")
+                selectedMicCommunicationDevice = comm
+            }
+            val minBuffer = AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
+            if (minBuffer <= 0) throw IllegalStateException("AudioRecord buffer geçersiz: $minBuffer")
+            val recorder = AudioRecord.Builder().setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+                .setAudioFormat(AudioFormat.Builder().setSampleRate(16000).setChannelMask(AudioFormat.CHANNEL_IN_MONO)
+                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT).build())
+                .setBufferSizeInBytes(maxOf(minBuffer * 2, 8192)).build()
+            if (recorder.state != AudioRecord.STATE_INITIALIZED || !recorder.setPreferredDevice(input)) {
+                recorder.release(); throw IllegalStateException("AudioRecord seçili mikrofonu açamadı")
+            }
+            val routed = recorder.routedDevice
+            if (routed == null || routed.id != input.id || routed.type != input.type) {
+                recorder.release(); throw IllegalStateException("Seçilen $wantedName; gerçek giriş ${routed?.productName ?: "bilinmiyor"}. Telefon mikrofonuna geçilmedi.")
+            }
+            val pipe = ParcelFileDescriptor.createPipe()
+            selectedMicPipeRead = pipe[0]; selectedMicPipeWrite = pipe[1]; selectedMicRecorder = recorder
+            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, selectedMicPipeRead)
+            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT, 1)
+            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING, AudioFormat.ENCODING_PCM_16BIT)
+            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE, 16000)
+            recorder.startRecording()
+            Settings.currentMicStatus = "Doğrulandı: ${routed.productName}; özel PCM kaynağı tanıyıcıya veriliyor"
+            android.util.Log.i("EDA-MIC", "Direct PCM source selected=${input.productName} id=${input.id}; routed=${routed.productName} id=${routed.id}")
+            selectedMicPumpJob = serviceScope.launch(Dispatchers.IO) {
+                val samples = ShortArray(2048)
+                try { FileOutputStream(selectedMicPipeWrite!!.fileDescriptor).use { out ->
+                    while (isActive) {
+                        val count = recorder.read(samples, 0, samples.size)
+                        if (count < 0) throw IllegalStateException("AudioRecord read=$count")
+                        if (count == 0) continue
+                        val bytes = ByteArray(count * 2)
+                        for (i in 0 until count) { val v = samples[i].toInt(); bytes[i*2] = (v and 255).toByte(); bytes[i*2+1] = ((v shr 8) and 255).toByte() }
+                        out.write(bytes)
                     }
-                    if (communicationDevice == null || !audioManager.setCommunicationDevice(communicationDevice)) {
-                        throw IllegalStateException("Android Bluetooth communication route could not be selected")
-                    }
-                    selectedMicCommunicationDevice = communicationDevice
-                    Settings.currentMicStatus = "Bluetooth yönlendirmesi istendi: " + communicationDevice.productName +
-                        " — SpeechRecognizer gerçek girişini doğrulama API'si sunmuyor"
-                    android.util.Log.i("EDA-MIC", Settings.currentMicStatus + "; inputId=" + input.id +
-                        "; communicationId=" + communicationDevice.id)
-                } else {
-                    @Suppress("DEPRECATION")
-                    audioManager.startBluetoothSco()
-                    @Suppress("DEPRECATION")
-                    audioManager.isBluetoothScoOn = true
-                    Settings.currentMicStatus = "Bluetooth SCO yönlendirmesi istendi: " + input.productName
-                    android.util.Log.i("EDA-MIC", Settings.currentMicStatus + "; inputId=" + input.id)
-                    delay(900L)
-                }
-            } else {
-                // For wired/USB inputs Android normally routes communication capture
-                // automatically. Do not claim a forced route unless the platform confirms it.
-                Settings.currentMicStatus = "Harici giriş bağlı: " + input.productName +
-                    " — sistem tanıyıcısının gerçek girişini Android API'siyle doğrulamak mümkün değil"
-                android.util.Log.i("EDA-MIC", Settings.currentMicStatus + "; inputId=" + input.id +
-                    "; type=" + input.type)
+                } } catch (e: Exception) { if (isActive) android.util.Log.e("EDA-MIC", "PCM source stopped: ${e.message}", e) }
             }
             return true
         } catch (e: Exception) {
-            try { audioManager.clearCommunicationDevice() } catch (_: Exception) {}
-            audioManager.mode = AudioManager.MODE_NORMAL
-            Settings.currentMicStatus = "HATA: " + wantedName + " yönlendirilemedi; telefon mikrofonuna geçilmedi — " +
-                (e.message ?: "bilinmeyen hata")
+            stopSelectedMicCapture("selected microphone start failed")
+            Settings.currentMicStatus = "HATA: $wantedName kullanılamadı; telefon mikrofonuna geçilmedi — ${e.message ?: "bilinmeyen hata"}"
             android.util.Log.e("EDA-MIC", Settings.currentMicStatus, e)
             return false
         }
     }
-
     private var microphoneAudioFocusRequest: AudioFocusRequest? = null
 
     private fun acquireMicrophoneAudioFocus() {
