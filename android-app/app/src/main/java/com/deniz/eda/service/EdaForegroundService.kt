@@ -678,72 +678,64 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     }
 
     private suspend fun startSelectedMicCapture(intent: Intent): Boolean {
+        // IMPORTANT: Do not open AudioRecord while Android SpeechRecognizer is
+        // listening. Doing both at once can reserve the microphone and prevent
+        // the recognizer from opening its input, which matches the active-mode bug.
         val key = Settings.preferredMicKey
-        if (key == "auto") { Settings.currentMicStatus = "Otomatik giriş: Android ses yönlendirmesi"; return true }
+        if (key == "auto") {
+            Settings.currentMicStatus = "Otomatik giriş: Android ses yönlendirmesi"
+            return true
+        }
         val parts = key.split("|", limit = 2)
         val wantedType = parts.firstOrNull()?.toIntOrNull()
         val wantedName = parts.getOrNull(1).orEmpty()
         val input = audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS).firstOrNull {
             it.type == wantedType && it.productName.toString().equals(wantedName, ignoreCase = true)
-        } ?: run { Settings.currentMicStatus = "HATA: $wantedName bağlı değil; telefon mikrofonuna geçilmedi"; return false }
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU) {
-            Settings.currentMicStatus = "Bu Android sürümünde seçili mikrofonu doğrudan tanıyıcıya bağlama desteklenmiyor; otomatik girişe geçilmedi"
+        } ?: run {
+            Settings.currentMicStatus = "HATA: $wantedName bağlı değil; telefon mikrofonuna geçilmedi"
             return false
         }
-        try {
-            val bluetooth = input.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO || input.type == android.media.AudioDeviceInfo.TYPE_BLE_HEADSET
-            if (bluetooth) {
+
+        val isBluetooth = input.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
+            (android.os.Build.VERSION.SDK_INT >= 33 && input.type == android.media.AudioDeviceInfo.TYPE_BLE_HEADSET)
+        if (!isBluetooth) {
+            Settings.currentMicStatus = "HATA: $wantedName için sistem konuşma yolu yönlendirmesi desteklenmiyor"
+            return false
+        }
+
+        return try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
                 val comm = audioManager.availableCommunicationDevices.firstOrNull {
-                    it.productName.toString().equals(wantedName, ignoreCase = true) &&
-                        (it.type == input.type || it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO)
-                } ?: throw IllegalStateException("Seçilen Bluetooth cihaz iletişim girişlerinde yok")
-                if (!audioManager.setCommunicationDevice(comm)) throw IllegalStateException("Bluetooth iletişim yolu reddedildi")
+                    it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO &&
+                        it.productName.toString().equals(wantedName, ignoreCase = true)
+                } ?: throw IllegalStateException("Bluetooth iletişim çıkışı bulunamadı; cihazı yeniden bağla")
+                if (!audioManager.setCommunicationDevice(comm)) {
+                    throw IllegalStateException("Android Bluetooth iletişim yolunu kabul etmedi")
+                }
                 selectedMicCommunicationDevice = comm
+            } else {
+                @Suppress("DEPRECATION")
+                audioManager.startBluetoothSco()
+                @Suppress("DEPRECATION")
+                audioManager.isBluetoothScoOn = true
+                audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
             }
-            val minBuffer = AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-            if (minBuffer <= 0) throw IllegalStateException("AudioRecord buffer geçersiz: $minBuffer")
-            val recorder = AudioRecord.Builder().setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
-                .setAudioFormat(AudioFormat.Builder().setSampleRate(16000).setChannelMask(AudioFormat.CHANNEL_IN_MONO)
-                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT).build())
-                .setBufferSizeInBytes(maxOf(minBuffer * 2, 8192)).build()
-            if (recorder.state != AudioRecord.STATE_INITIALIZED || !recorder.setPreferredDevice(input)) {
-                recorder.release(); throw IllegalStateException("AudioRecord seçili mikrofonu açamadı")
-            }
-            val routed = recorder.routedDevice
-            if (routed == null || routed.id != input.id || routed.type != input.type) {
-                recorder.release(); throw IllegalStateException("Seçilen $wantedName; gerçek giriş ${routed?.productName ?: "bilinmiyor"}. Telefon mikrofonuna geçilmedi.")
-            }
-            val pipe = ParcelFileDescriptor.createPipe()
-            selectedMicPipeRead = pipe[0]; selectedMicPipeWrite = pipe[1]; selectedMicRecorder = recorder
-            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, selectedMicPipeRead)
-            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT, 1)
-            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING, AudioFormat.ENCODING_PCM_16BIT)
-            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE, 16000)
-            recorder.startRecording()
-            Settings.currentMicStatus = "Doğrulandı: ${routed.productName}; özel PCM kaynağı tanıyıcıya veriliyor"
-            android.util.Log.i("EDA-MIC", "Direct PCM source selected=${input.productName} id=${input.id}; routed=${routed.productName} id=${routed.id}")
-            selectedMicPumpJob = serviceScope.launch(Dispatchers.IO) {
-                val samples = ShortArray(2048)
-                try { FileOutputStream(selectedMicPipeWrite!!.fileDescriptor).use { out ->
-                    while (isActive) {
-                        val count = recorder.read(samples, 0, samples.size)
-                        if (count < 0) throw IllegalStateException("AudioRecord read=$count")
-                        if (count == 0) continue
-                        val bytes = ByteArray(count * 2)
-                        for (i in 0 until count) { val v = samples[i].toInt(); bytes[i*2] = (v and 255).toByte(); bytes[i*2+1] = ((v shr 8) and 255).toByte() }
-                        out.write(bytes)
-                    }
-                } } catch (e: Exception) { if (isActive) android.util.Log.e("EDA-MIC", "PCM source stopped: ${e.message}", e) }
-            }
-            return true
+
+            // SpeechRecognizer owns the recording session. We only request the
+            // Bluetooth communication route and never compete for the microphone.
+            Settings.currentMicStatus =
+                "Bluetooth iletişim yolu istendi: $wantedName. Android SpeechRecognizer girişini ayrıca doğrulamak gerekir."
+            android.util.Log.i("EDA-MIC", "Requested Bluetooth communication route for $wantedName; no competing AudioRecord")
+            true
         } catch (e: Exception) {
-            stopSelectedMicCapture("selected microphone start failed")
-            Settings.currentMicStatus = "HATA: $wantedName kullanılamadı; telefon mikrofonuna geçilmedi — ${e.message ?: "bilinmeyen hata"}"
+            stopSelectedMicCapture("Bluetooth route request failed")
+            Settings.currentMicStatus = "HATA: $wantedName yönlendirilemedi — ${e.message ?: "bilinmeyen hata"}"
             android.util.Log.e("EDA-MIC", Settings.currentMicStatus, e)
-            return false
+            false
         }
     }
+
     private var microphoneAudioFocusRequest: AudioFocusRequest? = null
 
     private fun acquireMicrophoneAudioFocus() {
