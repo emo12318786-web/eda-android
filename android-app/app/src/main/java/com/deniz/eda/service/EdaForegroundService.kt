@@ -695,8 +695,6 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                     val communicationDevice = audioManager.availableCommunicationDevices.firstOrNull {
                         (it.type == input.type || it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO) &&
                             it.productName.toString().equals(wantedName, ignoreCase = true)
-                    } ?: audioManager.availableCommunicationDevices.firstOrNull {
-                        it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO
                     }
                     if (communicationDevice == null || !audioManager.setCommunicationDevice(communicationDevice)) {
                         throw IllegalStateException("Android Bluetooth communication route could not be selected")
@@ -986,7 +984,12 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             yenidenDenemeyiPlanla()
         }
 
-        override fun onReadyForSpeech(params: Bundle?) { android.util.Log.i("EDA-MIC", "SpeechRecognizer ready; " + Settings.currentMicStatus) }
+        override fun onReadyForSpeech(params: Bundle?) {
+            if (Settings.preferredMicKey != "auto") {
+                Settings.currentMicStatus = "Android iletişim yolu istendi; SpeechRecognizer gerçek mikrofonunu bildirmiyor. İstek: " + Settings.preferredMicKey.substringAfter("|")
+            }
+            android.util.Log.i("EDA-MIC", "SpeechRecognizer ready; " + Settings.currentMicStatus)
+        }
         override fun onBeginningOfSpeech() {}
         override fun onRmsChanged(rmsdB: Float) {}
         override fun onBufferReceived(buffer: ByteArray?) {}
