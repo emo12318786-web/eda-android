@@ -683,7 +683,24 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
         // the recognizer from opening its input, which matches the active-mode bug.
         val key = Settings.preferredMicKey
         if (key == "auto") {
-            Settings.currentMicStatus = "Otomatik giriş: Android ses yönlendirmesi"
+            // Do not leave a previously selected Bluetooth route active when the
+            // user switches back to the phone/default microphone.
+            try {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    audioManager.clearCommunicationDevice()
+                } else {
+                    @Suppress("DEPRECATION")
+                    audioManager.isBluetoothScoOn = false
+                    @Suppress("DEPRECATION")
+                    audioManager.stopBluetoothSco()
+                }
+                audioManager.mode = AudioManager.MODE_NORMAL
+            } catch (e: Exception) {
+                android.util.Log.w("EDA-MIC", "Default microphone route reset failed: ${e.message}")
+            }
+            selectedMicCommunicationDevice = null
+            Settings.currentMicStatus = "Otomatik giriş: Android varsayılan mikrofonu"
+            android.util.Log.i("EDA-MIC", "Default/phone microphone selected; Bluetooth communication route cleared")
             return true
         }
         val parts = key.split("|", limit = 2)
@@ -698,9 +715,30 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
 
         val isBluetooth = input.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
             (android.os.Build.VERSION.SDK_INT >= 33 && input.type == android.media.AudioDeviceInfo.TYPE_BLE_HEADSET)
+
+        // The built-in phone microphone must remain a valid selection too.
+        // The previous implementation rejected every non-Bluetooth input here,
+        // which made ACTIVE mode refuse to start listening with the phone mic.
         if (!isBluetooth) {
-            Settings.currentMicStatus = "HATA: $wantedName için sistem konuşma yolu yönlendirmesi desteklenmiyor"
-            return false
+            try {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    audioManager.clearCommunicationDevice()
+                } else {
+                    @Suppress("DEPRECATION")
+                    audioManager.isBluetoothScoOn = false
+                    @Suppress("DEPRECATION")
+                    audioManager.stopBluetoothSco()
+                }
+                audioManager.mode = AudioManager.MODE_NORMAL
+                selectedMicCommunicationDevice = null
+                Settings.currentMicStatus = "Telefon mikrofonu seçildi: $wantedName"
+                android.util.Log.i("EDA-MIC", "Using selected non-Bluetooth input $wantedName (type=${input.type}, id=${input.id}); Bluetooth route cleared")
+                return true
+            } catch (e: Exception) {
+                Settings.currentMicStatus = "HATA: Telefon mikrofonu başlatılamadı — ${e.message ?: "bilinmeyen hata"}"
+                android.util.Log.e("EDA-MIC", Settings.currentMicStatus, e)
+                return false
+            }
         }
 
         return try {
