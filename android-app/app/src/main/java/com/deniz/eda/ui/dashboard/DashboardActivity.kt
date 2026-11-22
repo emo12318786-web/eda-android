@@ -1074,13 +1074,21 @@ private fun NeonEnergyCore(status: Color, active: Boolean, sleeping: Boolean) {
 private fun NeonActionButton(label: String, icon: String, primary: Boolean, onClick: () -> Unit) {
     val shape = RoundedCornerShape(28.dp)
     val tint = if (primary) Color(0xFF00E5FF) else Color(0xFF9D4EDD)
+    val buttonMotion = rememberInfiniteTransition(label = "eda-action-border")
+    val buttonPhase by buttonMotion.animateFloat(0f, 1f,
+        animationSpec = infiniteRepeatable(tween(3600, easing = LinearEasing), RepeatMode.Reverse),
+        label = "action-border-phase")
     Surface(
         modifier = Modifier.height(54.dp)
             .shadow(18.dp, shape, ambientColor = tint.copy(alpha = 0.20f), spotColor = tint.copy(alpha = 0.26f))
             .clickable(onClick = onClick),
         shape = shape,
         color = Color.Transparent,
-        border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(tint, if (primary) Color(0xFF45FFC8) else Color(0xFF00E5FF))))
+        border = BorderStroke(2.dp, Brush.linearGradient(
+            colors = if (buttonPhase < 0.5f) listOf(tint, Color(0xFFFFB547), Color(0xFF00E5FF))
+                else listOf(Color(0xFF00E5FF), tint, Color(0xFFFFB547)),
+            start = Offset(buttonPhase * 420f, 0f), end = Offset(420f - buttonPhase * 120f, 240f)
+        ))
     ) {
         Box(
             Modifier.fillMaxSize().background(
@@ -1429,15 +1437,23 @@ private fun MetricCard(
     label: String, icon: String, value: String, detail: String, tint: Color,
     modifier: Modifier = Modifier, extra: @Composable (() -> Unit)? = null
 ) {
+    val cardMotion = rememberInfiniteTransition(label = "eda-card-border")
+    val cardPhase by cardMotion.animateFloat(0f, 1f,
+        animationSpec = infiniteRepeatable(tween(4600, easing = LinearEasing), RepeatMode.Reverse),
+        label = "card-border-phase")
+    val cyan = Color(0xFF00E5FF)
+    val purple = Color(0xFF9D4EDD)
+    val gold = Color(0xFFFFB547)
     Card(
         modifier = modifier.shadow(18.dp, RoundedCornerShape(20.dp),
-            ambientColor = Color(0xFF00E5FF).copy(alpha = 0.18f),
-            spotColor = Color(0xFF9D4EDD).copy(alpha = 0.20f)),
+            ambientColor = cyan.copy(alpha = 0.18f),
+            spotColor = purple.copy(alpha = 0.20f)),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0x99102141)),
-        border = BorderStroke(1.2.dp, Brush.horizontalGradient(listOf(
-            Color(0xFF00E5FF).copy(alpha = 0.55f), Color(0xFF9D4EDD).copy(alpha = 0.45f)
-        )))
+        border = BorderStroke(1.7.dp, Brush.linearGradient(
+            colors = if (cardPhase < 0.5f) listOf(cyan, purple, gold, cyan) else listOf(gold, cyan, purple, gold),
+            start = Offset(cardPhase * 500f, 0f), end = Offset(500f - cardPhase * 120f, 300f)
+        ))
     ) {
         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
