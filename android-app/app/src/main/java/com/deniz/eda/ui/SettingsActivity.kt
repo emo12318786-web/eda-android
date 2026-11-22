@@ -186,15 +186,15 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun applySelectedTheme() {
-        val background = AndroidColor.rgb(5, 9, 24)
+        val backgroundColor = AndroidColor.rgb(5, 9, 24)
         val panel = AndroidColor.rgb(8, 19, 42)
         val cyan = AndroidColor.rgb(0, 229, 255)
         val purple = AndroidColor.rgb(184, 77, 255)
         val gold = AndroidColor.rgb(255, 181, 71)
         val muted = AndroidColor.rgb(166, 190, 220)
 
-        window.statusBarColor = background
-        window.navigationBarColor = background
+        window.statusBarColor = backgroundColor
+        window.navigationBarColor = backgroundColor
         window.decorView.systemUiVisibility = 0
 
         val content = findViewById<ViewGroup>(android.R.id.content)
