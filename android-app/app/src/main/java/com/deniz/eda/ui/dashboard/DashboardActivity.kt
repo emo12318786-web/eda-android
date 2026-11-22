@@ -329,6 +329,10 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
     ) { padding ->
         Box(Modifier.fillMaxSize()) {
             NeonBackdrop(Modifier.matchParentSize())
+            // RGB motion is intentionally limited to Kontrol and Sistem; Merkez keeps its current look.
+            if (selectedTab == 1 || selectedTab == 2) {
+                RgbPageAtmosphere(Modifier.matchParentSize())
+            }
             // The selected neon palette colors the shared dashboard; keep layout and controls consistent across themes.
             Column(
                 Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
@@ -896,6 +900,73 @@ private fun BatteryGlyph(percent: Int) {
             size = Size(size.width - bodyWidth - 1.dp.toPx(), size.height * 0.30f), cornerRadius = CornerRadius(2.dp.toPx()))
     }
     Text("$percent%", color = fillColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+}
+
+@Composable
+private fun RgbPageAtmosphere(modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "eda-rgb-pages")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 6500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "rgb-page-phase"
+    )
+    val cyan = Color(0xFF00E5FF)
+    val purple = Color(0xFFB84DFF)
+    val orange = Color(0xFFFFA52F)
+    val pink = Color(0xFFFF4FA3)
+    val green = Color(0xFF45FFC8)
+    Canvas(modifier) {
+        val width = size.width
+        val height = size.height
+        val shift = width * phase
+        // Subtle, moving RGB aurora behind controls and system cards only.
+        drawRect(
+            brush = Brush.linearGradient(
+                colors = listOf(
+                    cyan.copy(alpha = 0.055f),
+                    purple.copy(alpha = 0.07f),
+                    pink.copy(alpha = 0.045f),
+                    orange.copy(alpha = 0.06f),
+                    green.copy(alpha = 0.045f)
+                ),
+                start = Offset(-width * 0.35f + shift, 0f),
+                end = Offset(width * 0.85f + shift, height)
+            )
+        )
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(cyan.copy(alpha = 0.10f), Color.Transparent),
+                center = Offset(width * (0.18f + 0.12f * phase), height * 0.22f),
+                radius = width * 0.56f
+            ),
+            radius = width * 0.56f,
+            center = Offset(width * (0.18f + 0.12f * phase), height * 0.22f)
+        )
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(purple.copy(alpha = 0.09f), Color.Transparent),
+                center = Offset(width * (0.86f - 0.15f * phase), height * 0.70f),
+                radius = width * 0.62f
+            ),
+            radius = width * 0.62f,
+            center = Offset(width * (0.86f - 0.15f * phase), height * 0.70f)
+        )
+        // A restrained RGB edge glides along the upper border.
+        drawRect(
+            brush = Brush.horizontalGradient(
+                colors = listOf(Color.Transparent, cyan.copy(alpha = 0.9f), purple.copy(alpha = 0.9f),
+                    orange.copy(alpha = 0.85f), pink.copy(alpha = 0.75f), Color.Transparent),
+                startX = -width * 0.25f + shift,
+                endX = width * 0.75f + shift
+            ),
+            topLeft = Offset(0f, 0f),
+            size = Size(width, 2.dp.toPx())
+        )
+    }
 }
 
 @Composable
