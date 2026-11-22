@@ -250,7 +250,7 @@ class SettingsActivity : AppCompatActivity() {
                         intArrayOf(AndroidColor.rgb(8, 42, 65), AndroidColor.rgb(39, 18, 66), AndroidColor.rgb(8, 35, 55))
                     ).apply {
                         cornerRadius = dp(16).toFloat()
-                        setStroke(dp(1.5f), cyan)
+                        setStroke(dp(2), cyan)
                     }
                     child.background = buttonFill
                     child.setTextColor(AndroidColor.WHITE)
@@ -261,7 +261,7 @@ class SettingsActivity : AppCompatActivity() {
                         repeatMode = ValueAnimator.REVERSE
                         interpolator = LinearInterpolator()
                         addUpdateListener { value ->
-                            buttonFill.setStroke(dp(1.5f), value.animatedValue as Int)
+                            buttonFill.setStroke(dp(2), value.animatedValue as Int)
                             child.invalidate()
                         }
                     }
@@ -314,7 +314,7 @@ class SettingsActivity : AppCompatActivity() {
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(panel)
-                setStroke(dp(1.5f), cyan)
+                setStroke(dp(2), cyan)
             }
             setTextColor(cyan)
             textSize = 26f
