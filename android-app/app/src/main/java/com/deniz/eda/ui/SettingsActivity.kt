@@ -46,6 +46,7 @@ import com.deniz.eda.core.Settings
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var gemmaSessions: GemmaSessionManager
+    private val settingsAnimators = mutableListOf<ValueAnimator>()
 
     private val gemmaModelPicker = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -178,6 +179,12 @@ class SettingsActivity : AppCompatActivity() {
      * Keep the legacy XML settings screen in the requested monochrome style.
      * Deliberately do not load themed artwork or apply the selected legacy palette.
      */
+    override fun onDestroy() {
+        settingsAnimators.forEach { it.cancel() }
+        settingsAnimators.clear()
+        super.onDestroy()
+    }
+
     private fun applySelectedTheme() {
         val background = AndroidColor.rgb(5, 9, 24)
         val panel = AndroidColor.rgb(8, 19, 42)
@@ -221,7 +228,7 @@ class SettingsActivity : AppCompatActivity() {
                 }
             }
             animator.start()
-            view.setTag(R.id.settings_rgb_animator_tag, animator)
+            settingsAnimators += animator
         }
 
         for (index in 1 until root.childCount) {
@@ -230,7 +237,7 @@ class SettingsActivity : AppCompatActivity() {
                 is LinearLayout -> {
                     child.setPadding(dp(16), dp(16), dp(16), dp(16))
                     child.elevation = dp(5).toFloat()
-                    animateBorder(child, dp(20).toFloat(), dp(1.5f), AndroidColor.argb(238, 7, 18, 40))
+                    animateBorder(child, dp(20).toFloat(), dp(2), AndroidColor.argb(238, 7, 18, 40))
                     val params = child.layoutParams as? LinearLayout.LayoutParams
                     params?.let {
                         it.bottomMargin = dp(14)
@@ -259,7 +266,7 @@ class SettingsActivity : AppCompatActivity() {
                         }
                     }
                     animator.start()
-                    child.setTag(R.id.settings_rgb_animator_tag, animator)
+                    settingsAnimators += animator
                 }
             }
         }
