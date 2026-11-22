@@ -421,25 +421,29 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
             } else {
                 HeroMini("SİSTEM DURUMU", "Bağlantıları ve kayıtlarını buradan kontrol et.")
                 SectionHeader("YAPAY ZEKÂ BAĞLANTILARI", "Son bağlantı kontrolünün sonucu")
-                StatusLine("🌐 İnternet", if (state.internetStatus) "Bağlı" else "Bağlı değil", state.internetStatus)
-                StatusLine("🦙 Ollama · Termux", state.ollamaStatus,
-                    state.ollamaStatus.contains("açık", true) || state.ollamaStatus.contains("acik", true) ||
-                        state.ollamaStatus.contains("hazır", true))
-                StatusLine("⚡ Groq", state.groqStatus,
-                    (state.groqStatus.contains("bağlı", true) || state.groqStatus.contains("bagli", true)) &&
-                        !state.groqStatus.contains("yok", true) && !state.groqStatus.contains("hata", true))
-                StatusLine("🌸 Pollinations", state.pollinationsStatus,
-                    state.pollinationsStatus.contains("açık", true) || state.pollinationsStatus.contains("acik", true) ||
-                        state.pollinationsStatus.contains("çalışıyor", true) || state.pollinationsStatus.contains("calisiyor", true))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SystemStatusTile("🌐 İnternet", if (state.internetStatus) "Bağlı" else "Bağlı değil",
+                        state.internetStatus, Modifier.weight(1f))
+                    SystemStatusTile("🦙 Ollama · Termux", state.ollamaStatus,
+                        state.ollamaStatus.contains("açık", true) || state.ollamaStatus.contains("acik", true) ||
+                            state.ollamaStatus.contains("hazır", true), Modifier.weight(1f))
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SystemStatusTile("⚡ Groq", state.groqStatus,
+                        (state.groqStatus.contains("bağlı", true) || state.groqStatus.contains("bagli", true)) &&
+                            !state.groqStatus.contains("yok", true) && !state.groqStatus.contains("hata", true),
+                        Modifier.weight(1f))
+                    SystemStatusTile("🌸 Pollinations", state.pollinationsStatus,
+                        state.pollinationsStatus.contains("açık", true) || state.pollinationsStatus.contains("acik", true) ||
+                            state.pollinationsStatus.contains("çalışıyor", true) || state.pollinationsStatus.contains("calisiyor", true),
+                        Modifier.weight(1f))
+                }
                 SectionHeader("SAĞLIK · MI BAND 5", "Yalnızca Health Connect'e gerçekten ulaşan veriler")
-                StatusLine(
-                    "🩺 Health Connect",
-                    healthDiagnostic,
+                SystemStatusTile("🩺 Health Connect", healthDiagnostic,
                     healthDiagnostic.contains("izinleri açık", true) &&
                         !healthDiagnostic.contains("veri gelmiyor", true) &&
                         !healthDiagnostic.contains("kullanılamıyor", true) &&
-                        !healthDiagnostic.contains("eksik", true)
-                )
+                        !healthDiagnostic.contains("eksik", true), Modifier.fillMaxWidth())
                 Button(
                     onClick = {
                         chatScope.launch {
@@ -468,20 +472,33 @@ private fun EdaDashboard(viewModel: DashboardViewModel, onAction: (String) -> Un
                     "ERROR" -> "Hata: ${wakeStatus.sherpaDetail}"
                     else -> "Kapalı / başlatılmadı"
                 }
-                StatusLine("🎯 Sherpa · Ana motor", if (com.deniz.eda.core.Settings.sherpaWakeEnabled) sherpaLabel else "Kapalı (Ayarlar’dan aç)", com.deniz.eda.core.Settings.sherpaWakeEnabled && sherpaState in setOf("LISTENING", "READY", "TRIGGERED"))
-                val voskState = wakeStatus.voskState
-                val voskLabel = when (voskState) {
-                    "LISTENING" -> "Aktif · Dinliyor"
-                    "READY" -> "Hazır · Yedekte"
-                    "PREPARING" -> "Hazırlanıyor"
-                    "DOWNLOADING" -> "İndiriliyor"
-                    "TRIGGERED" -> "Uyandırdı"
-                    "ERROR" -> "Hata: ${wakeStatus.voskDetail}"
-                    else -> "Kapalı / başlatılmadı"
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SystemStatusTile("🎯 Sherpa · Ana motor",
+                        if (com.deniz.eda.core.Settings.sherpaWakeEnabled) sherpaLabel else "Kapalı (Ayarlar’dan aç)",
+                        com.deniz.eda.core.Settings.sherpaWakeEnabled && sherpaState in setOf("LISTENING", "READY", "TRIGGERED"),
+                        Modifier.weight(1f))
+                    val voskState = wakeStatus.voskState
+                    val voskLabel = when (voskState) {
+                        "LISTENING" -> "Aktif · Dinliyor"
+                        "READY" -> "Hazır · Yedekte"
+                        "PREPARING" -> "Hazırlanıyor"
+                        "DOWNLOADING" -> "İndiriliyor"
+                        "TRIGGERED" -> "Uyandırdı"
+                        "ERROR" -> "Hata: ${wakeStatus.voskDetail}"
+                        else -> "Kapalı / başlatılmadı"
+                    }
+                    SystemStatusTile("🎙 Vosk · Yedek motor",
+                        if (com.deniz.eda.core.Settings.voskWakeEnabled) voskLabel else "Kapalı (Ayarlar’dan aç)",
+                        com.deniz.eda.core.Settings.voskWakeEnabled && voskState in setOf("LISTENING", "READY", "TRIGGERED"),
+                        Modifier.weight(1f))
                 }
-                StatusLine("🎙 Vosk · Yedek motor", if (com.deniz.eda.core.Settings.voskWakeEnabled) voskLabel else "Kapalı (Ayarlar’dan aç)", com.deniz.eda.core.Settings.voskWakeEnabled && voskState in setOf("LISTENING", "READY", "TRIGGERED"))
-                StatusLine("🗣 Uyandırma ifadesi", "Beklenen: ${wakeStatus.sherpaExpected} · Son duyulan: ${wakeStatus.sherpaLastHeard.ifBlank { wakeStatus.voskLastHeard.ifBlank { "—" } }}", wakeStatus.sherpaLastMatch || wakeStatus.voskLastMatch)
-                StatusLine("📦 Sherpa modeli", "APK içinde paketli; kurulum sonrası indirme gerekmez", true)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SystemStatusTile("🗣 Uyandırma ifadesi",
+                        "Beklenen: ${wakeStatus.sherpaExpected} · Son duyulan: ${wakeStatus.sherpaLastHeard.ifBlank { wakeStatus.voskLastHeard.ifBlank { "—" } }}",
+                        wakeStatus.sherpaLastMatch || wakeStatus.voskLastMatch, Modifier.weight(1f))
+                    SystemStatusTile("📦 Sherpa modeli", "APK içinde paketli; kurulum sonrası indirme gerekmez",
+                        true, Modifier.weight(1f))
+                }
                 SectionHeader("KAYITLARIN", "Bu telefonda saklanan bilgiler")
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     MetricCard("HAFIZA", "✧", state.hafizaSayi.toString(), "kayıt", Violet, Modifier.weight(1f))
@@ -1544,8 +1561,18 @@ private fun MetricCard(
 @Composable
 private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
     val main = selected.split(" → ").firstOrNull().orEmpty()
-    Column(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Color(0xFF07152D), Color(0xFF10133A))), RoundedCornerShape(22.dp)).padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    val providerMotion = rememberInfiniteTransition(label = "provider-rgb")
+    val providerPhase by providerMotion.animateFloat(0f, 1f,
+        animationSpec = infiniteRepeatable(tween(5200, easing = LinearEasing), RepeatMode.Reverse),
+        label = "provider-phase")
+    val providerShape = RoundedCornerShape(22.dp)
+    Column(Modifier.fillMaxWidth().shadow(12.dp, providerShape)
+        .background(Brush.linearGradient(
+            colors = if (providerPhase < 0.5f) listOf(Color(0xFF07152D), Color(0xFF17143B), Color(0xFF083047))
+                else listOf(Color(0xFF10133A), Color(0xFF082D3B), Color(0xFF211336)),
+            start = Offset(providerPhase * 520f, 0f), end = Offset(520f - providerPhase * 100f, 300f)), providerShape)
+        .border(1.5.dp, Brush.horizontalGradient(listOf(Cyan, Violet, Color(0xFFFFB547), Cyan)), providerShape)
+        .padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Öncelik zinciri", color = Muted, fontSize = 10.sp)
         Text(selected, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1570,8 +1597,16 @@ private fun ProviderPanel(selected: String, onAction: (String) -> Unit) {
 
 @Composable
 private fun ControlTile(icon: String, title: String, detail: String, tint: Color, onClick: () -> Unit) {
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = themeShape(18),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF07152D)), border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(tint, Violet, Cyan)))) {
+    val tileMotion = rememberInfiniteTransition(label = "control-tile-glow")
+    val tilePhase by tileMotion.animateFloat(0f, 1f,
+        animationSpec = infiniteRepeatable(tween(4800, easing = LinearEasing), RepeatMode.Reverse),
+        label = "control-tile-phase")
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth().shadow(12.dp, themeShape(18),
+        ambientColor = tint.copy(alpha = 0.18f), spotColor = Cyan.copy(alpha = 0.12f)),
+        shape = themeShape(18), colors = CardDefaults.cardColors(containerColor = Color(0xCC07152D)),
+        border = BorderStroke(1.7.dp, Brush.linearGradient(
+            colors = if (tilePhase < 0.5f) listOf(tint, Cyan, Violet) else listOf(Violet, tint, Color(0xFFFFB547)),
+            start = Offset(tilePhase * 400f, 0f), end = Offset(400f - tilePhase * 100f, 250f)))) {
         Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(44.dp).background(tint.copy(alpha = .12f), themeShape(14)),
                 contentAlignment = Alignment.Center) { Text(ThemeConfig.actionIcon(title, icon), color = tint, fontSize = 21.sp) }
@@ -1588,10 +1623,55 @@ private fun ControlTile(icon: String, title: String, detail: String, tint: Color
 
 @Composable
 private fun InfoNotice(title: String, detail: String) {
-    Column(Modifier.fillMaxWidth().background(Panel, themeShape(16)).padding(15.dp)) {
+    val motion = rememberInfiniteTransition(label = "info-notice-rgb")
+    val phase by motion.animateFloat(0f, 1f,
+        animationSpec = infiniteRepeatable(tween(5600, easing = LinearEasing), RepeatMode.Reverse),
+        label = "info-notice-phase")
+    val shape = themeShape(16)
+    Column(Modifier.fillMaxWidth().shadow(8.dp, shape)
+        .background(Brush.linearGradient(listOf(Color(0xCC07152D), Color(0xCC141438), Color(0xCC082B3B)),
+            start = Offset(phase * 450f, 0f), end = Offset(450f - phase * 80f, 260f)), shape)
+        .border(1.4.dp, Brush.horizontalGradient(listOf(Cyan.copy(alpha = 0.85f), Violet.copy(alpha = 0.85f),
+            Color(0xFFFFB547).copy(alpha = 0.8f), Cyan.copy(alpha = 0.85f))), shape)
+        .padding(15.dp)) {
         Text(themeLeadingIcon(title), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
         Spacer(Modifier.height(5.dp))
         Text(detail, color = Muted, fontSize = 11.sp, lineHeight = 16.sp)
+    }
+}
+
+@Composable
+private fun SystemStatusTile(name: String, status: String, ok: Boolean, modifier: Modifier = Modifier) {
+    val motion = rememberInfiniteTransition(label = "system-status-rgb")
+    val phase by motion.animateFloat(0f, 1f,
+        animationSpec = infiniteRepeatable(tween(4300, easing = LinearEasing), RepeatMode.Reverse),
+        label = "system-status-phase")
+    val cyan = Color(0xFF00E5FF)
+    val purple = Color(0xFFB84DFF)
+    val gold = Color(0xFFFFB547)
+    val stateColor = if (ok) cyan else gold
+    Card(modifier = modifier.heightIn(min = 108.dp).shadow(10.dp, RoundedCornerShape(18.dp),
+        ambientColor = stateColor.copy(alpha = 0.15f), spotColor = purple.copy(alpha = 0.12f)),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xCC07152D)),
+        border = BorderStroke(1.4.dp, Brush.linearGradient(
+            colors = if (phase < 0.5f) listOf(cyan, purple, gold) else listOf(gold, cyan, purple),
+            start = Offset(phase * 360f, 0f), end = Offset(360f - phase * 90f, 230f)
+        ))) {
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(8.dp).background(stateColor, CircleShape))
+                Spacer(Modifier.width(7.dp))
+                Text(name, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            }
+            Text(status, color = Color(0xFFD5E4FF), fontSize = 10.sp, lineHeight = 14.sp,
+                maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Box(Modifier.fillMaxWidth().height(3.dp).clip(CircleShape)
+                .background(Brush.horizontalGradient(listOf(stateColor.copy(alpha = 0.25f), stateColor, purple.copy(alpha = 0.65f)))))
+            Text(if (ok) "● ONLINE" else "○ CHECK", color = stateColor, fontSize = 9.sp,
+                fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+        }
     }
 }
 
@@ -1611,8 +1691,17 @@ private fun StatusLine(name: String, status: String, ok: Boolean) {
 
 @Composable
 private fun LogsPanel(logs: List<String>) {
-    Column(Modifier.fillMaxWidth().background(Panel, themeShape(18)).padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val logsMotion = rememberInfiniteTransition(label = "logs-rgb")
+    val logsPhase by logsMotion.animateFloat(0f, 1f,
+        animationSpec = infiniteRepeatable(tween(6100, easing = LinearEasing), RepeatMode.Reverse),
+        label = "logs-phase")
+    val logsShape = themeShape(18)
+    Column(Modifier.fillMaxWidth().shadow(10.dp, logsShape)
+        .background(Brush.linearGradient(listOf(Color(0xCC07152D), Color(0xCC111535), Color(0xCC062D39)),
+            start = Offset(logsPhase * 500f, 0f), end = Offset(500f - logsPhase * 100f, 300f)), logsShape)
+        .border(1.3.dp, Brush.horizontalGradient(listOf(Cyan.copy(alpha = 0.8f), Violet.copy(alpha = 0.8f),
+            Color(0xFFFFB547).copy(alpha = 0.7f))), logsShape)
+        .padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (logs.isEmpty()) {
             Text("Henüz kayıt yok. Eda'yı kullandıkça burada görünecek.", color = Muted, fontSize = 11.sp)
         } else {
