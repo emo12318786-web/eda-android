@@ -21,6 +21,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.foundation.background
@@ -845,18 +851,7 @@ private fun DashboardLiveMetrics(state: DashboardViewModel.DashboardState) {
             label = "BATARYA", icon = ThemeConfig.icon("battery"), value = "${state.pilYuzde}%",
             detail = state.pilDurum.ifBlank { "pil durumu" },
             tint = if (state.pilYuzde <= 20) Bad else Good, modifier = Modifier.weight(1f),
-            extra = {
-                Text(
-                    when {
-                        state.pilYuzde > 80 -> "█████"
-                        state.pilYuzde > 60 -> "████░"
-                        state.pilYuzde > 40 -> "███░░"
-                        state.pilYuzde > 20 -> "██░░░"
-                        else -> "█░░░░"
-                    },
-                    color = if (state.pilYuzde <= 20) Bad else Good, fontSize = 11.sp
-                )
-            }
+            extra = { BatteryGlyph(state.pilYuzde) }
         )
         MetricCard(
             label = "BAĞLANTI", icon = ThemeConfig.icon("network"),
@@ -877,6 +872,30 @@ private fun DashboardLiveMetrics(state: DashboardViewModel.DashboardState) {
         MetricCard("HATIRLATMA", ThemeConfig.icon("reminder"), state.hatirlatmaSayi.toString(),
             "bekleyen görev", Warn, Modifier.weight(1f))
     }
+}
+
+@Composable
+private fun BatteryGlyph(percent: Int) {
+    val level = percent.coerceIn(0, 100) / 100f
+    val fillColor = when {
+        percent <= 15 -> Color(0xFFFF5252)
+        percent <= 35 -> Color(0xFFFFB74D)
+        else -> Color(0xFF00E5FF)
+    }
+    Canvas(Modifier.width(98.dp).height(23.dp)) {
+        val bodyWidth = size.width * 0.90f
+        val bodyHeight = size.height * 0.78f
+        val top = (size.height - bodyHeight) / 2f
+        drawRoundRect(color = Color.White.copy(alpha = 0.92f), topLeft = Offset(0f, top),
+            size = Size(bodyWidth, bodyHeight), cornerRadius = CornerRadius(4.dp.toPx()), style = Stroke(1.5.dp.toPx()))
+        drawRoundRect(brush = Brush.horizontalGradient(listOf(fillColor.copy(alpha = 0.65f), fillColor)),
+            topLeft = Offset(3.dp.toPx(), top + 3.dp.toPx()),
+            size = Size((bodyWidth - 6.dp.toPx()).coerceAtLeast(0f) * level, (bodyHeight - 6.dp.toPx()).coerceAtLeast(0f)),
+            cornerRadius = CornerRadius(2.dp.toPx()))
+        drawRoundRect(color = Color.White.copy(alpha = 0.9f), topLeft = Offset(bodyWidth + 1.dp.toPx(), size.height * 0.35f),
+            size = Size(size.width - bodyWidth - 1.dp.toPx(), size.height * 0.30f), cornerRadius = CornerRadius(2.dp.toPx()))
+    }
+    Text("$percent%", color = fillColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
 }
 
 @Composable
@@ -981,56 +1000,70 @@ private fun DashboardLogsSection(state: DashboardViewModel.DashboardState) {
 
 @Composable
 private fun NeonEnergyCore(status: Color, active: Boolean, sleeping: Boolean) {
-    val accent = Violet
-    val secondary = Cyan
-    Box(Modifier.fillMaxWidth().height(260.dp), contentAlignment = Alignment.Center) {
+    val motion = rememberInfiniteTransition(label = "eda-orbit")
+    val orbitalRotation by motion.animateFloat(0f, 360f,
+        animationSpec = infiniteRepeatable(tween(11500, easing = LinearEasing), RepeatMode.Restart),
+        label = "orbital-rotation")
+    val colorShift by motion.animateFloat(0f, 1f,
+        animationSpec = infiniteRepeatable(tween(4200, easing = LinearEasing), RepeatMode.Reverse),
+        label = "neon-color-shift")
+    val blue = Color(0xFF00D9FF)
+    val gold = Color(0xFFFFA52F)
+    val violet = Color(0xFFB84DFF)
+    val warm = androidx.compose.ui.graphics.lerp(blue, gold, colorShift)
+    val cool = androidx.compose.ui.graphics.lerp(violet, blue, colorShift)
+    Box(Modifier.fillMaxWidth().height(292.dp), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
             val cx = size.width / 2f
             val cy = size.height / 2f
             val min = size.minDimension
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(secondary.copy(alpha = 0.35f), accent.copy(alpha = 0.18f), Color.Transparent),
-                    center = Offset(cx, cy), radius = min * 0.55f
-                ),
-                radius = min * 0.55f, center = Offset(cx, cy)
-            )
-            drawCircle(secondary.copy(alpha = 0.75f), min * 0.38f, Offset(cx, cy), style = Stroke(2.4.dp.toPx()))
-            drawCircle(accent.copy(alpha = 0.55f), min * 0.46f, Offset(cx, cy), style = Stroke(1.6.dp.toPx()))
-            drawCircle(secondary.copy(alpha = 0.30f), min * 0.52f, Offset(cx, cy), style = Stroke(1.2.dp.toPx()))
-            rotate(22f, pivot = Offset(cx, cy)) {
-                drawOval(secondary.copy(alpha = 0.90f),
-                    topLeft = Offset(cx - size.width * 0.42f, cy - size.height * 0.16f),
-                    size = Size(size.width * 0.84f, size.height * 0.32f), style = Stroke(2.3.dp.toPx()))
+            drawCircle(brush = Brush.radialGradient(listOf(blue.copy(alpha = 0.30f), violet.copy(alpha = 0.16f), Color.Transparent),
+                center = Offset(cx, cy), radius = min * 0.59f), radius = min * 0.59f, center = Offset(cx, cy))
+            drawCircle(gold.copy(alpha = 0.30f), min * 0.49f, Offset(cx, cy), style = Stroke(1.2.dp.toPx()))
+            drawCircle(blue.copy(alpha = 0.42f), min * 0.43f, Offset(cx, cy), style = Stroke(1.5.dp.toPx()))
+            drawCircle(violet.copy(alpha = 0.32f), min * 0.36f, Offset(cx, cy), style = Stroke(1.4.dp.toPx()))
+            rotate(orbitalRotation, pivot = Offset(cx, cy)) {
+                drawOval(brush = Brush.horizontalGradient(listOf(warm, cool, gold, blue)),
+                    topLeft = Offset(cx - size.width * 0.43f, cy - size.height * 0.16f),
+                    size = Size(size.width * 0.86f, size.height * 0.32f), style = Stroke(2.8.dp.toPx()))
+                drawCircle(brush = Brush.radialGradient(listOf(Color.White, warm, warm.copy(alpha = 0.05f))),
+                    radius = 9.dp.toPx(), center = Offset(cx + size.width * 0.34f, cy))
+                drawCircle(brush = Brush.radialGradient(listOf(Color.White, cool, cool.copy(alpha = 0.05f))),
+                    radius = 8.dp.toPx(), center = Offset(cx - size.width * 0.34f, cy))
             }
-            rotate(-28f, pivot = Offset(cx, cy)) {
-                drawOval(accent.copy(alpha = 0.70f),
-                    topLeft = Offset(cx - size.width * 0.38f, cy - size.height * 0.13f),
-                    size = Size(size.width * 0.76f, size.height * 0.26f), style = Stroke(1.8.dp.toPx()))
+            rotate(-orbitalRotation * 0.62f, pivot = Offset(cx, cy)) {
+                drawOval(cool.copy(alpha = 0.82f), topLeft = Offset(cx - size.width * 0.38f, cy - size.height * 0.12f),
+                    size = Size(size.width * 0.76f, size.height * 0.24f), style = Stroke(1.8.dp.toPx()))
             }
-            drawCircle(secondary, 5.5.dp.toPx(), Offset(cx + size.width * 0.28f, cy - size.height * 0.22f))
-            drawCircle(accent, 4.2.dp.toPx(), Offset(cx - size.width * 0.32f, cy + size.height * 0.18f))
         }
-        Box(Modifier.size(118.dp).background(
-            Brush.radialGradient(listOf(secondary.copy(alpha = 0.65f), accent.copy(alpha = 0.40f), Color(0xFF0A1630))),
-            CircleShape
-        ), contentAlignment = Alignment.Center) {
-            Surface(
-                Modifier.fillMaxSize().padding(6.dp), shape = CircleShape,
-                color = Color(0xFF050D1F).copy(alpha = 0.92f),
-                border = BorderStroke(2.5.dp, Brush.linearGradient(listOf(secondary, accent, secondary)))
-            ) {
+        Box(Modifier.size(122.dp).shadow(20.dp, CircleShape, ambientColor = blue.copy(alpha = 0.45f), spotColor = gold.copy(alpha = 0.34f))
+            .background(Brush.radialGradient(listOf(Color(0xFF152B57), Color(0xFF071026), Color(0xFF020713))), CircleShape),
+            contentAlignment = Alignment.Center) {
+            Surface(Modifier.fillMaxSize().padding(5.dp), shape = CircleShape, color = Color(0xFF030817).copy(alpha = 0.96f),
+                border = BorderStroke(3.dp, Brush.sweepGradient(listOf(blue, violet, gold, blue)))) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text("E", fontSize = 58.sp, fontWeight = FontWeight.Light, color = Color.White)
+                    Canvas(Modifier.fillMaxSize()) {
+                        val particles = listOf(-0.31f to -0.28f, 0.30f to -0.31f, -0.34f to 0.18f, 0.34f to 0.22f,
+                            -0.19f to -0.39f, 0.18f to 0.39f, 0.02f to -0.43f, -0.03f to 0.42f,
+                            0.42f to -0.08f, -0.42f to -0.05f, 0.27f to 0.31f, -0.27f to 0.32f)
+                        particles.forEachIndexed { index, p ->
+                            val flicker = if ((index + (orbitalRotation / 30f).toInt()) % 3 == 0) 0.95f else 0.38f
+                            drawCircle(if (index % 2 == 0) Color.White.copy(alpha = flicker) else blue.copy(alpha = flicker),
+                                radius = if (index % 4 == 0) 1.8.dp.toPx() else 1.dp.toPx(),
+                                center = Offset(size.width * (0.5f + p.first), size.height * (0.5f + p.second)))
+                        }
+                    }
+                    Text("E", fontSize = 62.sp, fontWeight = FontWeight.Black, color = Color(0xFFEAFBFF),
+                        style = TextStyle(shadow = androidx.compose.ui.graphics.Shadow(color = blue.copy(alpha = 0.90f), blurRadius = 18f)))
                 }
             }
         }
     }
-    Surface(color = status.copy(alpha = 0.14f), shape = RoundedCornerShape(50),
-        border = BorderStroke(1.dp, Brush.horizontalGradient(listOf(secondary, accent)))) {
+    Surface(color = status.copy(alpha = 0.13f), shape = RoundedCornerShape(50),
+        border = BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(blue, gold, violet, blue)))) {
         Row(Modifier.padding(horizontal = 18.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(Modifier.size(7.dp).background(status, CircleShape))
+            Box(Modifier.size(7.dp).background(if (sleeping) gold else if (active) blue else status, CircleShape))
             Text(if (active) "EDA DİNLİYOR" else if (sleeping) "UYKU MODUNDA" else "MERKEZ BEKLEMEDE",
                 color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
         }
@@ -1068,6 +1101,13 @@ private fun NeonActionButton(label: String, icon: String, primary: Boolean, onCl
 @Composable
 private fun HeroPanel(name: String, time: String, date: String, status: Color, active: Boolean, sleeping: Boolean, onAction: (String) -> Unit) {
     val shape = CutCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomEnd = 18.dp, bottomStart = 18.dp)
+    val borderMotion = rememberInfiniteTransition(label = "eda-hero-border")
+    val borderPhase by borderMotion.animateFloat(0f, 1f,
+        animationSpec = infiniteRepeatable(tween(5200, easing = LinearEasing), RepeatMode.Reverse),
+        label = "hero-border-phase")
+    val borderBlue = Color(0xFF00DFFF)
+    val borderGold = Color(0xFFFFAD42)
+    val borderPurple = Color(0xFFB14DFF)
     Box(
         Modifier.fillMaxWidth()
             .shadow(22.dp, shape, ambientColor = Cyan.copy(alpha = 0.30f), spotColor = Violet.copy(alpha = 0.32f))
@@ -1076,7 +1116,11 @@ private fun HeroPanel(name: String, time: String, date: String, status: Color, a
                 Brush.linearGradient(listOf(Color(0xFF071B3B), Color(0xFF03091B), Color(0xFF100B2A))),
                 shape
             )
-            .then(Modifier.border(1.5.dp, Brush.horizontalGradient(listOf(Cyan, Color(0xFF167DFF), Violet, Cyan)), shape))
+            .then(Modifier.border(2.dp, Brush.linearGradient(
+                colors = if (borderPhase < 0.5f) listOf(borderBlue, borderPurple, borderGold, borderBlue)
+                    else listOf(borderGold, borderBlue, borderPurple, borderGold),
+                start = Offset(borderPhase * 900f, 0f), end = Offset(900f - borderPhase * 300f, 1200f)
+            ), shape))
             .padding(18.dp)
     ) {
         when (ThemeConfig.current.layoutMode) {
