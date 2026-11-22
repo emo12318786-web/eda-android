@@ -1,6 +1,9 @@
 package com.deniz.eda.ui
 
 import android.os.Bundle
+import android.animation.ArgbEvaluator
+import android.animation.ValueAnimator
+import android.view.animation.LinearInterpolator
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioRecord
@@ -176,26 +179,87 @@ class SettingsActivity : AppCompatActivity() {
      * Deliberately do not load themed artwork or apply the selected legacy palette.
      */
     private fun applySelectedTheme() {
-        val background = AndroidColor.rgb(8, 8, 8)
-        val panel = AndroidColor.rgb(24, 24, 24)
-        val accent = AndroidColor.rgb(235, 235, 235)
-        val muted = AndroidColor.rgb(165, 165, 165)
+        val background = AndroidColor.rgb(5, 9, 24)
+        val panel = AndroidColor.rgb(8, 19, 42)
+        val cyan = AndroidColor.rgb(0, 229, 255)
+        val purple = AndroidColor.rgb(184, 77, 255)
+        val gold = AndroidColor.rgb(255, 181, 71)
+        val muted = AndroidColor.rgb(166, 190, 220)
+
         window.statusBarColor = background
         window.navigationBarColor = background
+        window.decorView.systemUiVisibility = 0
 
         val content = findViewById<ViewGroup>(android.R.id.content)
         val scroll = content.getChildAt(0) as? ScrollView ?: return
-        scroll.setBackgroundColor(background)
+        scroll.setBackground(GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            intArrayOf(AndroidColor.rgb(5, 10, 28), AndroidColor.rgb(12, 12, 38), AndroidColor.rgb(4, 25, 42))
+        ))
         val root = scroll.getChildAt(0) as? LinearLayout ?: return
         root.setBackgroundColor(AndroidColor.TRANSPARENT)
+        root.setPadding(dp(18), root.paddingTop, dp(18), root.paddingBottom)
+        scroll.clipToPadding = false
+
+        fun animateBorder(view: View, radius: Float, strokeWidth: Int, fill: Int) {
+            val drawable = GradientDrawable().apply {
+                setColor(fill)
+                cornerRadius = radius
+                setStroke(strokeWidth, cyan)
+            }
+            view.background = drawable
+            val animator = ValueAnimator.ofObject(
+                ArgbEvaluator(), cyan, purple, gold, cyan
+            ).apply {
+                duration = 5200L
+                repeatCount = ValueAnimator.INFINITE
+                repeatMode = ValueAnimator.REVERSE
+                interpolator = LinearInterpolator()
+                addUpdateListener { value ->
+                    drawable.setStroke(strokeWidth, value.animatedValue as Int)
+                    view.invalidate()
+                }
+            }
+            animator.start()
+            view.setTag(R.id.settings_rgb_animator_tag, animator)
+        }
 
         for (index in 1 until root.childCount) {
             val child = root.getChildAt(index)
-            if (child is LinearLayout) {
-                child.background = GradientDrawable().apply {
-                    setColor(panel)
-                    cornerRadius = dp(18).toFloat()
-                    setStroke(dp(1), AndroidColor.rgb(70, 70, 70))
+            when (child) {
+                is LinearLayout -> {
+                    child.setPadding(dp(16), dp(16), dp(16), dp(16))
+                    child.elevation = dp(5).toFloat()
+                    animateBorder(child, dp(20).toFloat(), dp(1.5f), AndroidColor.argb(238, 7, 18, 40))
+                    val params = child.layoutParams as? LinearLayout.LayoutParams
+                    params?.let {
+                        it.bottomMargin = dp(14)
+                        child.layoutParams = it
+                    }
+                }
+                is Button -> {
+                    val buttonFill = GradientDrawable(
+                        GradientDrawable.Orientation.LEFT_RIGHT,
+                        intArrayOf(AndroidColor.rgb(8, 42, 65), AndroidColor.rgb(39, 18, 66), AndroidColor.rgb(8, 35, 55))
+                    ).apply {
+                        cornerRadius = dp(16).toFloat()
+                        setStroke(dp(1.5f), cyan)
+                    }
+                    child.background = buttonFill
+                    child.setTextColor(AndroidColor.WHITE)
+                    child.elevation = dp(3).toFloat()
+                    val animator = ValueAnimator.ofObject(ArgbEvaluator(), cyan, purple, gold, cyan).apply {
+                        duration = 4200L
+                        repeatCount = ValueAnimator.INFINITE
+                        repeatMode = ValueAnimator.REVERSE
+                        interpolator = LinearInterpolator()
+                        addUpdateListener { value ->
+                            buttonFill.setStroke(dp(1.5f), value.animatedValue as Int)
+                            child.invalidate()
+                        }
+                    }
+                    animator.start()
+                    child.setTag(R.id.settings_rgb_animator_tag, animator)
                 }
             }
         }
@@ -205,24 +269,32 @@ class SettingsActivity : AppCompatActivity() {
                 is EditText -> {
                     view.setTextColor(AndroidColor.WHITE)
                     view.setHintTextColor(muted)
-                    view.backgroundTintList = ColorStateList.valueOf(accent)
+                    view.backgroundTintList = ColorStateList.valueOf(cyan)
+                    view.setPadding(dp(10), view.paddingTop, dp(10), view.paddingBottom)
                 }
                 is Switch -> {
                     view.setTextColor(AndroidColor.WHITE)
-                    view.thumbTintList = ColorStateList.valueOf(accent)
-                    view.trackTintList = ColorStateList.valueOf(AndroidColor.rgb(90, 90, 90))
+                    view.thumbTintList = ColorStateList.valueOf(cyan)
+                    view.trackTintList = ColorStateList.valueOf(AndroidColor.rgb(55, 65, 105))
+                    view.minimumHeight = dp(48)
                 }
                 is Button -> {
-                    view.background = GradientDrawable().apply {
-                        cornerRadius = dp(12).toFloat()
-                        setColor(AndroidColor.rgb(45, 45, 45))
-                        setStroke(dp(1), accent)
-                    }
                     view.setTextColor(AndroidColor.WHITE)
+                    view.isAllCaps = false
+                    view.textSize = 14f
                 }
                 is TextView -> {
-                    view.setTextColor(if (view.currentTextColor == AndroidColor.GRAY) muted else AndroidColor.WHITE)
-                    view.typeface = Typeface.create("sans-serif", view.typeface?.style ?: Typeface.NORMAL)
+                    view.setTextColor(AndroidColor.WHITE)
+                    view.typeface = Typeface.create(
+                        "sans-serif",
+                        if (view.text.toString().uppercase() == view.text.toString() ||
+                            view.text.toString().contains("EDA", true)) Typeface.BOLD else Typeface.NORMAL
+                    )
+                    if (view.text.toString().uppercase() == view.text.toString() &&
+                        view.text.toString().length in 5..45) {
+                        view.setTextColor(gold)
+                        view.letterSpacing = 0.06f
+                    }
                 }
             }
             if (view is ViewGroup) {
@@ -231,10 +303,25 @@ class SettingsActivity : AppCompatActivity() {
         }
         tintTree(root)
 
-        findViewById<TextView>(R.id.geriButon)?.background = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
-            setColor(panel)
-            setStroke(dp(1), accent)
+        findViewById<TextView>(R.id.geriButon)?.apply {
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(panel)
+                setStroke(dp(1.5f), cyan)
+            }
+            setTextColor(cyan)
+            textSize = 26f
+            elevation = dp(4).toFloat()
+        }
+
+        findViewById<Button>(R.id.izinMerkeziButon)?.apply {
+            text = "✦  İzin Merkezi · Gizlilik ve erişim"
+            minHeight = dp(54)
+        }
+        findViewById<Button>(R.id.kaydetButon)?.apply {
+            text = "✦  Ayarları Kaydet"
+            minHeight = dp(60)
+            textSize = 16f
         }
     }
 
