@@ -8,17 +8,8 @@
 
     <!-- Deep-space halo behind the EDA monogram -->
     <path android:pathData="M54,17 A37,37 0,1 1 53.9,17"
-        android:fillColor="#00000000" android:strokeWidth="2.2" android:strokeLineCap="round">
-        <aapt:attr name="android:strokeColor">
-            <gradient android:type="sweep" android:centerX="54" android:centerY="54">
-                <item android:offset="0.0" android:color="#FF00E5FF"/>
-                <item android:offset="0.28" android:color="#FFB84DFF"/>
-                <item android:offset="0.58" android:color="#FFFFB547"/>
-                <item android:offset="0.82" android:color="#FF00E5FF"/>
-                <item android:offset="1.0" android:color="#FF00E5FF"/>
-            </gradient>
-        </aapt:attr>
-    </path>
+        android:fillColor="#00000000" android:strokeColor="#FF00E5FF"
+        android:strokeWidth="2.2" android:strokeLineCap="round" />
 
     <!-- Orbital trails -->
     <path android:pathData="M12,60 C27,28 79,27 96,51 C108,68 75,83 36,80 C14,78 5,69 12,60"
