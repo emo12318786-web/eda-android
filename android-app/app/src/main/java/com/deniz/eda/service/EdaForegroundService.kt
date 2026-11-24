@@ -635,7 +635,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             while (isActive) {
                 delay(30_000L)
                 val tetiklenenler = ReminderChecker.kontrolEt(this@EdaForegroundService)
-                tetiklenenler.forEach { mesaj -> konus("Hatırlatma: $mesaj") }
+                tetiklenenler.forEach { mesaj -> konus("Hatırlatma: $mesaj") { if (mod == Mod.AKTIF && !Settings.derinUyku) baslatDinleme() } }
             }
         }
     }
