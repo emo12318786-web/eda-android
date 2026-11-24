@@ -607,7 +607,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                         val seviye = (yuzde / 5) * 5
                         if (seviye != sonPilUyariSeviyesi) {
                             sonPilUyariSeviyesi = seviye
-                            konus("Acil! Pil yüzde $yuzde. Hemen şarja tak!")
+                            konus("Acil! Pil yüzde $yuzde. Hemen şarja tak!") { if (mod == Mod.AKTIF && !Settings.derinUyku) baslatDinleme() }
                             continue
                         }
                     }
@@ -616,13 +616,13 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
                         val seviye = (yuzde / 5) * 5
                         if (seviye != sonPilUyariSeviyesi) {
                             sonPilUyariSeviyesi = seviye
-                            konus("Dikkat! Pil yüzde $yuzde. Şarj etmen iyi olur")
+                            konus("Dikkat! Pil yüzde $yuzde. Şarj etmen iyi olur") { if (mod == Mod.AKTIF && !Settings.derinUyku) baslatDinleme() }
                             continue
                         }
                     }
 
                     // ═══ عادی (بالای ۳۰٪) ═══
-                    konus("Pil yüzde $yuzde ${Settings.kullaniciAdi}.")
+                    konus("Pil yüzde $yuzde ${Settings.kullaniciAdi}.") { if (mod == Mod.AKTIF && !Settings.derinUyku) baslatDinleme() }
                 }
             }
         }
@@ -635,7 +635,7 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
             while (isActive) {
                 delay(30_000L)
                 val tetiklenenler = ReminderChecker.kontrolEt(this@EdaForegroundService)
-                tetiklenenler.forEach { mesaj -> konus("Hatırlatma: $mesaj") }
+                tetiklenenler.forEach { mesaj -> konus("Hatırlatma: $mesaj") { if (mod == Mod.AKTIF && !Settings.derinUyku) baslatDinleme() } }
             }
         }
     }
