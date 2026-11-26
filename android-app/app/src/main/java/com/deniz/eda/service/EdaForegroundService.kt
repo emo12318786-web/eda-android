@@ -1345,6 +1345,12 @@ class EdaForegroundService : Service(), TextToSpeech.OnInitListener {
     }
 
     private fun konus(metin: String, tamamlaninca: (() -> Unit)? = null) {
+        // Aktif modda mikrofon komut beklerken EDA sesli cikis yapmaz.
+        // Pil/hatirlatma anonslari da dahil tum TTS burada sessizce atlanir.
+        if (mod == Mod.AKTIF && dinlemeAktif) {
+            android.util.Log.i("EDA-TTS", "TTS atlandi: aktif mikrofon komut bekliyor; metin=$metin")
+            return
+        }
         val id = "eda_${System.currentTimeMillis()}"
         val temizMetin = ttsTemizle(metin)
         // TTS callbacks and the watchdog can race; an atomic guard ensures the
